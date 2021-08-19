@@ -1,0 +1,71 @@
+/*
+
+  BookML: bookdown flavoured GitBook port for LaTeXML
+  Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+/* Reduce margins on lists */
+.ltx_itemize, .ltx_enumerate {
+  margin-left: 0;
+}
+
+/* Reduce margins on abstracts and make them
+   independent of the font size */
+.ltx_abstract {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+/* Remove indentation on paragraphs */
+.ltx_title_abstract + .ltx_p,
+.ltx_para > .ltx_p:first-child {
+  text-indent: 0em !important;
+}
+
+/* Add some extra padding to proofs */
+.ltx_proof {
+  margin-top: 0.5em; margin-bottom: 0.5em;
+}
+
+/* mimic LaTeX default enumerate style:
+   arabic > lower alpha > lower roman > upper alpha
+
+   the SIMPLIFY_HTML option in bookml-html5.xsl prevents LaTeXML from using the
+   characters emitted by LaTeX as they may cause accessibility issues
+   https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-type#accessibility_concerns */
+ol.ltx_enumerate ol.ltx_enumerate {
+  list-style-type: lower-alpha;
+}
+
+ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate {
+  list-style-type: lower-roman;
+}
+
+ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate {
+  list-style-type: upper-alpha;
+}
+
+/* Reduce margins on listings and ensure content fits the container */
+.ltx_listing {
+  margin-right: 0;
+  max-width: 100%;
+}
+
+/* Ensure that oversized figures are scrollable */
+.ltx_figure {
+  overflow-x: auto;
+}

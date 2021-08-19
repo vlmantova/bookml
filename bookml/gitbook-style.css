@@ -1,0 +1,152 @@
+/*
+
+  BookML: bookdown flavoured GitBook port for LaTeXML
+  Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+*/
+
+/* from bookdown 'style.css' */
+/* disabled in BookML
+p.caption {
+  color: #777;
+  margin-top: 10px;
+} */
+p code {
+  white-space: inherit;
+}
+pre {
+  word-break: normal;
+  word-wrap: normal;
+}
+pre code {
+  white-space: inherit;
+}
+p.flushright {
+  text-align: right;
+}
+blockquote > p:last-child {
+  text-align: right;
+}
+blockquote > p:first-child {
+  text-align: inherit;
+}
+.header-section-number {
+  padding-right: .2em;
+  font-weight: 500;
+}
+.level1 .header-section-number {
+  display: inline-block;
+  border-bottom: 3px solid;
+}
+.level1 h1 {
+  border-bottom: 1px solid;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-weight: normal;
+}
+h1.title {
+  font-weight: 700;
+}
+.smallcaps {
+  font-variant: small-caps;
+}
+.book .book-body .page-wrapper .page-inner section.normal strong {
+  font-weight: 600;
+}
+
+/* BookML tweaks */
+
+/* Disable bottom border on titles below level 1 */
+.level1 .level2 .header-section-number,
+.level1 h2 .header-section-number,
+.level1 h3 .header-section-number,
+.level1 h4 .header-section-number,
+.level1 h5 .header-section-number,
+.level1 h6 .header-section-number {
+  border-bottom: none;
+}
+
+/* <h6> is used for theorems, avoid the default faint gitbook colour */
+.book .book-body .page-wrapper .page-inner section.normal h6 {
+  color: inherit;
+}
+
+.book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
+  color: inherit;
+}
+
+.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h6 {
+  color: #fffffa;
+}
+
+/* Disable section padding */
+.book .book-body .page-wrapper .page-inner section {
+  padding: 0px;
+}
+
+/* Disable header number padding */
+.header-section-number {
+  padding-right: 0;
+}
+
+/* Ensure the paragraphs are scrollable if necessary */
+.ltx_para {
+  overflow-x: auto;
+}
+
+/* Adjust colours in sepia and night modes */
+.book.color-theme-1 object[type="image/svg+xml"],
+.book.color-theme-1 img,
+.book.color-theme-1 *[style*=";color:"],
+.book.color-theme-1 *[style^="color:"] {
+  filter: sepia(40%);
+}
+
+.book.color-theme-2 object[type="image/svg+xml"],
+.book.color-theme-2 img,
+.book.color-theme-2 *[style*=";color:"],
+.book.color-theme-2 *[style^="color:"] {
+  filter: invert(100%) saturate(70%);
+}
+
+.book.color-theme-2 object[type="image/svg+xml"].bml_no_invert,
+.book.color-theme-2 img.bml_no_invert,
+.book.color-theme-2 *[style*=";color:"].bml_no_invert,
+.book.color-theme-2 *[style^="color:"].bml_no_invert {
+  filter: saturate(70%);
+}
+
+/* Fix <dt> margin (a GitBook bug?) */
+.book .book-body .page-wrapper .page-inner section.normal dl dt {
+  margin-top: 0;
+  margin-bottom: 0.85em;
+}
+
+/* Tweak listings */
+.ltx_listing {
+  background-color: #f7f7f7;
+  margin: 0 0 1.275em;
+  padding: .85em 1em;
+  width: 100%;
+}
+
+.book.color-theme-1 .ltx_listing {
+  background-color: #fdf6e3;
+}
+
+.book.color-theme-2 .ltx_listing {
+  background-color: #2d3143;
+}

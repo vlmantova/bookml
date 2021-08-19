@@ -1,0 +1,55 @@
+% BookML: bookdown flavoured GitBook port for LaTeXML
+% Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bookml}[2021/08/19 BookML: bookdown flavoured GitBook port for LaTeXML]
+
+\newif\ifbmlGitBook
+\bmlGitBooktrue
+
+\DeclareOption{nogitbook}{\bmlGitBookfalse}
+\DeclareOption{mathjax=2}{}
+\DeclareOption{nomathjax}{}
+\DeclareOption*{}
+
+\ProcessOptions
+
+% import latexml.sty if available, otherwise at least define \iflatexml
+\IfFileExists{latexml.sty}{
+  \RequirePackage{latexml}
+}{
+  \newif\iflatexml\latexmlfalse
+}
+
+% HTML
+\def\bmlHTMLEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
+
+% Raw HTML
+\RequirePackage[T1]{fontenc} % required for proper parsing of <, >
+\def\bmlRawHTML#1{}
+
+% Image generation via LaTeX
+\RequirePackage[noconfig,delayed]{preview}
+\def\bmlImageEnvironment#1{\PreviewEnvironment{#1}}
+
+\newenvironment{bmlimage}{}{}
+\bmlImageEnvironment{bmlimage}
+
+% Alternative text
+\newcommand\bmlDescription[1]{}
+
+% Add class to previous node
+\newcommand\bmlPlusClass[1]{}

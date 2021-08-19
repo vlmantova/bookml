@@ -1,0 +1,69 @@
+--- a/bookml/gitbook/js/plugin-bookdown.js
++++ b/bookml/gitbook/js/plugin-bookdown.js
+@@ -95,12 +95,8 @@
+     });
+ 
+     // highlight the current section in TOC
+-    var href = window.location.pathname;
+-    href = href.substr(href.lastIndexOf('/') + 1);
+-    // accentuated characters need to be decoded (#819)
+-    href = decodeURIComponent(href);
+-    if (href === '') href = 'index.html';
+-    var li = $('a[href^="' + href + location.hash + '"]').parent('li.chapter').first();
++    var href = location.hash ? '' : location.hash;
++    var li = $('a[href="' + href + '"]').parent('li.chapter').first();
+     var summary = $('ul.summary'), chaps = summary.find('li.chapter');
+     if (li.length === 0) li = chaps.first();
+     li.addClass('active');
+@@ -162,22 +158,25 @@
+       }
+       if (m === 0) return;
+       // all section titles on current page
+-      var hs = bookInner.find('.page-inner').find('h1,h2,h3'), n = hs.length,
+-          ts = hs.map(function(i, el) { return $(el).text(); });
++      var hs = bookInner.find('.page-inner').find('h1,h2,h3,h4,h5').children('span[class^="ltx_tag"]'), n = hs.length,
++          ts = hs.map(function(i, el) { return ($(el).closest('section').attr('id') ? '#' + $(el).closest('section').attr('id') : ''); });
+       if (n === 0) return;
+       var scrollHandler = function(e) {
+         var ht = $(window).height();
+         clearTimeout($.data(this, 'scrollTimer'));
+         $.data(this, 'scrollTimer', setTimeout(function() {
+-          // find the first visible title in the viewport
++          // find the section containing the last visible content on screen
+           for (var i = 0; i < n; i++) {
+             var rect = hs[i].getBoundingClientRect();
+-            if (rect.top >= 0 && rect.bottom <= ht) break;
++            if (rect.top >= 0) { // we are past heading i-1
++              if (rect.bottom > ht && i > 0) i--; // but not yet past i
++              break;
++            }
+           }
+-          if (i === n) return;
++          if (i === n && i > 0) i--;
+           items.removeClass('active');
+           for (var j = 0; j < m; j++) {
+-            if (items.eq(j).children('a').first().text() === ts[i]) break;
++            if (items.eq(j).children('a').attr('href') === ts[i]) break;
+           }
+           if (j === m) j = 0;  // highlight the chapter title
+           // search bottom-up for a visible TOC item to highlight; if an item is
+@@ -191,7 +190,7 @@
+     })();
+ 
+     // do not refresh the page if the TOC item points to the current page
+-    $('a[href="' + href + '"]').parent('li.chapter').children('a')
++    $('a[href=""]').parent('li.chapter').children('a')
+       .on('click', function(e) {
+         bookInner.scrollTop(0);
+         bookBody.scrollTop(0);
+@@ -239,9 +238,7 @@
+     try { inIframe = window.self !== window.top; } catch (e) {}
+     return inIframe;
+   };
+-  if (inIFrame()) {
+-    $(window).on('blur unload', saveScrollPos);
+-  }
++  $(window).on('blur unload', saveScrollPos);
+ 
+   $(function(e) {
+     var pos = gs.get('bodyScrollTop');

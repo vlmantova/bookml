@@ -1,0 +1,333 @@
+\documentclass[a4paper,british]{article}
+
+\usepackage{ifpdf}
+\ifpdf % make build reproducible
+\pdfinfoomitdate=1
+\pdftrailerid{}
+\pdfsuppressptexinfo=-1
+\fi
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{bookml}
+\usepackage{latexml}
+
+\usepackage{babel}
+
+\usepackage[pdfusetitle,colorlinks]{hyperref}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{geometry}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.3em}
+
+\iflatexml
+\def\Xy{Xy}
+\else
+\usepackage[all]{xy}
+\usepackage{tikz}
+\usetikzlibrary{ducks}
+\usepackage{animate}
+\fi
+\def\tikzname{Ti\emph{k}Z}
+
+\bmlImageEnvironment{tikzpicture}
+\bmlImageEnvironment{animateinline}
+
+\usepackage{listings}
+\lstset{basicstyle={\small\ttfamily},%
+  keywordstyle={\color{blue}\bfseries},%
+  keywordstyle=[2]{\color{MidnightBlue}\bfseries},%
+  stringstyle={\color{red}},%
+  commentstyle={\color{OliveGreen}},%
+  frame=none,
+  xleftmargin=1em,xrightmargin=1em%
+}
+
+\lstdefinestyle{bookml}{language=[LaTeX]TeX,%
+  texcsstyle=*{\color{blue}\bfseries},%
+  texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
+  moretexcs={xymatrix,ltxinline,href},%
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,ifbmlGitBook}%
+  }
+
+\def\ltxinline{\lstinline[style=bookml]}
+\def\htmlinline{\lstinline[language=html]}
+
+\title{BookML: a bookdown flavoured GitBook port for \LaTeXML{}}
+\author{Vincenzo Mantova}
+
+\date{19 August 2021}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  This package is mainly a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown} for \LaTeXML, but it also offer a few extra features and bugfixes for \LaTeXML{} that can be used with or without the GitBook style:
+  \begin{itemize}
+    \item transparent generation of SVG pictures via \LaTeX{} for packages not well supported by \LaTeXML{}, such as \tikzname{} pictures, animations, \Xy-matrices;
+    \item a simple method to add alternative text for images;
+    \item partial support for arbitrary \HTML{} content;
+    \item backport of some minor styling fixes from \LaTeXML{} 0.8.6 such as mobile friendliness as well as the occasional bookdown bugfixes;
+    \item direct embedding of MathJax, with the option of choosing between versions 2 and 3 or disabling it.
+  \end{itemize}
+\end{abstract}
+
+\iflatexml\ifbmlGitBook
+This document has been compiled with the GitBook theme, but you can also see the \href{index.nogitbook.html}{plain version} compiled with the option \ltxinline|nogitbook|.
+\else
+This document has been compiled with the option \ltxinline|nogitbook|, but you can also see the \href{.}{GitBook version}.
+\fi\fi
+
+\iflatexml\ifbmlGitBook\else
+\tableofcontents
+\fi\fi
+
+\section{Getting started}
+
+\begin{enumerate}
+  \item Install the prerequisites:
+  \begin{itemize}
+    \item \textbf{Required:} a working \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} installation, at least version 0.8.5.
+    \item \textbf{Optional} (necessary for generating the images via \LaTeX): a working \TeX{} install containing \lstinline[frame=none]|dvisvgm| and \lstinline[frame=none]|latexmk|.
+  \end{itemize}
+  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} next to your \lstinline[frame=none]|.tex| files. Your folder should look something like the following:
+    \begin{lstlisting}
+bookml
+bookml.sty
+bookml.sty.ltxml
+LaTeXML-html5.xsl
+my_latex_file.tex
+    \end{lstlisting}
+  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add
+    \begin{lstlisting}[style=bookml]
+\usepackage{bookml}
+    \end{lstlisting}
+  \item Compile your file to HTML:
+    \begin{lstlisting}[language=bash]
+latexmlc --navigationtoc=context \
+  --dest=my_latex_file/index.html \
+  my_latex_file.tex
+    \end{lstlisting}
+    Add \ltxinline|--splitat=section| (or chapter, part...) to split the content on multiple pages. See the \LaTeXML{} \href{https://dlmf.nist.gov/LaTeXML/manual/usage/}{manual} for all the options.
+\end{enumerate}
+
+\section{Options}
+
+The \ltxinline|bookml| package accepts a few options (use for instance use \ltxinline|\usepackage[nogitbook,nomathjax]{bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output except for setting the truth value of \ltxinline|\ifbmlGitBook|.
+
+You can also pass these options at compilation time using the \ltxinline|--preload| option of \ltxinline|latexml| and \ltxinline|latexmlc|:
+\begin{lstlisting}
+  latexmlc --preload=[nogitbook,nomathjax]bookml \
+    --dest=my_latex_file/index.html \
+    my_latex_file.xml
+\end{lstlisting}
+
+\begin{description}
+  \item[\texttt{nogitbook}] Disable the GitBook style and restore the typical LaTeXML output, with just a few tweaks.
+  \item[\texttt{nomathjax}] Do not include MathJax in the output.
+  \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
+  \item[\texttt{imagescale=X.XXX}] Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
+\end{description}
+
+\section{Commands}
+
+\subsection{Conditional execution}
+Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively (this functionality is also offered by the \ltxinline|latexml| package).
+
+Use \ltxinline|\ifbmlGitBook ... \else ... \fi| to detect if the document is being compiled with the \ltxinline|nogitbook| option (see Figure~\ref{fig:ifbmlGitBook}).
+
+\begin{figure}[hb]
+  \begin{lstlisting}[style=bookml]
+\iflatexml\ifbmlGitBook
+This document has been compiled with the GitBook theme,
+but you can also see the \href{index.nogitbook.html}{plain version}
+compiled with the option \ltxinline|nogitbook|.
+\else
+This document has been compiled with the option \ltxinline|nogitbook|,
+but you can also see the \href{.}{GitBook version}.
+\fi\fi
+  \end{lstlisting}
+  \caption{Example of \texttt{\textbackslash{}iflatexml} and \texttt{\textbackslash{}ifbmlGitBook}.}
+  \label{fig:ifbmlGitBook}
+\end{figure}
+
+\subsection{Alternative text for images}
+Call \ltxinline|\bmlDescription{textual description}| \emph{right after} an image to populate its \htmlinline|alt| attribute (or \ltxinline|aria-label| if appropriate). Inspect the \HTML{} source of Figure~\ref{fig:duck} or use a screen reader to check its text description.
+
+\subsection{Add custom CSS classes}
+Call \ltxinline|\bmlPlusClass{class}| \emph{right after} some piece of content to add a CSS class. If done within text, its effect may be unpredictable. Its main use is to call \ltxinline|\bmlPlusClass{bml_no_invert}| after an image to prevent the picture from getting inverted in night mode. Compare how Figure~\ref{fig:duck} (with \ltxinline|bml_no_invert|) and Figure~\ref{fig:xymatrix} (no additional classes) change in night mode to see the difference.
+
+Note that the package \ltxinline|latexml| also offers \ltxinline|\lxAddClass| and \ltxinline|\lxWithClass| for the same effect but different behaviour regarding which element gets the class.
+
+\subsection{Generate pictures with \LaTeX{}}
+\label{sec:external-image}
+
+LaTeXML supports the \ltxinline|picture| environment as well as \emph{some} \tikzname{} pictures, but not all which will come out mangled, and some common packages are not supported altogether (for instance \ltxinline|xypic|, \ltxinline|tikzcd|, \ltxinline|animate|).
+
+BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing LaTeXML entirely. In your preamble, after \ltxinline|\usepackage{bookml}|, write
+\begin{lstlisting}[style=bookml]
+\bmlImageEnvironment{tikzpicture}
+\bmlImageEnvironment{animateinline}
+
+% optional, but strongly recommended:
+% do not load tikz when running in LaTeXML
+\iflatexml\else
+\usepackage{tikz}
+\usepackage{animate}
+\fi
+\end{lstlisting}
+
+Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be compiled with \LaTeX{} (using \lstinline[frame=none]|latexmk|) and converted to SVG images (using \lstinline[frame=none]|dvisvgm|). Figure~\ref{fig:duck} demonstrates this approach.
+
+\begin{figure}
+  \begin{lstlisting}[style=bookml]
+\begin{animateinline}[
+  alttext=none,loop,controls,poster=20,autopause,
+  begin={\begin{tikzpicture}
+    \useasboundingbox (0,0) rectangle (4,3);},
+    end={\end{tikzpicture}}]{30}
+  \multiframe{160}{dShift=40mm+-0.5mm}
+    {\duck[tophat,xshift=\dShift]}
+\end{animateinline}
+\bmlDescription{A stylised rubber duck, yellow
+  and wearing a black top hat, enters from the right
+  and slides until it exits from the left. The animation
+  repeats every six seconds.}
+\bmlPlusClass{bml_no_invert} % preserve colours in night mode
+  \end{lstlisting}
+  \begin{center}
+    \begin{animateinline}[
+      alttext=none,loop,controls,poster=20,autopause,
+      poster=20,autopause,
+      begin={\begin{tikzpicture}%
+        \useasboundingbox (0,0) rectangle (4,3);},
+        end={\end{tikzpicture}}]{30}
+      \multiframe{160}{dShift=40mm+-0.5mm}
+        {\duck[tophat,xshift=\dShift]}
+    \end{animateinline}
+  \end{center}
+  \bmlDescription{A stylised rubber duck, yellow
+    and wearing a black top hat, enters from the right
+    and slides until it exits from the left. The animation
+    repeats this every six seconds.}
+  \bmlPlusClass{bml_no_invert} % preserve colours in night mode
+  \caption{A fancy duck. Click on the image to start the animation (for the PDF, it requires a compatible software such as Acrobat Reader).}
+  \label{fig:duck}
+\end{figure}
+
+If you only need this mechanism in a pinch, you can simply wrap the desired content between \ltxinline|\begin{bmlimage}| and \ltxinline|\end{bmlimage}| as exemplified in Figure~\ref{fig:xymatrix}.
+\begin{figure}
+  \begin{lstlisting}[style=bookml]
+\begin{bmlimage}
+  \[ \xymatrix{
+      U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
+      & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
+      & Y \ar[r]^g & Z} \]
+\end{bmlimage}
+  \end{lstlisting}
+  \begin{bmlimage}
+    \[ \xymatrix{
+        U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
+        & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
+        & Y \ar[r]^g & Z} \]
+  \end{bmlimage}
+  \bmlDescription{Universal property of the pullback as defined in [omitted].}
+  \caption{Example of \iflatexml\ltxinline|\xymatrix|\else\ltxinline|\\xymatrix|\fi{} from the \ltxinline|xypic| documentation.}
+  \label{fig:xymatrix}
+\end{figure}
+
+\subsection{Direct \HTML{} input}
+
+You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
+
+\textbf{Warning:} the \HTML{} code needs to be written in `XML syntax', so you have to close all the tags (for instance, write \htmlinline|<br/>| instead of \htmlinline|<br>|, close the \htmlinline|<p>| tags, and so on) and empty attributes \emph{must} be given the value \htmlinline|""| (see this \href{https://dev.w3.org/html5/html-author/#elements}{old W3C guide} for some indications). Moreover, you must remember to escape your \ltxinline|%&_^${}|, and replace \ltxinline|\| with \ltxinline|\textbackslash|.
+
+\ltxinline|\bmlRawHTML| is robust, i.e.\ it does not change the category codes, so it can be used inside \ltxinline|\newcommand| to create custom macros. See for instance Figure~\ref{fig:youtube-ducks} for a generic YouTube embedding macro. Note that the video will not be visible in the PDF, so a link should always be provided (possibly PDF only, as in the example).
+
+\begin{figure}
+  \begin{lstlisting}[style=bookml]
+\newcommand{\youtube}[2]{\bmlRawHTML{
+  <div style="max-width: 1920px; width: 100\%">
+    <div style="position: relative;
+        padding-bottom: 56.25\%; height: 0; overflow: hidden;">
+      <iframe width="1920" height="1080"
+        src="https://www.youtube-nocookie.com/embed/#1"
+        title="YouTube: #2"
+        frameborder="0" allowfullscreen=""
+        style="border:none; position: absolute; top: 0; left: 0;
+          right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
+        allow="accelerometer; autoplay; clipboard-write;
+          encrypted-media; gyroscope; picture-in-picture"/>
+    </div>
+  </div>}
+\iflatexml\else
+\begin{center}
+  Watch \href{https://www.youtube.com/watch?v=#1}{#2}.
+\end{center}
+\fi}
+\youtube{mH0oCDa74tE}
+  {Group theory, abstraction, and the 196,883-dimensional monster}
+  \end{lstlisting}
+  \newcommand{\youtube}[2]{\bmlRawHTML{
+    <div style="max-width: 1920px; width: 100\%">
+      <div style="position: relative;
+          padding-bottom: 56.25\%; height: 0; overflow: hidden;">
+        <iframe width="1920" height="1080"
+          src="https://www.youtube-nocookie.com/embed/#1"
+          title="YouTube: #2"
+          frameborder="0" allowfullscreen=""
+          style="border:none; position: absolute; top: 0; left: 0;
+            right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
+          allow="accelerometer; autoplay; clipboard-write;
+            encrypted-media; gyroscope; picture-in-picture"/>
+      </div>
+    </div>}
+    \iflatexml\else
+  \begin{center}
+    Watch \href{https://www.youtube.com/watch?v=#1}{#2}.
+  \end{center}
+  \fi}
+  \youtube{mH0oCDa74tE}
+    {Group theory, abstraction, and the 196,883-dimensional monster}
+  \caption{Demonstration of \iflatexml\ltxinline|\bmlRawHTML|\else\ltxinline|\\bmlRawHTML|\fi{} within \iflatexml\ltxinline|\newcommand|\else\ltxinline|\\newcommand|\fi{} with a video from \href{https://www.youtube.com/3blue1brown}{3Blue1Brown}.}
+  \label{fig:youtube-ducks}
+\end{figure}
+
+\subsection{Wrapping \LaTeX{} in \HTML{} tags (experimental)}
+
+The command \ltxinline|\bmlHTMLEnvironment{tag}| defines an environment \ltxinline|\begin{h:tag} ... \end{h:tag}| which wraps the content between \lstinline[language=html,frame=none]|<tag> ... </tag>|. One can also add attributes as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|.
+
+This approach is very fragile because \LaTeXML{} cannot cope well with unknown tags, and the implementation may change in the future. For now, this is best used for tags which behave like blocks and can contain paragraphs. See Figure~\ref{fig:details} for an example.
+
+  \begin{figure}
+    \bmlHTMLEnvironment{details}
+    \begin{h:details}[style={text-align: left; width: 100\%}]
+      % <summary> cannot contain <p>, better use \bmlRawHTML
+      \bmlRawHTML{<summary><strong>Code for
+        <code>\&lt;details\&gt;</code>.</strong></summary>}
+      \iflatexml\else {\bfseries Code for
+        \lstinline[language=html,frame=none]|<details>|.}\fi
+
+      Completing the quine is left as an exercise for the reader.
+      \begin{lstlisting}[style=bookml]
+\bmlHTMLEnvironment{details}
+\begin{h:details}[style={text-align: left; width: 100\%}]
+  % <summary> cannot contain <p>, better use \bmlRawHTML
+  \bmlRawHTML{<summary>Code for
+    <code>\&lt;details\&gt;</code>.</summary>}
+  \iflatexml\else {\bfseries Code for
+    \lstinline[language=html,frame=none]|<details>|.}\fi
+
+  Completing the quine is left as an exercise for the reader.
+\end{h:details}
+          \end{lstlisting}
+    \end{h:details}
+    \caption{Implementation of the \htmlinline|<details>| tag.}
+    \label{fig:details}
+  \end{figure}
+
+\end{document}

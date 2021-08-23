@@ -107,6 +107,11 @@ h1.title {
   overflow-x: auto;
 }
 
+/* ...except in a few places */
+.ltx_item .ltx_para {
+  overflow-x: initial;
+}
+
 /* Adjust colours in sepia and night modes */
 .book.color-theme-1 object[type="image/svg+xml"],
 .book.color-theme-1 img,
@@ -132,7 +137,6 @@ h1.title {
 /* Fix <dt> margin (a GitBook bug?) */
 .book .book-body .page-wrapper .page-inner section.normal dl dt {
   margin-top: 0;
-  margin-bottom: 0.85em;
 }
 
 /* Tweak listings */
@@ -140,7 +144,6 @@ h1.title {
   background-color: #f7f7f7;
   margin: 0 0 1.275em;
   padding: .85em 1em;
-  width: 100%;
 }
 
 .book.color-theme-1 .ltx_listing {
@@ -149,4 +152,17 @@ h1.title {
 
 .book.color-theme-2 .ltx_listing {
   background-color: #2d3143;
+}
+
+/* Remove indentation on paragraphs */
+.ltx_title_abstract + .ltx_p,
+.ltx_para > .ltx_p:first-child {
+  text-indent: 0em !important;
+}
+
+/* Reduce margins on abstracts and make them
+   independent of the font size */
+.ltx_abstract {
+  margin-left: 32px;
+  margin-right: 32px;
 }

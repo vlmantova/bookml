@@ -165,15 +165,12 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
         var ht = $(window).height();
         clearTimeout($.data(this, 'scrollTimer'));
         $.data(this, 'scrollTimer', setTimeout(function() {
-          // find the section containing the last visible content on screen
+          // find the last section starting by the middle of the viewport
           for (var i = 0; i < n; i++) {
             var rect = hs[i].getBoundingClientRect();
-            if (rect.top >= 0) { // we are past heading i-1
-              if (rect.bottom > ht && i > 0) i--; // but not yet past i
-              break;
-            }
+            if (rect.top > ht / 2) break;
           }
-          if (i === n && i > 0) i--;
+          if (i > 0) i--;
           items.removeClass('active');
           for (var j = 0; j < m; j++) {
             if (items.eq(j).children('a').attr('href') === ts[i]) break;

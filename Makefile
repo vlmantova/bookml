@@ -16,21 +16,24 @@
 
 VERSION = $(shell git describe)
 RELEASE = bookml-$(VERSION).zip
+SPLIT   = $(patsubst %,--splitat=%,$(SPLITAT))
 
 BOOKDOWN_SOURCE = bookdown-source/inst/resources
-GITBOOK = $(foreach wd,css/*.css css/fontawesome/*.ttf js/*.js,$(wildcard $(BOOKDOWN_SOURCE)/gitbook/$(wd)))
-JQUERY = $(wildcard $(BOOKDOWN_SOURCE)/jquery/*.js)
+GITBOOK_CSS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css plugin-clipboard.css fontawesome/fontawesome-webfont.ttf)
+GITBOOK_JS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/js/%,app.min.js clipboard.min.js plugin-fontsettings.js plugin-bookdown.js plugin-clipboard.js)
+JQUERY = $(BOOKDOWN_SOURCE)/jquery/jquery.min.js
 BOOKDOWN_OUT_DIRS = $(patsubst %,bookml/%,gitbook/css/fontawesome gitbook/css gitbook/js gitbook jquery)
-BOOKDOWN_OUT = $(patsubst $(BOOKDOWN_SOURCE)/%,bookml/%,$(GITBOOK) $(JQUERY))
+BOOKDOWN_OUT = $(patsubst $(BOOKDOWN_SOURCE)/%,bookml/%,$(GITBOOK_CSS) $(GITBOOK_JS) $(JQUERY))
 
 TEX_DEPS = bookml.sty bookml/bookml-latex.sty
 XML_DEPS = bookml.sty.ltxml bookml/bookml-perl.pl
 HTML_DEPS = LaTeXML-html5.xsl $(wildcard bookml/*.xsl) $(wildcard bookml/*.css) $(BOOKDOWN_OUT)
 
 .PHONY: all clean release
-.PRECIOUS: docs.dvi docs.ps docs.pdf
+.PRECIOUS:
+.SECONDARY:
 
-all: $(BOOKDOWN_OUT) docs/index.html docs/index.nogitbook.html
+all: docs/index.html docs/index.plain.html
 
 clean:
 	-latexmk -C docs.tex
@@ -67,14 +70,11 @@ bookml/gitbook/js/plugin-bookdown.js: $(BOOKDOWN_SOURCE)/gitbook/js/plugin-bookd
 %.xml: %.tex $(XML_DEPS)
 	latexml --dest="$@" "$<"
 
-%.nogitbook.xml: %.tex $(XML_DEPS)
-	latexml --preload=[nogitbook]bookml --dest="$@" "$<"
+%.plain.xml: %.tex $(XML_DEPS) $(wildcard bmluser/*.plain.*css)
+	latexml --preload=[style=plain]bookml --dest="$@" "$<"
 
-%/index.html: %.xml $(HTML_DEPS)
-	latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 "$<"
+%/index.html: %.xml $(HTML_DEPS) %.pdf
+	latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 $(SPLIT) "$<"
 
-docs/index.html: docs.xml $(HTML_DEPS) docs.pdf
-	latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 "$<"
-
-docs/index.nogitbook.html: docs.nogitbook.xml $(HTML_DEPS) docs.pdf
-	latexmlpost --dest="$@" --timestamp=0 "$<"
+%/index.plain.html: %.plain.xml $(HTML_DEPS) %.pdf $(wildcard bmluser/*.plain.*css)
+	latexmlpost --dest="$@" --timestamp=0 $(SPLIT) "$<"

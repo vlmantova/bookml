@@ -35,7 +35,15 @@
   <!-- include the GitBook style -->
   <xsl:import href="gitbook.xsl"/>
 
-  <xsl:variable name="GITBOOK" select="not(b:if-option('nogitbook'))"/>
+  <xsl:param name="BMLSTYLE">
+    <xsl:choose>
+      <xsl:when test="b:if-option('style=plain')">plain</xsl:when>
+      <xsl:when test="b:if-option('style=gitbook')">gitbook</xsl:when>
+      <xsl:otherwise>gitbook</xsl:otherwise>
+    </xsl:choose>
+  </xsl:param>
+
+  <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
   <xsl:variable name="MATHJAX3"
     select="not(b:if-option('nomathjax') or $MATHJAX2)"/>
@@ -56,9 +64,6 @@
       <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
     </xsl:choose>
   </xsl:template>
-
-  <!-- disable LaTeXML list management -->
-  <xsl:param name="SIMPLIFY_HTML">true</xsl:param>
 
   <!-- add BookML resources at the end of the head -->
   <xsl:template match="/" mode="head-end">
@@ -231,6 +236,114 @@
         <xsl:text>&#x2B07;</xsl:text>
       </a>
     </div>
+  </xsl:template>
+
+  <!-- remove unwanted spaces between tag and content in lists -->
+  <xsl:template match="ltx:item">
+    <xsl:param name="context"/>
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:choose>
+      <xsl:when test="$SIMPLIFY_HTML">
+        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
+          <xsl:call-template name="add_id"/>
+          <xsl:call-template name="add_attributes"/>
+          <xsl:apply-templates select="." mode="begin">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="*[local-name() != 'tags']">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="." mode="end">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:when>
+      <xsl:when test="child::ltx:tags">
+        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
+          <xsl:call-template name="add_id"/>
+          <xsl:call-template name="add_attributes">
+            <xsl:with-param name="extra_style">
+              <xsl:value-of select="'list-style-type:none;'"/>
+              <xsl:if test="@itemsep">
+                <xsl:value-of select="concat('padding-top:',@itemsep,';')"/>
+              </xsl:if>
+            </xsl:with-param>
+          </xsl:call-template>
+          <xsl:apply-templates select="." mode="begin">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="ltx:tags/ltx:tag[not(@role)]">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="*[local-name() != 'tags']">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="." mode="end">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
+          <xsl:call-template name="add_id"/>
+          <!-- if there's no ltx:tags, it's presumably intentional -->
+          <xsl:call-template name="add_attributes">
+            <xsl:with-param name="extra_style">
+              <xsl:value-of select="'list-style-type:none;'"/>
+              <xsl:if test="@itemsep">
+                <xsl:value-of select="concat('padding-top:',@itemsep,';')"/>
+              </xsl:if>
+            </xsl:with-param>
+          </xsl:call-template>
+          <xsl:apply-templates select="." mode="begin">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates>
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+          <xsl:apply-templates select="." mode="end">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="ltx:enumerate/ltx:item/ltx:para[1]/ltx:p[1] | ltx:itemize/ltx:item/ltx:para[1]/ltx:p[1]">
+    <xsl:param name="context"/>
+    <xsl:text>&#x200B;</xsl:text> <!-- zero width space to prevent newlines -->
+    <xsl:element name="{f:blockelement($context,'p')}" namespace="{$html_ns}">
+      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes"/>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:enumerate/ltx:item/ltx:para[1] | ltx:itemize/ltx:item/ltx:para[1]">
+    <xsl:param name="context"/>
+    <xsl:text>&#x200B;</xsl:text> <!-- zero width space to prevent newlines -->
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes"/>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </xsl:element>
   </xsl:template>
 
 </xsl:stylesheet>

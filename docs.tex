@@ -1,12 +1,5 @@
 \documentclass[a4paper,british]{article}
 
-\usepackage{ifpdf}
-\ifpdf % make build reproducible
-\pdfinfoomitdate=1
-\pdftrailerid{}
-\pdfsuppressptexinfo=-1
-\fi
-
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
@@ -16,10 +9,16 @@
 \usepackage{babel}
 
 \usepackage[pdfusetitle,colorlinks]{hyperref}
+\usepackage{ifpdf}
+\ifpdf % make build reproducible
+\pdfinfoomitdate=1
+\pdftrailerid{}
+\pdfsuppressptexinfo=-1
+\hypersetup{pdfinfo={ Creator={}, Producer={} }}
+\fi
+
 \usepackage[dvipsnames]{xcolor}
-
 \usepackage{geometry}
-
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.3em}
 
@@ -33,7 +32,6 @@
 \fi
 \def\tikzname{Ti\emph{k}Z}
 
-\bmlImageEnvironment{tikzpicture}
 \bmlImageEnvironment{animateinline}
 
 \usepackage{listings}
@@ -50,23 +48,23 @@
   texcsstyle=*{\color{blue}\bfseries},%
   texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
   moretexcs={xymatrix,ltxinline,href},%
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,ifbmlGitBook}%
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass}%
   }
 
 \def\ltxinline{\lstinline[style=bookml]}
 \def\htmlinline{\lstinline[language=html]}
 
-\title{BookML: a bookdown flavoured GitBook port for \LaTeXML{}}
+\title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{19 August 2021}
+\date{23 August 2021}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-  This package is mainly a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown} for \LaTeXML, but it also offer a few extra features and bugfixes for \LaTeXML{} that can be used with or without the GitBook style:
+  This package is mainly a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown} for \LaTeXML, but it also offers a few extra features and bugfixes for \LaTeXML{} that can be used with or without the GitBook style:
   \begin{itemize}
     \item transparent generation of SVG pictures via \LaTeX{} for packages not well supported by \LaTeXML{}, such as \tikzname{} pictures, animations, \Xy-matrices;
     \item a simple method to add alternative text for images;
@@ -76,15 +74,11 @@
   \end{itemize}
 \end{abstract}
 
-\iflatexml\ifbmlGitBook
-This document has been compiled with the GitBook theme, but you can also see the \href{index.nogitbook.html}{plain version} compiled with the option \ltxinline|nogitbook|.
-\else
-This document has been compiled with the option \ltxinline|nogitbook|, but you can also see the \href{.}{GitBook version}.
-\fi\fi
+\begin{center}
+  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}.
+\end{center}
 
-\iflatexml\ifbmlGitBook\else
 \tableofcontents
-\fi\fi
 
 \section{Getting started}
 
@@ -94,20 +88,10 @@ This document has been compiled with the option \ltxinline|nogitbook|, but you c
     \item \textbf{Required:} a working \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} installation, at least version 0.8.5.
     \item \textbf{Optional} (necessary for generating the images via \LaTeX): a working \TeX{} install containing \lstinline[frame=none]|dvisvgm| and \lstinline[frame=none]|latexmk|.
   \end{itemize}
-  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} next to your \lstinline[frame=none]|.tex| files. Your folder should look something like the following:
-    \begin{lstlisting}
-bookml
-bookml.sty
-bookml.sty.ltxml
-LaTeXML-html5.xsl
-my_latex_file.tex
-    \end{lstlisting}
-  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add
-    \begin{lstlisting}[style=bookml]
-\usepackage{bookml}
-    \end{lstlisting}
+  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} in the same folder as your \lstinline[frame=none]|.tex| files (and not in a subfolder).
+  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml}|.
   \item Compile your file to HTML:
-    \begin{lstlisting}[language=bash]
+    \begin{lstlisting}
 latexmlc --navigationtoc=context \
   --dest=my_latex_file/index.html \
   my_latex_file.tex
@@ -117,42 +101,51 @@ latexmlc --navigationtoc=context \
 
 \section{Options}
 
-The \ltxinline|bookml| package accepts a few options (use for instance use \ltxinline|\usepackage[nogitbook,nomathjax]{bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output except for setting the truth value of \ltxinline|\ifbmlGitBook|.
+The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[style=plain,nomathjax]{bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output.
 
 You can also pass these options at compilation time using the \ltxinline|--preload| option of \ltxinline|latexml| and \ltxinline|latexmlc|:
 \begin{lstlisting}
-  latexmlc --preload=[nogitbook,nomathjax]bookml \
+  latexmlc --preload=[style=plain,nomathjax]bookml \
     --dest=my_latex_file/index.html \
     my_latex_file.xml
 \end{lstlisting}
 
 \begin{description}
-  \item[\texttt{nogitbook}] Disable the GitBook style and restore the typical LaTeXML output, with just a few tweaks.
+  \item[\texttt{style=gitbook}] Use the GitBook style (the default behaviour). When using the GitBook style, you must call \ltxinline|latexmlc| (or \ltxinline|latexmlpost|) with the option \ltxinline|--navigationtoc=context|.
+  \item[\texttt{style=plain}] Use the \LaTeXML{} style with a few slightly opinionated tweaks.
+  \item[\texttt{style=none}] Use the \LaTeXML{} style with no tweaks (except for backported styles and some fixes).
   \item[\texttt{nomathjax}] Do not include MathJax in the output.
   \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
   \item[\texttt{imagescale=X.XXX}] Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
+  \item[\texttt{download=docs.pdf|docs.epub}] |-separated list of files to list under bookdown's download button (only valid for the GitBook style). The default value is \ltxinline|\jobname.pdf|, where \ltxinline|\jobname| is the name of the \lstinline|.tex| file being compiled without the extension. Use \ltxinline|download=| to remove the download button. For now, only PDF and EPUB files are supported.
 \end{description}
+
+\section{Customisation}
+
+\subsection{\CSS{} and fonts}
+Just create a \lstinline|bmluser| folder and add any \lstinline|.css| file to it. The files will be included at the end of the \htmlinline|<head>| tag and override the previous styles.
+
+If the name of a file contains the substring \lstinline|.gitbook.|, then that file will be used only when the \lstinline|style=gitbook| option is passed (likewise for \lstinline|.plain.| or \lstinline|.none.|).
+
+The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this document has been compiled with an additional \href{https://vlmantova.github.io/bookml/bmluser/computer-modern.plain.css}{\texttt{computer-modern.plain.css}} that sets the font to Computer Modern.
+
+\subsection{\HTML{} output}
+
+You can modify \lstinline|LaTeXML-html5.xsl| to change the \HTML{} output. Just be careful not to overwrite the file during updates.
 
 \section{Commands}
 
 \subsection{Conditional execution}
-Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively (this functionality is also offered by the \ltxinline|latexml| package).
-
-Use \ltxinline|\ifbmlGitBook ... \else ... \fi| to detect if the document is being compiled with the \ltxinline|nogitbook| option (see Figure~\ref{fig:ifbmlGitBook}).
+Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively. \lstinline|bookml| will try to use the \lstinline|latexml| package, which offers the same functionality (and much more), if available. See Figure~\ref{fig:iflatexml}.
 
 \begin{figure}[hb]
   \begin{lstlisting}[style=bookml]
-\iflatexml\ifbmlGitBook
-This document has been compiled with the GitBook theme,
-but you can also see the \href{index.nogitbook.html}{plain version}
-compiled with the option \ltxinline|nogitbook|.
-\else
-This document has been compiled with the option \ltxinline|nogitbook|,
-but you can also see the \href{.}{GitBook version}.
-\fi\fi
+\caption{Example of
+  \iflatexml\ltxinline|\xymatrix|\else\ltxinline|\\xymatrix|\fi{}
+  from the \ltxinline|xypic| documentation.}
   \end{lstlisting}
-  \caption{Example of \texttt{\textbackslash{}iflatexml} and \texttt{\textbackslash{}ifbmlGitBook}.}
-  \label{fig:ifbmlGitBook}
+  \caption{Example of \texttt{\textbackslash{}iflatexml}, used in Figure~\ref{fig:xymatrix} to work around a subtle difference between \LaTeXML{} and \LaTeX{}.}
+  \label{fig:iflatexml}
 \end{figure}
 
 \subsection{Alternative text for images}
@@ -286,7 +279,7 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
             encrypted-media; gyroscope; picture-in-picture"/>
       </div>
     </div>}
-    \iflatexml\else
+  \iflatexml\else
   \begin{center}
     Watch \href{https://www.youtube.com/watch?v=#1}{#2}.
   \end{center}

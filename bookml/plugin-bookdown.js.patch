@@ -15,7 +15,7 @@
      var summary = $('ul.summary'), chaps = summary.find('li.chapter');
      if (li.length === 0) li = chaps.first();
      li.addClass('active');
-@@ -162,22 +158,25 @@
+@@ -162,22 +158,22 @@
        }
        if (m === 0) return;
        // all section titles on current page
@@ -29,17 +29,14 @@
          clearTimeout($.data(this, 'scrollTimer'));
          $.data(this, 'scrollTimer', setTimeout(function() {
 -          // find the first visible title in the viewport
-+          // find the section containing the last visible content on screen
++          // find the last section starting by the middle of the viewport
            for (var i = 0; i < n; i++) {
              var rect = hs[i].getBoundingClientRect();
 -            if (rect.top >= 0 && rect.bottom <= ht) break;
-+            if (rect.top >= 0) { // we are past heading i-1
-+              if (rect.bottom > ht && i > 0) i--; // but not yet past i
-+              break;
-+            }
++            if (rect.top > ht / 2) break;
            }
 -          if (i === n) return;
-+          if (i === n && i > 0) i--;
++          if (i > 0) i--;
            items.removeClass('active');
            for (var j = 0; j < m; j++) {
 -            if (items.eq(j).children('a').first().text() === ts[i]) break;
@@ -47,7 +44,7 @@
            }
            if (j === m) j = 0;  // highlight the chapter title
            // search bottom-up for a visible TOC item to highlight; if an item is
-@@ -191,7 +190,7 @@
+@@ -191,7 +187,7 @@
      })();
  
      // do not refresh the page if the TOC item points to the current page
@@ -56,7 +53,7 @@
        .on('click', function(e) {
          bookInner.scrollTop(0);
          bookBody.scrollTop(0);
-@@ -239,9 +238,7 @@
+@@ -239,9 +235,7 @@
      try { inIframe = window.self !== window.top; } catch (e) {}
      return inIframe;
    };

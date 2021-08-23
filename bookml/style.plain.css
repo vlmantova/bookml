@@ -18,10 +18,8 @@
 
 */
 
+/* Set a max-width */
 .ltx_page_main {
-  /* Reduce margin continuously on small screens (backported from 0.8.6) */
-  padding:min(1em,1.5%) min(3em,4.5%) min(1em,1.5%) min(2em, 3%);
-  /* Set a max-width */
   max-width: 100ex;
   margin-left: auto; margin-right: auto;
 }

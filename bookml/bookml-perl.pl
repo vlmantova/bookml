@@ -30,24 +30,26 @@ use warnings;
 use LaTeXML::Package;
 use LaTeXML::Util::Pathname;
 
+use File::Find;
+use File::Spec;
 use IPC::Open3;
 use XML::LibXML;
 
-my ($bmlProgressSpinup, $bmlProgressSpindown, $bmlProgressStep, $bmlNote, $bmlNoteDetailed);
+my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog);
 
 if (!defined &ProgressSpinup) {
   # pre-0.8.6 reporting
-  $bmlProgressSpinup   = \&NoteBegin;
-  $bmlProgressSpindown = \&NoteEnd;
-  $bmlProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bmlNote             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bmlNoteDetailed = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
+  $bml_ProgressSpinup   = \&NoteBegin;
+  $bml_ProgressSpindown = \&NoteEnd;
+  $bml_ProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
+  $bml_Note             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
+  $bml_NoteLog = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
 } else {
-  $bmlProgressSpinup   = \&ProgressSpinup;
-  $bmlProgressSpindown = \&ProgressSpindown;
-  $bmlProgressStep     = \&ProgressStep;
-  $bmlNote             = \&Note;
-  $bmlNoteDetailed     = \&NoteLog;
+  $bml_ProgressSpinup   = \&ProgressSpinup;
+  $bml_ProgressSpindown = \&ProgressSpindown;
+  $bml_ProgressStep     = \&ProgressStep;
+  $bml_Note             = \&Note;
+  $bml_NoteLog          = \&NoteLog;
 }
 
 # Helper function to add resources at the *end* of head or body
@@ -55,7 +57,12 @@ if (!defined &ProgressSpinup) {
 my $bml_resource_options = {
   type => 1, location => 1, content => 1 };
 my $bml_resource_types = {
-  css => 'text/css', js => 'text/javascript', ttf => 'font/ttf', pdf => 'application/pdf' };
+  css  => 'text/css',
+  js   => 'text/javascript',
+  ttf  => 'font/ttf',
+  pdf  => 'application/pdf',
+  epub => 'application/epub+zip'
+};
 
 sub BMLRequireResource {
   my ($resource, %options) = @_;
@@ -80,22 +87,43 @@ sub BMLRequireResource {
   return RequireResource($resource, %options);
 }
 
-my $bml_gitbook    = 1;
+# Import user files from bmluser
+my %bml_user;
+
+if (-d 'bmluser') {
+  File::Find::find({
+      wanted => sub {
+        if (-f $_) {
+          my @styles = ($_ =~ /\.([^.]*)(?=\.)/g);
+          if (!@styles) { @styles = (''); }
+          for my $s (@styles) {
+            push(@{ $bml_user{$s} }, $_);
+          }
+        }
+      },
+      preprocess => sub { sort @_; },
+      no_chdir   => 1
+    },
+    'bmluser');
+}
+
+my $bml_style      = 'gitbook';
 my $bml_imagescale = 96 / 72;
 my $bml_fontscale  = 1;
+my @bml_download   = (ToString(Expand(T_CS('\jobname'))) . '.pdf');
 
-DeclareOption('nogitbook', sub { $bml_gitbook = 0; return; });
+DeclareOption('style=plain',   sub { $bml_style = 'plain';   return; });
+DeclareOption('style=gitbook', sub { $bml_style = 'gitbook'; return; });
+DeclareOption('style=none',    sub { $bml_style = 'none';    return; });
 DeclareOption('mathjax=2');
 DeclareOption('nomathjax');
-for my $pt (5..28) {
+for my $pt (5 .. 28) {
   DeclareOption($pt . 'pt', sub {
       $bml_fontscale  = 10 / $pt;
       $bml_imagescale = 96 / 72 * $bml_fontscale;
       return;
   });
 }
-
-DefConditional('\ifbmlGitBook', sub { $bml_gitbook; });
 
 DeclareOption(undef, sub {
     my ($stomach) = @_;
@@ -106,6 +134,8 @@ DeclareOption(undef, sub {
         $bml_imagescale = $bml_fontscale * $val; }
       else {
         Error('malformed', $opt, $stomach, "Value '$val' of imagescale= for bookml.sty must be a decimal number"); } }
+    elsif ($opt =~ m/^download\s*=\s*(.*)$/) {
+      @bml_download = split(/\|/, $1); }
     else {
       Error('unexpected', $opt, $stomach, "Unexpected option '$opt' passed to bookml.sty"); }
     return;
@@ -115,7 +145,7 @@ ProcessOptions();
 
 RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
 
-if ($bml_gitbook) {
+if ($bml_style eq 'gitbook') {
   # anywhere in the head
   for my $res (qw(
     bookml/jquery/jquery.min.js
@@ -124,8 +154,8 @@ if ($bml_gitbook) {
     bookml/gitbook/css/plugin-bookdown.css
     bookml/gitbook/css/plugin-fontsettings.css
     bookml/gitbook/css/plugin-clipboard.css
-    bookml/gitbook-style.css
-    )) { RequireResource($res); }
+    )
+  ) { RequireResource($res); }
 
   # end of body
   for my $res (qw(
@@ -138,13 +168,25 @@ if ($bml_gitbook) {
 
   # additional files to be copied over
   RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.ttf', type => 'font/ttf');
-  RequireResource(ToString(Expand(T_CS('\jobname'))) . '.pdf', type => 'application/pdf');
-} else {
-  RequireResource('bookml/nogitbook-style.css');
+  for my $file (@bml_download) {
+    BMLRequireResource($file, location => 'download');
+  }
 }
 
+# styles that must be loaded after the other packages
 AtBeginDocument(sub {
     RequireResource('bookml/style.css');
+    if ($bml_style eq 'gitbook') {
+      RequireResource('bookml/style.gitbook.css');
+      RequireResource('bookml/style.gitbook.plain.css');
+      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'gitbook'} }; }
+    elsif ($bml_style eq 'plain') {
+      RequireResource('bookml/style.plain.css');
+      RequireResource('bookml/style.gitbook.plain.css');
+      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'plain'} }; }
+    elsif ($bml_style eq 'none') {
+      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'none'} }; }
+    map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{''} };
 });
 
 # HTML-in-LaTeX mechanism
@@ -179,7 +221,7 @@ DefPrimitive('\bmlHTMLEnvironment{}', sub {
 # Raw HTML mechanism
 
 # import fontenc after \documentclass to allow for --preload=bookml
-AtBeginDocument( sub { RequirePackage('fontenc', options => ['T1']); });
+AtBeginDocument(sub { RequirePackage('fontenc', options => ['T1']); });
 my $parser = XML::LibXML->new();
 
 DefConstructor('\bmlRawHTML Digested', sub {
@@ -227,10 +269,10 @@ AtEndDocument(sub {
     # skip if there are no images to generate
     return unless CounterValue('bml@imagecounter')->valueOf;
 
-    &$bmlProgressSpinup('BookML generating bmlimages');
+    &$bml_ProgressSpinup('BookML generating bmlimages');
 
-    # code to activate preview and add dvisvgm as global option
-    my $preclass = '\PassOptionsToPackage{active}{preview}';        # activate preview
+    # code to activate bmlimages and add dvisvgm as global option
+    my $preclass = '\PassOptionsToPackage{_bmlimages}{bookml}';     # activate bmlimages
     $preclass .= '\makeatletter';
     $preclass .= '\let\bml@dcl@ss\documentclass';                   # save \documentclass
     $preclass .= '\renewcommand{\documentclass}[1][]{';             # renew \documentclass[]
@@ -257,8 +299,8 @@ AtEndDocument(sub {
     if ($^O =~ /^(MSWin|cygwin)/) {
       require Win32::ShellQuote;
       @lmk_invocation = Win32::ShellQuote::quote_system_list->(@lmk_invocation); }
-    &$bmlNoteDetailed('Calling ' . join(' ', @lmk_invocation));
-    &$bmlNoteDetailed('Logs in ' . pathname_concat($outdir, $jobname . '.log'));
+    &$bml_NoteLog('Calling ' . join(' ', @lmk_invocation));
+    &$bml_NoteLog('Logs in ' . pathname_concat($outdir, $jobname . '.log'));
     my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
       @lmk_invocation);
 
@@ -268,10 +310,10 @@ AtEndDocument(sub {
     while (<$lmk_stdout>) {
       $rebuilt = 1;
       if (m/^Latexmk: Run number (.*)/) {
-        &$bmlProgressStep("latexmk: run number $1"); }
-      else { &$bmlProgressStep(); }
+        &$bml_ProgressStep("latexmk: run number $1"); }
+      else { &$bml_ProgressStep(); }
       chomp $_;
-      &$bmlNoteDetailed($_);
+      &$bml_NoteLog($_);
     }
 
     close($lmk_stdout);
@@ -286,7 +328,7 @@ AtEndDocument(sub {
       if ($^O =~ /^(MSWin|cygwin)/) {
         require Win32::ShellQuote;
         @dsvg_invocation = Win32::ShellQuote::quote_system_list->(@dsvg_invocation); }
-      &$bmlNoteDetailed('Calling ' . join(' ', @dsvg_invocation));
+      &$bml_NoteLog('Calling ' . join(' ', @dsvg_invocation));
       my $dsvg_pid = IPC::Open3::open3(undef, my $dsvg_stdout, undef,
         @dsvg_invocation);
 
@@ -294,16 +336,16 @@ AtEndDocument(sub {
       while (<$dsvg_stdout>) {
         $rebuilt = 1;
         if (m/^processing page (\d+)/) {
-          &$bmlProgressStep("dvisvgm: processing image $1"); }
-        else { &$bmlProgressStep(); }
+          &$bml_ProgressStep("dvisvgm: processing image $1"); }
+        else { &$bml_ProgressStep(); }
         chomp $_;
-        &$bmlNoteDetailed($_);
+        &$bml_NoteLog($_);
       }
 
       close($dsvg_stdout);
       waitpid($dsvg_pid, 0); }
 
-    &$bmlProgressSpindown('BookML generating bmlimages');
+    &$bml_ProgressSpindown('BookML generating bmlimages');
 
     return;
 });

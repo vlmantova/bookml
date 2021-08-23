@@ -18,54 +18,7 @@
 
 */
 
-/* Reduce margins on lists */
-.ltx_itemize, .ltx_enumerate {
-  margin-left: 0;
-}
-
-/* Reduce margins on abstracts and make them
-   independent of the font size */
-.ltx_abstract {
-  margin-left: 32px;
-  margin-right: 32px;
-}
-
-/* Remove indentation on paragraphs */
-.ltx_title_abstract + .ltx_p,
-.ltx_para > .ltx_p:first-child {
-  text-indent: 0em !important;
-}
-
-/* Add some extra padding to proofs */
-.ltx_proof {
-  margin-top: 0.5em; margin-bottom: 0.5em;
-}
-
-/* mimic LaTeX default enumerate style:
-   arabic > lower alpha > lower roman > upper alpha
-
-   the SIMPLIFY_HTML option in bookml-html5.xsl prevents LaTeXML from using the
-   characters emitted by LaTeX as they may cause accessibility issues
-   https://developer.mozilla.org/en-US/docs/Web/CSS/list-style-type#accessibility_concerns */
-ol.ltx_enumerate ol.ltx_enumerate {
-  list-style-type: lower-alpha;
-}
-
-ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate {
-  list-style-type: lower-roman;
-}
-
-ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate ol.ltx_enumerate {
-  list-style-type: upper-alpha;
-}
-
-/* Reduce margins on listings and ensure content fits the container */
-.ltx_listing {
-  margin-right: 0;
-  max-width: 100%;
-}
-
-/* Ensure that oversized figures are scrollable */
-.ltx_figure {
-  overflow-x: auto;
+/* Reduce margin continuously on small screens (backported from 0.8.6) */
+.ltx_page_main {
+  padding:min(1em,1.5%) min(3em,4.5%) min(1em,1.5%) min(2em, 3%);
 }

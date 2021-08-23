@@ -1,0 +1,30 @@
+
+/* use Latin Modern */
+@font-face {
+  font-family: 'CMU Serif';
+  font-style: normal;
+  font-weight: 500;
+  src: local('CMU Serif'), url('https://fonts.cdnfonts.com/s/19926/cmunrm.woff') format('woff');
+}
+@font-face {
+  font-family: 'CMU Serif';
+  font-style: italic;
+  font-weight: 500;
+  src: local('CMU Serif'), url('https://fonts.cdnfonts.com/s/19926/cmunti.woff') format('woff');
+}
+@font-face {
+  font-family: 'CMU Serif';
+  font-style: normal;
+  font-weight: 700;
+  src: local('CMU Serif'), url('https://fonts.cdnfonts.com/s/19926/cmunbx.woff') format('woff');
+}
+@font-face {
+  font-family: 'CMU Serif';
+  font-style: italic;
+  font-weight: 700;
+  src: local('CMU Serif'), url('https://fonts.cdnfonts.com/s/19926/cmunbi.woff') format('woff');
+}
+
+.ltx_page_main {
+  font-family: "CMU Serif", serif;
+}

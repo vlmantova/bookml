@@ -15,14 +15,15 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml}[2021/08/19 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml}[2021/08/23 BookML: bookdown flavoured GitBook port for LaTeXML]
 
-\newif\ifbmlGitBook
-\bmlGitBooktrue
+\newif\ifbml@images
 
-\DeclareOption{nogitbook}{\bmlGitBookfalse}
+\DeclareOption{style=plain}{}
+\DeclareOption{style=gitbook}{}
 \DeclareOption{mathjax=2}{}
 \DeclareOption{nomathjax}{}
+\DeclareOption{_bmlimages}{\bml@imagestrue}
 \DeclareOption*{}
 
 \ProcessOptions
@@ -42,8 +43,12 @@
 \def\bmlRawHTML#1{}
 
 % Image generation via LaTeX
-\RequirePackage[noconfig,delayed]{preview}
-\def\bmlImageEnvironment#1{\PreviewEnvironment{#1}}
+\ifbml@images
+\RequirePackage[noconfig,delayed,active]{preview}
+\let\bmlImageEnvironment\PreviewEnvironment
+\else
+\let\bmlImageEnvironment\@gobble
+\fi
 
 \newenvironment{bmlimage}{}{}
 \bmlImageEnvironment{bmlimage}

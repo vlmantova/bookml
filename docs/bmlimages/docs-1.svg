@@ -7153,9 +7153,6 @@ a0_playBwd=function(){if(a0_idx==0){a0_stopLast();}a0_playLeft();};
 a0_playFwd=function(){if(a0_idx==159){a0_stopFirst();}a0_playRight();};
 a0_seekFrame(20);
 }
-document.getElementById('anm0').addEventListener('mouseup',onMouseUpWdgt);
-document.getElementById('anm0').addEventListener('mousedown',onMouseDownWdgt);
-document.getElementById('anm0').addEventListener('touchend',onTouchEndWdgt);
 onvisible();
 }
 function onvisible(){
@@ -7170,40 +7167,11 @@ if(document.hidden){try{onhidden();}catch(e){}}else{try{onvisible();}catch(e){}}
 }
 document.addEventListener('visibilitychange',onVisibilityChange);
 window.addEventListener('load',onload);
-function onWidgetUpAction(event){
-try{
-if(event.shiftKey)a0_playsRight=!a0_playsRight;
-var a0_doplay=true;
-if(a0_idx==159&&a0_playsRight){a0_stopFirst();}
-if(a0_idx==0&&!a0_playsRight){a0_stopLast();}
-if(a0_doplay){if(a0_playsRight){a0_playRight();}else{a0_playLeft();}}
-}catch(e){}
-}
-function onTouchEndWdgt(event){
-event.preventDefault();event.stopPropagation();
-if(a0_playing){try{a0_pause();}catch(e){}}else{
-try{
-if(event.shiftKey)a0_playsRight=!a0_playsRight;
-var a0_doplay=true;
-if(a0_idx==159&&a0_playsRight){a0_stopFirst();}
-if(a0_idx==0&&!a0_playsRight){a0_stopLast();}
-if(a0_doplay){if(a0_playsRight){a0_playRight();}else{a0_playLeft();}}
-}catch(e){}
-}
-}
-function onMouseDownWdgt(event){
-event.preventDefault();event.stopPropagation();
-try{if(a0_playing){a0_pause();}}catch(e){}
-}
-function onMouseUpWdgt(event){
-event.preventDefault();event.stopPropagation();
-onWidgetUpAction(event);
-}
 })();
 ]]>
 </script>
 </defs>
-<path class='annot' cursor='pointer' d='M0 0L113.385777 0L113.385777 -85.039333L0 -85.039333Z' id='anm0' opacity='0'/>
+<path class='annot' d='M0 0L113.385777 0L113.385777 -85.039333L0 -85.039333Z' id='anm0' opacity='0'/>
 <defs>
 <g class='xform' id='pbs@obj320' transform='translate(10.000751 -15.777063)'>
 <g transform='translate(-.438033 .691035)scale(.9562)' stroke='#000' fill='none' stroke-miterlimit='10' stroke-linecap='round'>

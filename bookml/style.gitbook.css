@@ -114,6 +114,7 @@ h1.title {
 
 /* Adjust colours in sepia and night modes */
 .book.color-theme-1 object[type="image/svg+xml"],
+.book.color-theme-1 iframe[src$=".svg"],
 .book.color-theme-1 img,
 .book.color-theme-1 *[style*=";color:"],
 .book.color-theme-1 *[style^="color:"] {
@@ -121,6 +122,7 @@ h1.title {
 }
 
 .book.color-theme-2 object[type="image/svg+xml"],
+.book.color-theme-2 iframe[src$=".svg"],
 .book.color-theme-2 img,
 .book.color-theme-2 *[style*=";color:"],
 .book.color-theme-2 *[style^="color:"] {
@@ -128,6 +130,7 @@ h1.title {
 }
 
 .book.color-theme-2 object[type="image/svg+xml"].bml_no_invert,
+.book.color-theme-2 iframe[src$=".svg"].bml_no_invert,
 .book.color-theme-2 img.bml_no_invert,
 .book.color-theme-2 *[style*=";color:"].bml_no_invert,
 .book.color-theme-2 *[style^="color:"].bml_no_invert {
@@ -155,14 +158,25 @@ h1.title {
 }
 
 /* Remove indentation on paragraphs */
-.ltx_title_abstract + .ltx_p,
-.ltx_para > .ltx_p:first-child {
+.ltx_title_abstract + .ltx_p {
   text-indent: 0em !important;
 }
 
-/* Reduce margins on abstracts and make them
-   independent of the font size */
-.ltx_abstract {
-  margin-left: 32px;
-  margin-right: 32px;
+/* WCAG 2.1 AA 1.4.3: Contrast */
+.book .book-body .page-wrapper .page-inner section.normal a {
+  color: #3975b0;
+}
+
+.book .book-summary ul.summary li a:hover, .book .book-summary ul.summary li.active>a {
+  color: #0071ce;
+}
+
+.book .book-summary ul.summary li span {
+  opacity: 0.8;
+  filter: inherit;
+}
+
+.book .book-header .btn,
+.dropdown-menu .buttons .button {
+  color: #717171;
 }

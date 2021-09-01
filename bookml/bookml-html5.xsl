@@ -19,12 +19,14 @@
 
 -->
 <xsl:stylesheet
-    version   = "1.0"
-    xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-    xmlns:ltx = "http://dlmf.nist.gov/LaTeXML"
-    xmlns:f   = "http://dlmf.nist.gov/LaTeXML/functions"
-    xmlns:b   = "https://vlmantova.github.io/bookml/functions"
-    exclude-result-prefixes = "ltx f b">
+    version    = "1.0"
+    xmlns:xsl  = "http://www.w3.org/1999/XSL/Transform"
+    xmlns:exsl = "http://exslt.org/common"
+    xmlns:ltx  = "http://dlmf.nist.gov/LaTeXML"
+    xmlns:f    = "http://dlmf.nist.gov/LaTeXML/functions"
+    xmlns:b    = "https://vlmantova.github.io/bookml/functions"
+    extension-element-prefixes = "exsl"
+    exclude-result-prefixes    = "exsl ltx f b">
 
   <!-- include the standard LaTeXML html5 stylesheet -->
   <xsl:import href="urn:x-LaTeXML:XSLT:LaTeXML-html5.xsl"/>
@@ -32,21 +34,26 @@
   <!-- include the BookML utils -->
   <xsl:import href="utils.xsl"/>
 
+  <!-- include the BookML XHTML5 fixes -->
+  <xsl:import href="xhtml5.xsl"/>
+
   <!-- include the GitBook style -->
   <xsl:import href="gitbook.xsl"/>
 
-  <xsl:param name="BMLSTYLE">
-    <xsl:choose>
-      <xsl:when test="b:if-option('style=plain')">plain</xsl:when>
-      <xsl:when test="b:if-option('style=gitbook')">gitbook</xsl:when>
-      <xsl:otherwise>gitbook</xsl:otherwise>
-    </xsl:choose>
-  </xsl:param>
+  <!-- strip namespaces from XHTML5 output -->
+  <xsl:template match="/">
+    <xsl:call-template name="bml-alter">
+      <xsl:with-param name="fragment">
+        <xsl:apply-imports/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
 
-  <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
-  <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
-  <xsl:variable name="MATHJAX3"
-    select="not(b:if-option('nomathjax') or $MATHJAX2)"/>
+  <xsl:template match="*" mode="bml-alter">
+    <xsl:element name="{local-name()}">
+      <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
+    </xsl:element>
+  </xsl:template>
 
   <!-- modern and mobile friendly tags (backported from 0.8.6) -->
   <xsl:template match="/" mode="head-begin">
@@ -55,19 +62,6 @@
       <meta name="viewport"
         content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
     </xsl:if>
-  </xsl:template>
-
-  <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
-  <xsl:template match="/" mode="head-content-type">
-    <xsl:choose>
-      <xsl:when test="b:max-version('0.8.5')"/>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <!-- add BookML resources at the end of the head -->
-  <xsl:template match="/" mode="head-end">
-    <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=head')]" mode="bml-resource"/>
   </xsl:template>
 
   <!-- add BookML resources at the end of the body, including MathJax -->
@@ -91,259 +85,6 @@
       <xsl:text>&#x0A;</xsl:text>
     </xsl:if>
 
-  </xsl:template>
-
-  <!-- BookML external resources -->
-  <xsl:template match="ltx:resource[contains(@type,';bmllocation=') and @src]" mode="bml-resource">
-    <xsl:choose>
-      <xsl:when test="starts-with(@type,'text/javascript;')">
-        <script src="{f:url(@src)}"/>
-        <xsl:text>&#x0A;</xsl:text>
-      </xsl:when>
-      <xsl:when test="starts-with(@type,'text/css;')">
-        <link href="{f:url(@src)}" rel="stylesheet"/>
-      </xsl:when>
-    </xsl:choose>
-  </xsl:template>
-
-  <!-- BookML inline resources -->
-  <xsl:template match="ltx:resource[contains(@type,';bmllocation=') and text()]" mode="bml-resource">
-    <xsl:choose>
-      <xsl:when test="starts-with(@type,'text/javascript;')">
-        <script>
-          <xsl:text>&#x0A;</xsl:text>
-          <xsl:value-of select="text()"/>
-        </script>
-      </xsl:when>
-      <xsl:when test="starts-with(@type,'text/css;')">
-        <style>
-          <xsl:text>&#x0A;</xsl:text>
-          <xsl:value-of select="text()"/>
-        </style>
-      </xsl:when>
-    </xsl:choose>
-  </xsl:template>
-
-  <!-- remove date from subpages, add 'hasAnchor' class for GitBook -->
-  <xsl:template name="maketitle">
-    <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="b:max-version('0.8.5') and (not($GITBOOK) or //ltx:navigation/ltx:ref[@rel='up'] or f:seclev-aux(local-name(..))!='0')">
-        <xsl:element name="{concat('h',f:section-head-level(parent::*))}">
-          <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes"/>
-          <!-- avoid class styling when $GITBOOK -->
-          <xsl:if test="$GITBOOK"><xsl:attribute name="class"/></xsl:if>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-        </xsl:element>
-        <!-- include parent's subtitle, author & date (if any)-->
-        <xsl:apply-templates select="../ltx:subtitle" mode="intitle">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-        <xsl:if test="not(parent::ltx:sidebar)">
-          <xsl:call-template name="authors">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:call-template>
-          <!-- date on front page only (backported from v0.8.6) -->
-          <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='up'])">
-            <xsl:call-template name="dates">
-              <xsl:with-param name="context" select="$context"/>
-              <xsl:with-param name="dates" select="../ltx:date"/>
-            </xsl:call-template>
-          </xsl:if>
-        </xsl:if>
-        <xsl:apply-templates select="." mode="end">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-        <xsl:text>&#x0A;</xsl:text>
-        <xsl:apply-templates select="parent::*" mode="auto-toc">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-      </xsl:when>
-      <xsl:when test="$GITBOOK and not(//ltx:navigation/ltx:ref[@rel='up']) and f:seclev-aux(local-name(..))='0'">
-        <div class="header">
-          <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <h1 class="title">
-            <xsl:apply-templates>
-              <xsl:with-param name="context" select="$innercontext"/>
-            </xsl:apply-templates>
-          </h1>
-          <xsl:if test="../ltx:creator[@role='author']">
-            <xsl:text>&#x0A;</xsl:text>
-            <p class="author">
-              <em>
-                <xsl:apply-templates select="../ltx:creator[@role='author']" mode="intitle">
-                  <xsl:with-param name="context" select="$context"/>
-                </xsl:apply-templates>
-              </em>
-            </p>
-          </xsl:if>
-          <xsl:if test="../ltx:date and string(../ltx:date)">
-            <p class="date">
-              <em>
-                <xsl:apply-templates select="../ltx:date" mode="intitle">
-                  <xsl:with-param name="context" select="$context"/>
-                </xsl:apply-templates>
-              </em>
-            </p>
-          </xsl:if>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </div>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <!-- improve ltx:rawliteral so that it can output valid HTML -->
-  <xsl:template match="ltx:rawliteral">
-    <xsl:text disable-output-escaping="yes">&lt;</xsl:text>
-    <xsl:value-of select="@open" disable-output-escaping="yes"/>
-    <xsl:if test="text()">
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="text()" disable-output-escaping="yes"/>
-    </xsl:if>
-    <xsl:if test="@close">
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="@close" disable-output-escaping="yes"/>
-    </xsl:if>
-    <xsl:text disable-output-escaping="yes">&gt;</xsl:text>
-  </xsl:template>
-
-  <!-- the <object> tag traps the keyboard focus! -->
-  <xsl:template match="ltx:graphics[f:ends-with(@imagesrc,'.svg')='true']" mode="begin">
-    <xsl:attribute name="tabindex">-1</xsl:attribute>
-  </xsl:template>
-
-  <!-- add descriptive tooltip to download button -->
-  <xsl:template match="ltx:listing[@data]" mode="begin">
-    <xsl:param name="context"/>
-    <div class="ltx_listing_data">
-      <a download="" title="download code">
-        <xsl:call-template name="add_data_attribute">
-          <xsl:with-param name="name" select="'href'"/>
-        </xsl:call-template>
-        <xsl:text>&#x2B07;</xsl:text>
-      </a>
-    </div>
-  </xsl:template>
-
-  <!-- remove unwanted spaces between tag and content in lists -->
-  <xsl:template match="ltx:item">
-    <xsl:param name="context"/>
-    <xsl:text>&#x0A;</xsl:text>
-    <xsl:choose>
-      <xsl:when test="$SIMPLIFY_HTML">
-        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes"/>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="*[local-name() != 'tags']">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </xsl:element>
-      </xsl:when>
-      <xsl:when test="child::ltx:tags">
-        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes">
-            <xsl:with-param name="extra_style">
-              <xsl:value-of select="'list-style-type:none;'"/>
-              <xsl:if test="@itemsep">
-                <xsl:value-of select="concat('padding-top:',@itemsep,';')"/>
-              </xsl:if>
-            </xsl:with-param>
-          </xsl:call-template>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="ltx:tags/ltx:tag[not(@role)]">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="*[local-name() != 'tags']">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </xsl:element>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:element name="{f:blockelement($context,'li')}" namespace="{$html_ns}">
-          <xsl:call-template name="add_id"/>
-          <!-- if there's no ltx:tags, it's presumably intentional -->
-          <xsl:call-template name="add_attributes">
-            <xsl:with-param name="extra_style">
-              <xsl:value-of select="'list-style-type:none;'"/>
-              <xsl:if test="@itemsep">
-                <xsl:value-of select="concat('padding-top:',@itemsep,';')"/>
-              </xsl:if>
-            </xsl:with-param>
-          </xsl:call-template>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </xsl:element>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <xsl:template match="ltx:enumerate/ltx:item/ltx:para[1]/ltx:p[1] | ltx:itemize/ltx:item/ltx:para[1]/ltx:p[1]">
-    <xsl:param name="context"/>
-    <xsl:text>&#x200B;</xsl:text> <!-- zero width space to prevent newlines -->
-    <xsl:element name="{f:blockelement($context,'p')}" namespace="{$html_ns}">
-      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-      <xsl:call-template name="add_id"/>
-      <xsl:call-template name="add_attributes"/>
-      <xsl:apply-templates select="." mode="begin">
-        <xsl:with-param name="context" select="$innercontext"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates>
-        <xsl:with-param name="context" select="$innercontext"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates select="." mode="end">
-        <xsl:with-param name="context" select="$innercontext"/>
-      </xsl:apply-templates>
-    </xsl:element>
-  </xsl:template>
-
-  <xsl:template match="ltx:enumerate/ltx:item/ltx:para[1] | ltx:itemize/ltx:item/ltx:para[1]">
-    <xsl:param name="context"/>
-    <xsl:text>&#x200B;</xsl:text> <!-- zero width space to prevent newlines -->
-    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
-      <xsl:call-template name="add_id"/>
-      <xsl:call-template name="add_attributes"/>
-      <xsl:apply-templates select="." mode="begin">
-        <xsl:with-param name="context" select="$context"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates>
-        <xsl:with-param name="context" select="$context"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates select="." mode="end">
-        <xsl:with-param name="context" select="$context"/>
-      </xsl:apply-templates>
-    </xsl:element>
   </xsl:template>
 
 </xsl:stylesheet>

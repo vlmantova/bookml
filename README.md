@@ -1,19 +1,22 @@
 # BookML
 bookdown flavoured GitBook port for LaTeXML.
 
-This package is mainly a port of the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org/)for [LaTeXML](https://dlmf.nist.gov/LaTeXML/), but it also offer a few extra features and bugfixes for LaTeXML that can be used with or without the GitBook style:
-  - transparent generation of SVG pictures via LaTeX for packages not well supported by LaTeXML, such as Ti*k*Z pictures, animations, Xy-matrices;
-  - a simple method to add alternative text for images;
-  - partial support for arbitrary HTML content;
-  - backport of some minor styling fixes from LaTeXML 0.8.6 such as mobile friendliness as well as the occasional bookdown bugfixes;
-  - direct embedding of [MathJax](https://www.mathjax.org/), with the option of choosing between versions 2 and 3 or disabling it.
+BookML is a small add-on for [LaTeXML](https://dlmf.nist.gov/LaTeXML/) with a few accessibility features and quality of life improvements. Its purpose is to simplify the conversion of LaTeX documents into HTML files that conform to the [Web Content Accessibility Guidelines 2.1](https://www.w3.org/TR/WCAG21/) level AA.
 
-See the [manual](https://vlmantova.github.io/bookml/) for more details and examples of the commands described below.
+The key features:
+- a port of the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org), tweaked for better WCAG conformance; this is enabled by default, but can be disabled;
+- styling fixes for LaTeXML (many backported from 0.8.6), such as mobile friendly responsive output;
+- transparent generation of SVG pictures via LaTeX for packages not well supported by LaTeXML, such as Ti*k*z pictures, animations, Xy-matrices;
+- a simple method to add alternative text for images;
+- partial support for arbitrary HTML content;
+- direct embedding of MathJax, with the option of choosing between versions 2 and 3 or disabling it.
+
+Full details can be found in the [MANUAL](https://vlmantova.github.io/bookml/).
 
 ## Getting started
 1. Install [LaTeXML](https://dlmf.nist.gov/LaTeXML/get.html), minimum version 0.8.5, and optionally a TeX distribution including `latexmk` and `dvisvgm`.
-2. Unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) next to your `.tex` files (the file `bookml.sty` and sibling files must be in the same folder as the `.tex` files, not a subfolder).
-3. Add `\usepackage{bookml}` to your preamble.
+2. Unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) next to your `.tex` files.
+3. Add `\usepackage{bookml/bookml}` to your preamble.
 4. Compile your files with LaTeXML, passing the option `--navigationtoc=context` in postprocessing.
 
 ## Package options
@@ -36,7 +39,7 @@ See the [manual](https://vlmantova.github.io/bookml/) for more details and examp
 
 <dl>
   <dt>CSS</dt>
-  <dd>Create the folder <code>bmlextras</code> and drop <code>.css</code> in it. If the name of a file contains <code>.gitbook.</code>, it will be used by the GitBook style (likewise for <code>.plain.</code> and <code>.none.</code>).</dd>
+  <dd>Create the folder <code>bmluser</code> and drop <code>.css</code> in it. If the name of a file contains <code>.gitbook.</code>, it will be used by the GitBook style (likewise for <code>.plain.</code> and <code>.none.</code>).</dd>
   <dt>HTML</dt>
   <dd>Modify <code>LaTeXML-html5.xsl</code>.</dd>
 </dl>

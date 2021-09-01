@@ -21,11 +21,39 @@
 <xsl:stylesheet
     version    = "1.0"
     xmlns:xsl  = "http://www.w3.org/1999/XSL/Transform"
+    xmlns:exsl = "http://exslt.org/common"
     xmlns:f    = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:func = "http://exslt.org/functions"
     xmlns:b    = "https://vlmantova.github.io/bookml/functions"
-    extension-element-prefixes = "func"
+    extension-element-prefixes = "exsl func"
     exclude-result-prefixes    = "f func b">
+
+  <!-- global variables -->
+  <xsl:param name="BMLSTYLE">
+    <xsl:choose>
+      <xsl:when test="b:if-option('style=plain')">plain</xsl:when>
+      <xsl:when test="b:if-option('style=gitbook')">gitbook</xsl:when>
+      <xsl:when test="b:if-option('style=none')">none</xsl:when>
+      <xsl:otherwise>gitbook</xsl:otherwise>
+    </xsl:choose>
+  </xsl:param>
+
+  <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
+  <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
+  <xsl:variable name="MATHJAX3"
+    select="not(b:if-option('nomathjax') or $MATHJAX2)"/>
+
+  <!-- alter $fragment by overriding mode="bml-alter" -->
+  <xsl:template name="bml-alter">
+    <xsl:param name="fragment"/>
+    <xsl:apply-templates select="exsl:node-set($fragment)" mode="bml-alter"/>
+  </xsl:template>
+
+  <xsl:template match="@*|node()" mode="bml-alter">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
+    </xsl:copy>
+  </xsl:template>
 
   <!-- check if $elem is in the $sep-separated $list -->
   <func:function name="b:in-list">
@@ -56,12 +84,14 @@
 
   <!-- bookml options -->
   <xsl:variable name="BOOKML_OPTIONS">
-    <!-- expected: <?latexml package="bookml" options="$options"?> -->
-    <xsl:variable name="start"
-      select="'package=&quot;bookml&quot; options=&quot;'"/>
+    <!-- expected: <?latexml package="bookml/bookml" options="$options"?> -->
+    <xsl:variable name="pkgstart"
+      select="'package=&quot;bookml/bookml&quot;'"/>
+    <xsl:variable name="optstart"
+      select="' options=&quot;'"/>
     <xsl:variable name="pi"
-      select="/processing-instruction('latexml')[starts-with(.,$start)]"/>
-    <xsl:variable name="opts" select="substring-after($pi,$start)"/>
+      select="/processing-instruction('latexml')[starts-with(.,$pkgstart)]"/>
+    <xsl:variable name="opts" select="substring-after(substring-after($pi,$pkgstart),$optstart)"/>
     <xsl:if test="$opts">
       <!-- surround with commas, remove trailing quote -->
       <xsl:value-of select=

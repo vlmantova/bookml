@@ -31,9 +31,15 @@
   <!-- gitbook *requires* navigationtoc=context -->
   <xsl:template match="/">
     <xsl:if test="$GITBOOK and not(//ltx:navigation/ltx:TOC[@format='context'])">
-      <xsl:message terminate="yes">
-        bookml: you must call latexmlpost/latexmlc with --navigationtoc=context or disable the gitbook style via \usepackage[nogitbook]{bookml}
-      </xsl:message>
+      <xsl:message terminate="yes">bookml: you must call latexmlpost/latexmlc with --navigationtoc=context or disable the gitbook style via \usepackage[style=plain]{bookml}</xsl:message>
+    </xsl:if>
+    <xsl:apply-imports/>
+  </xsl:template>
+
+  <!-- additional javascript -->
+  <xsl:template match="/" mode="head-javascript">
+    <xsl:if test="$GITBOOK">
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     </xsl:if>
     <xsl:apply-imports/>
   </xsl:template>
@@ -220,7 +226,22 @@
             <xsl:choose>
               <!-- link to the front page -->
               <xsl:when test="//ltx:navigation/ltx:ref[@rel='start']">
-                <xsl:apply-templates select="//ltx:navigation/ltx:ref[@rel='start']"/>
+                <xsl:for-each select="//ltx:navigation/ltx:ref[@rel='start']">
+                  <a href="{f:url(@href)}" title="{@title}">
+                    <xsl:variable name="innercontext" select="'inline'"/>
+                    <xsl:call-template name="add_id"/>
+                    <xsl:call-template name="add_attributes"/>
+                    <xsl:apply-templates select="." mode="begin">
+                      <xsl:with-param name="context" select="$innercontext"/>
+                    </xsl:apply-templates>
+                    <xsl:apply-templates select="node()">
+                      <xsl:with-param name="context" select="$innercontext"/>
+                    </xsl:apply-templates>
+                    <xsl:apply-templates select="." mode="end">
+                      <xsl:with-param name="context" select="$innercontext"/>
+                    </xsl:apply-templates>
+                  </a>
+                </xsl:for-each>
               </xsl:when>
               <!-- unless we *are* the front page -->
               <xsl:otherwise>
@@ -299,7 +320,7 @@
   </xsl:template>
 
   <!-- do not wrap titles -->
-  <xsl:template match="ltx:navigation/ltx:TOC//ltx:text[@class='ltx_ref_title']">
+  <xsl:template match="ltx:navigation//ltx:text[@class='ltx_ref_title']">
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="$GITBOOK">

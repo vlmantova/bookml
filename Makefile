@@ -21,28 +21,28 @@ SPLIT   = $(patsubst %,--splitat=%,$(SPLITAT))
 BOOKDOWN_SOURCE = bookdown-source/inst/resources
 GITBOOK_CSS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css plugin-clipboard.css fontawesome/fontawesome-webfont.ttf)
 GITBOOK_JS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/js/%,app.min.js clipboard.min.js plugin-fontsettings.js plugin-bookdown.js plugin-clipboard.js)
-JQUERY = $(BOOKDOWN_SOURCE)/jquery/jquery.min.js
-BOOKDOWN_OUT_DIRS = $(patsubst %,bookml/%,gitbook/css/fontawesome gitbook/css gitbook/js gitbook jquery)
+BOOKDOWN_OUT_DIRS = $(patsubst %,bookml/%,gitbook/css/fontawesome gitbook/css gitbook/js gitbook)
 BOOKDOWN_OUT = $(patsubst $(BOOKDOWN_SOURCE)/%,bookml/%,$(GITBOOK_CSS) $(GITBOOK_JS) $(JQUERY))
 
-TEX_DEPS = bookml.sty bookml/bookml-latex.sty
-XML_DEPS = bookml.sty.ltxml bookml/bookml-perl.pl
+TEX_DEPS = bookml/bookml.sty
+XML_DEPS = bookml/bookml.sty.ltxml
 HTML_DEPS = LaTeXML-html5.xsl $(wildcard bookml/*.xsl) $(wildcard bookml/*.css) $(BOOKDOWN_OUT)
+EPUB_DEPS = LaTeXML-epub3.xsl $(wildcard bookml/*.xsl) $(wildcard bookml/*.css) $(BOOKDOWN_OUT)
 
 .PHONY: all clean release
 .PRECIOUS:
 .SECONDARY:
 
-all: docs/index.html docs/index.plain.html
+all: docs.pdf docs.epub docs/index.html docs/index.plain.html
 
 clean:
 	-latexmk -C docs.tex
-	-rm -f -r docs.*.log docs*.xml bmlimages docs
+	-rm -f -r docs.*.log docs*.xml docs.epub bmlimages docs
 	-rm -f -d $(BOOKDOWN_OUT) $(BOOKDOWN_OUT_DIRS) $(RELEASE)
 
 release: $(RELEASE)
 
-$(RELEASE): $(TEX_DEPS) $(XML_DEPS) $(HTML_DEPS)
+$(RELEASE): $(TEX_DEPS) $(XML_DEPS) $(HTML_DEPS) $(EPUB_DEPS)
 	-rm -f "$@"
 	TZ=UTC+00 zip -r "$@" $^
 
@@ -65,16 +65,19 @@ bookml/gitbook/js/plugin-bookdown.js: $(BOOKDOWN_SOURCE)/gitbook/js/plugin-bookd
 	latexmk -pdf -interaction=nonstopmode -halt-on-error "$<"
 
 %.bib.xml: %.bib
-	latexml --preload=amssymb --dest="$@" "$<"
+	$(LML_PREFIX)latexml --preload=amssymb --dest="$@" "$<"
 
 %.xml: %.tex $(XML_DEPS)
-	latexml --dest="$@" "$<"
+	$(LML_PREFIX)latexml --dest="$@" "$<"
 
 %.plain.xml: %.tex $(XML_DEPS) $(wildcard bmluser/*.plain.*css)
-	latexml --preload=[style=plain]bookml --dest="$@" "$<"
+	$(LML_PREFIX)latexml --preload=[style=plain]bookml/bookml --dest="$@" "$<"
 
-%/index.html: %.xml $(HTML_DEPS) %.pdf
-	latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 $(SPLIT) "$<"
+%.epub: %.tex $(XML_DEPS) $(EPUB_DEPS) $(wildcard bmluser/*.plain.*css)
+	$(LML_PREFIX)latexmlc --preload=[style=plain]bookml/bookml --dest="$@" --splitat=section "$<"
+
+%/index.html: %.xml $(HTML_DEPS) %.pdf %.epub
+	$(LML_PREFIX)latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 $(SPLIT) "$<"
 
 %/index.plain.html: %.plain.xml $(HTML_DEPS) %.pdf $(wildcard bmluser/*.plain.*css)
-	latexmlpost --dest="$@" --timestamp=0 $(SPLIT) "$<"
+	$(LML_PREFIX)latexmlpost --dest="$@" --timestamp=0 $(SPLIT) "$<"

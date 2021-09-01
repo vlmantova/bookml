@@ -3,7 +3,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
-\usepackage{bookml}
+\usepackage{bookml/bookml}
 \usepackage{latexml}
 
 \usepackage{babel}
@@ -35,11 +35,12 @@
 \bmlImageEnvironment{animateinline}
 
 \usepackage{listings}
+\colorlet{WCAGGreen}{OliveGreen!80!black} % a bit darker to get sufficient contrast
 \lstset{basicstyle={\small\ttfamily},%
   keywordstyle={\color{blue}\bfseries},%
   keywordstyle=[2]{\color{MidnightBlue}\bfseries},%
   stringstyle={\color{red}},%
-  commentstyle={\color{OliveGreen}},%
+  commentstyle={\color{WCAGGreen}},%
   frame=none,
   xleftmargin=1em,xrightmargin=1em%
 }
@@ -57,25 +58,28 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{23 August 2021}
+\date{1 September 2021}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-  This package is mainly a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown} for \LaTeXML, but it also offers a few extra features and bugfixes for \LaTeXML{} that can be used with or without the GitBook style:
+  BookML is a small add-on for \LaTeXML{} with a few accessibility features and quality of life improvements. Its purpose is to simplify the conversion of \LaTeX{} documents into \HTML{} files that conform to the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA.
+
+  The key features:
   \begin{itemize}
+    \item a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown}, tweaked for better WCAG conformance; this is enabled by default, but can be disabled;
+    \item styling fixes for \LaTeXML{} (many backported from 0.8.6), such as mobile friendly responsive output;
     \item transparent generation of SVG pictures via \LaTeX{} for packages not well supported by \LaTeXML{}, such as \tikzname{} pictures, animations, \Xy-matrices;
     \item a simple method to add alternative text for images;
     \item partial support for arbitrary \HTML{} content;
-    \item backport of some minor styling fixes from \LaTeXML{} 0.8.6 such as mobile friendliness as well as the occasional bookdown bugfixes;
     \item direct embedding of MathJax, with the option of choosing between versions 2 and 3 or disabling it.
   \end{itemize}
 \end{abstract}
 
 \begin{center}
-  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}.
+  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://vlmantova.github.io/bookml/docs.epub}{EPUB}.
 \end{center}
 
 \tableofcontents
@@ -88,8 +92,8 @@
     \item \textbf{Required:} a working \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} installation, at least version 0.8.5.
     \item \textbf{Optional} (necessary for generating the images via \LaTeX): a working \TeX{} install containing \lstinline[frame=none]|dvisvgm| and \lstinline[frame=none]|latexmk|.
   \end{itemize}
-  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} in the same folder as your \lstinline[frame=none]|.tex| files (and not in a subfolder).
-  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml}|.
+  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} in the same folder as your \lstinline[frame=none]|.tex| files.
+  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml/bookml}|.
   \item Compile your file to HTML:
     \begin{lstlisting}
 latexmlc --navigationtoc=context \
@@ -97,27 +101,33 @@ latexmlc --navigationtoc=context \
   my_latex_file.tex
     \end{lstlisting}
     Add \ltxinline|--splitat=section| (or chapter, part...) to split the content on multiple pages. See the \LaTeXML{} \href{https://dlmf.nist.gov/LaTeXML/manual/usage/}{manual} for all the options.
+  \item Compile your file to EPUB3 (experimental, requires patched \LaTeXML{} 0.8.6):
+    \begin{lstlisting}
+latexmlc --preload='[style=plain]bookml/bookml' \
+  --dest=my_latex_file.epub \
+  --splitat=section \
+  my_latex_file.tex
+    \end{lstlisting}
 \end{enumerate}
 
 \section{Options}
 
-The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[style=plain,nomathjax]{bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output.
+The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[style=plain,nomathjax]{bookml/bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output.
 
 You can also pass these options at compilation time using the \ltxinline|--preload| option of \ltxinline|latexml| and \ltxinline|latexmlc|:
 \begin{lstlisting}
-  latexmlc --preload=[style=plain,nomathjax]bookml \
+  latexmlc --preload=[style=plain,nomathjax]bookml/bookml \
     --dest=my_latex_file/index.html \
     my_latex_file.xml
 \end{lstlisting}
 
 \begin{description}
-  \item[\texttt{style=gitbook}] Use the GitBook style (the default behaviour). When using the GitBook style, you must call \ltxinline|latexmlc| (or \ltxinline|latexmlpost|) with the option \ltxinline|--navigationtoc=context|.
+  \item[\texttt{style=gitbook}] Use the GitBook style (the default behaviour). When using the GitBook style, you must call \ltxinline|latexmlc| (or \ltxinline|latexmlpost|) with the option \ltxinline|--navigationtoc=context|. Any PDF or EPUB file with the same name as the source will be detected and added to the download menu.
   \item[\texttt{style=plain}] Use the \LaTeXML{} style with a few slightly opinionated tweaks.
   \item[\texttt{style=none}] Use the \LaTeXML{} style with no tweaks (except for backported styles and some fixes).
   \item[\texttt{nomathjax}] Do not include MathJax in the output.
   \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
   \item[\texttt{imagescale=X.XXX}] Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
-  \item[\texttt{download=docs.pdf|docs.epub}] |-separated list of files to list under bookdown's download button (only valid for the GitBook style). The default value is \ltxinline|\jobname.pdf|, where \ltxinline|\jobname| is the name of the \lstinline|.tex| file being compiled without the extension. Use \ltxinline|download=| to remove the download button. For now, only PDF and EPUB files are supported.
 \end{description}
 
 \section{Customisation}
@@ -125,7 +135,7 @@ You can also pass these options at compilation time using the \ltxinline|--prelo
 \subsection{\CSS{} and fonts}
 Just create a \lstinline|bmluser| folder and add any \lstinline|.css| file to it. The files will be included at the end of the \htmlinline|<head>| tag and override the previous styles.
 
-If the name of a file contains the substring \lstinline|.gitbook.|, then that file will be used only when the \lstinline|style=gitbook| option is passed (likewise for \lstinline|.plain.| or \lstinline|.none.|).
+If the file name ends with \lstinline|.style1,style2.css|, then that file will be used only when \lstinline|style=style1| or \lstinline|style=2| is passed. You can use \lstinline|._all.css| to ensure that the file is included in every style.
 
 The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this document has been compiled with an additional \href{https://vlmantova.github.io/bookml/bmluser/computer-modern.plain.css}{\texttt{computer-modern.plain.css}} that sets the font to Computer Modern.
 
@@ -161,7 +171,7 @@ Note that the package \ltxinline|latexml| also offers \ltxinline|\lxAddClass| an
 
 LaTeXML supports the \ltxinline|picture| environment as well as \emph{some} \tikzname{} pictures, but not all which will come out mangled, and some common packages are not supported altogether (for instance \ltxinline|xypic|, \ltxinline|tikzcd|, \ltxinline|animate|).
 
-BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing LaTeXML entirely. In your preamble, after \ltxinline|\usepackage{bookml}|, write
+BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing LaTeXML entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
 \begin{lstlisting}[style=bookml]
 \bmlImageEnvironment{tikzpicture}
 \bmlImageEnvironment{animateinline}
@@ -179,7 +189,7 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
 \begin{figure}
   \begin{lstlisting}[style=bookml]
 \begin{animateinline}[
-  alttext=none,loop,controls,poster=20,autopause,
+  alttext=none,loop,controls,nomouse,poster=20,autopause,
   begin={\begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (4,3);},
     end={\end{tikzpicture}}]{30}
@@ -194,7 +204,7 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
   \end{lstlisting}
   \begin{center}
     \begin{animateinline}[
-      alttext=none,loop,controls,poster=20,autopause,
+      alttext=none,loop,controls,nomouse,poster=20,autopause,
       poster=20,autopause,
       begin={\begin{tikzpicture}%
         \useasboundingbox (0,0) rectangle (4,3);},
@@ -208,7 +218,7 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
     and slides until it exits from the left. The animation
     repeats this every six seconds.}
   \bmlPlusClass{bml_no_invert} % preserve colours in night mode
-  \caption{A fancy duck. Click on the image to start the animation (for the PDF, it requires a compatible software such as Acrobat Reader).}
+  \caption{A fancy duck. Click on the play button to start the animation (for the PDF, it requires a compatible software such as Acrobat Reader).}
   \label{fig:duck}
 \end{figure}
 
@@ -249,8 +259,7 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
         padding-bottom: 56.25\%; height: 0; overflow: hidden;">
       <iframe width="1920" height="1080"
         src="https://www.youtube-nocookie.com/embed/#1"
-        title="YouTube: #2"
-        frameborder="0" allowfullscreen=""
+        title="YouTube: #2" allowfullscreen=""
         style="border:none; position: absolute; top: 0; left: 0;
           right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
         allow="accelerometer; autoplay; clipboard-write;
@@ -271,8 +280,7 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
           padding-bottom: 56.25\%; height: 0; overflow: hidden;">
         <iframe width="1920" height="1080"
           src="https://www.youtube-nocookie.com/embed/#1"
-          title="YouTube: #2"
-          frameborder="0" allowfullscreen=""
+          title="YouTube: #2" allowfullscreen=""
           style="border:none; position: absolute; top: 0; left: 0;
             right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
           allow="accelerometer; autoplay; clipboard-write;

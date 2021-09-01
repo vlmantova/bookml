@@ -94,12 +94,12 @@ if (-d 'bmluser') {
   File::Find::find({
       wanted => sub {
         if (-f $_) {
-          my @styles = ($_ =~ /\.([^.]*)(?=\.)/g);
-          if (!@styles) { @styles = (''); }
+          $_ =~ /\.([^.]*)\.css$/i;
+          my @styles = split(/,/, $1);
+          if (!@styles || grep { /^_all$/ } @styles) { @styles = ('_all'); }
           for my $s (@styles) {
             push(@{ $bml_user{$s} }, $_);
-          }
-        }
+        } }
       },
       preprocess => sub { sort @_; },
       no_chdir   => 1
@@ -110,7 +110,14 @@ if (-d 'bmluser') {
 my $bml_style      = 'gitbook';
 my $bml_imagescale = 96 / 72;
 my $bml_fontscale  = 1;
-my @bml_download   = (ToString(Expand(T_CS('\jobname'))) . '.pdf');
+my $bml_jobname    = ToString(Expand(T_CS('\jobname')));
+my @bml_download   = ();
+
+for my $ext ('pdf', 'epub') {
+  if (-f "$bml_jobname.$ext") {
+    Info('found', $ext, undef, "bundling '$bml_jobname.$ext' in the output");
+    push(@bml_download, "$bml_jobname.$ext"); }
+}
 
 DeclareOption('style=plain',   sub { $bml_style = 'plain';   return; });
 DeclareOption('style=gitbook', sub { $bml_style = 'gitbook'; return; });
@@ -134,8 +141,6 @@ DeclareOption(undef, sub {
         $bml_imagescale = $bml_fontscale * $val; }
       else {
         Error('malformed', $opt, $stomach, "Value '$val' of imagescale= for bookml.sty must be a decimal number"); } }
-    elsif ($opt =~ m/^download\s*=\s*(.*)$/) {
-      @bml_download = split(/\|/, $1); }
     else {
       Error('unexpected', $opt, $stomach, "Unexpected option '$opt' passed to bookml.sty"); }
     return;
@@ -148,7 +153,6 @@ RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
 if ($bml_style eq 'gitbook') {
   # anywhere in the head
   for my $res (qw(
-    bookml/jquery/jquery.min.js
     bookml/gitbook/css/style.css
     bookml/gitbook/css/plugin-table.css
     bookml/gitbook/css/plugin-bookdown.css
@@ -178,11 +182,11 @@ AtBeginDocument(sub {
     RequireResource('bookml/style.css');
     if ($bml_style eq 'gitbook') {
       RequireResource('bookml/style.gitbook.css');
-      RequireResource('bookml/style.gitbook.plain.css');
+      RequireResource('bookml/style.gitbook,plain.css');
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'gitbook'} }; }
     elsif ($bml_style eq 'plain') {
       RequireResource('bookml/style.plain.css');
-      RequireResource('bookml/style.gitbook.plain.css');
+      RequireResource('bookml/style.gitbook,plain.css');
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'plain'} }; }
     elsif ($bml_style eq 'none') {
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'none'} }; }

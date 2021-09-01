@@ -18,25 +18,27 @@
 
 */
 
+/* Responsive margins are based on the simple rule 1.5% ~ 1em */
+
 /* Reduce margins on lists and ensure consistent positioning of the tags */
 /* TODO: this only works for ltr text, implement rtl alternative */
 .ltx_itemize, .ltx_enumerate {
   margin-left: 0;
-  padding-left: 2.5em; /* typical UA default is 40px = 2.5em */
+  padding-left: max(min(3.75%,2.5em),1.5em) !important; /* typical UA default is 40px = 2.5em */
 }
 
 li.ltx_item .ltx_tag {
   box-sizing: border-box;
-  min-width: 2.5em;
-  margin-left: -2.5em; /* opposite of padding-left */
+  min-width: max(min(3.75%,2.5em),1.5em); /* same as padding-left */
+  margin-left: -max(min(3.75%,2.5em),1.5em);
 }
 
 ul.ltx_itemize>li.ltx_item>.ltx_tag {
-  padding-right: 0.7em; /* this seems the closest to default UA <ul>'s */
+  padding-right: max(min(1.05%,0.7em),0.4em); /* this seems the closest to default UA <ul>'s */
 }
 
 ol.ltx_enumerate>li.ltx_item>.ltx_tag {
-  padding-right: 0.3em; /* this seems the closest to default UA <ol>'s */
+  padding-right: max(min(0.5%,0.3em),0.2em); /* this seems the closest to default UA <ol>'s */
 }
 
 /* Reduce margins on listings and ensure content fits the container */
@@ -49,4 +51,24 @@ ol.ltx_enumerate>li.ltx_item>.ltx_tag {
 /* Ensure that oversized figures are scrollable */
 .ltx_figure {
   overflow-x: auto;
+}
+
+/* Reduce margins smoothly on small screens */
+.ltx_abstract {
+  margin-left: min(6%,4em);
+  margin-right: min(6%,4em);
+}
+
+dl.ltx_description dd {
+  margin-left: min(7.5%,5em);
+}
+
+.ltx_toclist {
+  padding-inline-start: min(3.75%,2.5em);
+  padding-left: min(3.75%,2.5em) !important;
+}
+
+/* Force no indentation */
+.ltx_p {
+  text-indent: 0em !important;
 }

@@ -1,0 +1,3 @@
+[submodule "bookml"]
+	path = bookml
+	url = git@github.com:vlmantova/bookml.git

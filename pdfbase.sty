@@ -1,0 +1,2645 @@
+%%%%%%%%%%%%%%%%%%%%%% pdfmanagement-testphase %%%%%%%%%%%%%%%%%%%
+\newif\if@pbs@testphase
+\ExplSyntaxOn
+\bool_if:nTF{
+  \bool_lazy_and_p:nn {\cs_if_exist_p:N \pdfmanagement_if_active_p:} { \pdfmanagement_if_active_p: }
+}{\@pbs@testphasetrue}{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% pdfbase.sty
+%
+% driver independent access to low-level pdf features
+%
+% Copyright 2015--\today, Alexander Grahn
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This package implements commands for the creation of PDF Objects,
+% Form XObjects, Image XObjects, annotations, links, marked content (BDC/EMC)
+% and for manipulating the PDF catalog.
+%
+% Supported workflows:
+%
+%   pdflatex, lualatex
+%   latex-->dvips-->ps2pdf or Distiller
+%   latex-->dvipdfmx
+%   xelatex
+%
+% Package options:
+%
+%   xetex
+%   dvipdfmx
+%   dvisvgm  (basic support: \pbs_literal:nn, \pbs_pdfannot:nnnn,
+%                            \pbs_pdfxform:nnnnn\pbs_pdfrefxform:n)
+%   bigfiles (for embedding large files as stream objects; only relevant for
+%     dvips mode, ignored otherwise)
+%
+% Commands defined:
+%
+%   \pbs_pdfobj:nnn
+%     #1: predefined PDF object ID to be used for the current obj; may be empty
+%     #2: type of object ( generic | dict | array | stream | fstream )
+%     #3: if #2==
+%        `generic', then single basic object, such as 3.141, (foo), true, /Name
+%        `dict', then PDF key-value dictionary
+%        `stream', then
+%           {stream attributes as PDF key-value dictionary}{content string}
+%        `fstream', then
+%           {stream attributes as PDF key-value dictionary}{file name}
+%
+%     if #3 && #1 are both empty, an object reference will be reserved for later
+%     use as #1
+%
+%   \pbs_pdflastobj:
+%     inserts object ID of PDF object created/processed during most recent call
+%     of \pbs_pdfobj:nnn
+%
+%   --------
+%
+%   \pbs_pdfannot:nnnn
+%     #1: width, #2: height, #3: depth, #4: dictionary (key-value)
+%
+%   \pbs_pdflastann:
+%     inserts object ID of PDF object created during most recent call of
+%     \pbs_pdfannot:nnnn
+%
+%   --------
+%
+%   \pbs_appendtofields:n
+%     #1 object ID of PDF annotation; annotations of /Subtype/Widget
+%     should be appended to the /Fields array of the global /AcroForm dictionary
+%
+%   --------
+%
+%   \pbs_pdflink:nn
+%     #1: dictionary (key-value), #2: text
+%
+%   --------
+%
+%   \pbs_pdfdest:nnnn
+%     #1: name, #2: fit | fitb | fitbh | fith | fitbv | fitv | xyz | fitr
+%     #3: zoom, #4: text
+%
+%   --------
+%
+%   \pbs_pdfxform:nnnnn
+%     #1: add pgf/tikz resources (transparency, shading)? (0|1) %dvipdfmx/xetex
+%     #2: write immediately to PDF? (0|1); eg 1 for appearances; pdftex/luatex
+%     #3: additional resources                                  %all BUT dvips
+%     #4: additional dictionary entries
+%     #5: savebox number
+%     creates PDF Form XObject from savebox content
+%
+%   \pbs_pdflastxform:
+%     inserts object ID of PDF Form XObject created during most recent call of
+%     \pbs_pdfxform:nnnnn
+%
+%   \pbs_pdfrefxform:n
+%     #1: xform object ID
+%     inserts the PDF Form XObject into the current content stream, that is,
+%     typsets the PDF Form XObject
+%
+%   --------
+%
+%   \pbs_pdfximage:n
+%     #1: bitmap image file name
+%     creates PDF Image XObject from /bitmap/ file for use as bitmap resource
+%     in 3D context
+%
+%   \pbs_pdflastximage:
+%     inserts object ID of PDF Image XObject created during most recent call of
+%     \pbs_pdfximage:n
+%
+%   --------
+%
+%   \pbs_literal:nn
+%     #1: keyword (empty) | direct | page
+%     #2: raw PDF/Postscript code
+%     implements \pdfliteral{...}, \pdfliteral direct {...},
+%     \pdfliteral page {...} from pdfTeX, and
+%     \special{" ...} and  \special{ps: ...} from dvips
+%
+%   --------
+%
+%   \pbs_pdfcatalog:n
+%     #1: dictionary (key-value)
+%
+%   --------
+%
+%   marked content BDC/EMC operators
+%   \pbs_pdfbdc:nn ...
+%   ... \pbs_pdfemc:
+%     #1: tag, #2: properties dictionary obj ID
+%
+%   --------
+%
+%   \pbs_add_form_font: (pdfLaTeX, LuaLaTeX)
+%     adds current font as a resource to the global /AcroForm dict, allowing
+%     the font to be used in PDF Forms (theoretically, see
+%     https://acrobat.uservoice.com/forums/590923-acrobat-for-windows-and-mac/
+%       suggestions/33077827-bug-in-text-field-forms-embedded-opentype-font )
+%
+%   \pbs_last_form_font: (pdfLaTeX, LuaLaTeX)
+%     expands to current font's resource name; to be used in the /DA (...)
+%     entry of the Form dictionary
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License.
+%
+% The latest version of this license is in
+%
+%   http://mirrors.ctan.org/macros/latex/base/lppl.txt
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is A. Grahn.
+
+\RequirePackage{l3keys2e}
+
+\def\g@pbs@date@tl{2021/09/02}
+\def\g@pbs@version@tl{0.52}
+
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
+{driver~independent~access~to~low-level~PDF~features}
+
+\int_new:N\g_pbs_page_int %abs. page counter
+
+%creating global definitions
+\cs_new:Npn\pbs@newkey#1#2{\tl_gset:cx{#1}{#2}}
+
+\msg_set:nnn{pdfbase}{rerun}{Rerun~to~get~internal~references~right!}
+
+%LaTeX2e wrapper
+\cs_new_nopar:Npn\pbs@seq@push@cx#1#2{
+  \seq_if_exist:cF{#1}{\seq_new:c{#1}}
+  \seq_gput_right:cx{#1}{#2}
+}
+
+%wrong image file type for Image XObject generation
+\msg_gset:nnn{pdfbase}{wrong~image~resource}{
+  Image~resource~file\\~~'#1'\\has~wrong~type.\\\\
+  Driver~#2~only~accepts~files~of~type\\#3\\
+  as~image~resources.
+}
+
+% page (bop, eop) hooks
+\cs_new_protected:Nn\pbs_bop_action:n{\seq_gput_right:Nn\g_pbs_bop_seq{#1}}
+\cs_new_protected:Nn\pbs_eop_action:n{\seq_gput_right:Nn\g_pbs_eop_seq{#1}}
+\seq_new:N\g_pbs_bop_seq
+\seq_new:N\g_pbs_eop_seq
+
+\AtBeginDocument{
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@newkey[2]{}
+  }
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@seq@push@cx[2]{}
+  }
+}
+
+%%%%%%%%%%%%%%%%%
+%package options
+%%%%%%%%%%%%%%%%%
+%unknown package option error message
+\msg_gset:nnnn{pdfbase}{unknown~package~option}{Unknown~package~option~`#1'.}{
+  Package option~'#1'~is~unknown;\\
+  perhaps~it~is~spelled~incorrectly.
+}
+
+\bool_new:N\g_pbs_pkgbigfiles_bool
+\bool_new:N\g_pbs_dvipdfmx_bool
+\bool_new:N\g_pbs_dvisvgm_bool
+\bool_new:N\g_pbs_lscape_bool %if we are inside landscape env
+\AtBeginDocument{
+  \cs_if_exist:NT\landscape{%
+    \tl_put_right:Nn\landscape{\bool_gset_true:N\g_pbs_lscape_bool}
+    \tl_put_left:Nn\endlandscape{\bool_gset_false:N\g_pbs_lscape_bool}
+  }
+}
+
+\keys_define:nn{pdfbase}{
+  xetex .code:n = {}, %dummy, we use engine test instead
+
+  dvipdfmx .choice:,
+  dvipdfmx / true .code:n = {
+    \bool_gset_true:N\g_pbs_dvipdfmx_bool
+    \bool_gset_false:N\g_pbs_dvisvgm_bool
+  },
+  dvipdfmx / false .code:n = {\bool_gset_false:N\g_pbs_dvipdfmx_bool},
+  dvipdfmx .default:n = {true},
+
+  dvisvgm .choice:,
+  dvisvgm / true .code:n = {
+    \bool_gset_true:N\g_pbs_dvisvgm_bool
+    \bool_gset_false:N\g_pbs_dvipdfmx_bool
+  },
+  dvisvgm / false .code:n = {\bool_gset_false:N\g_pbs_dvisvgm_bool},
+  dvisvgm .default:n = {true},
+
+  bigfiles .bool_gset:N = \g_pbs_pkgbigfiles_bool,
+
+  unknown .code:n = {
+    \msg_error:nnx{pdfbase}{unknown~package~option}{\l_keys_key_tl}
+  }
+}
+\ProcessKeysOptions{pdfbase}
+
+\sys_if_output_pdf:T{
+  \bool_gset_false:N\g_pbs_dvipdfmx_bool
+  \bool_gset_false:N\g_pbs_dvisvgm_bool
+}
+
+\sys_if_engine_xetex:T{
+  \bool_if:NF\g_pbs_dvisvgm_bool{\bool_gset_true:N\g_pbs_dvipdfmx_bool}
+}
+
+\cs_new_nopar:Nn\pbs_insert_properties_entry:{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%commands for creating PDF objects, annots etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\sys_if_output_pdf:TF{
+  %in LuaTeX-0.95.0, pdfTeX primitives got new names
+  \bool_lazy_and:nnT{
+    \sys_if_engine_luatex_p:
+  }{
+    !\int_compare_p:n{\luatexversion<95}
+  }{
+    \cs_set_protected:Npn\pdfnames{\pdfextension~names~}
+    \cs_set_protected:Npn\pdfobj{\pdfextension~obj~}
+    \cs_set_protected:Npn\pdfrefobj{\pdfextension~refobj~}
+    \cs_set_protected:Npn\pdfannot{\pdfextension~annot~}
+    \cs_set_protected:Npn\pdfstartlink{\pdfextension~startlink~}
+    \cs_set_protected:Npn\pdfendlink{\pdfextension~endlink\relax}
+    \cs_set_protected:Npn\pdfdest{\pdfextension~dest~}
+    \cs_set_protected:Npn\pdfliteral{\pdfextension~literal~}
+    \cs_set_protected:Npn\pdfcatalog{\pdfextension~catalog~}
+    \cs_set:Npn\pdflastlink{\numexpr\pdffeedback~lastlink\relax}
+    \cs_set:Npn\pdflastobj{\numexpr\pdffeedback~lastobj\relax}
+    \cs_set:Npn\pdflastannot{\numexpr\pdffeedback~lastannot\relax}
+    \cs_set:Npn\pdfpageref{\numexpr\pdffeedback~pageref\relax}
+    \cs_set:Npx\pdfpageresources{\pdfvariable~pageresources}
+    \cs_set_eq:NN\pdfximage\saveimageresource
+    \cs_set_eq:NN\pdfrefximage\useimageresource
+    \cs_set_eq:NN\pdflastximage\lastsavedimageresourceindex
+    \cs_set_eq:NN\pdflastximagepages\lastsavedimageresourcepages
+    \cs_set_eq:NN\pdfxform\saveboxresource
+    \cs_set_eq:NN\pdfrefxform\useboxresource
+    \cs_set_eq:NN\pdflastxform\lastsavedboxresourceindex
+    \cs_set:Npn\pdffontobjnum{\pdffeedback~fontobjnum}
+  }
+
+  %helper func to remove `0 R' part from pdf obj reference
+  \cs_new_nopar:Nn\pbs_reftonum:n{\_pbs_reftonum:f{#1}}
+  \cs_new_nopar:Nn\_pbs_reftonum:n{\exp_after:wN\_pbs_reftonum:w#1}
+  \cs_generate_variant:Nn\_pbs_reftonum:n{f}
+  \cs_new_nopar:Npn\_pbs_reftonum:w #1~0~R{#1}
+
+  %literal PDF code into content stream, no saving of graphics state
+  \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+    \str_case:nnF{#1}{                       % #2: raw PDF           `page'
+      % `direct' inserts raw pdf code without translating origin (0,0) to
+      % current position: origin is lower left page corner
+      {direct}{\pdfliteral~direct~{#2}}
+      % same as above, but closing text object if necessary
+      {page}{\pdfliteral~page~{#2}}
+    }{
+      % closing text object if necessary and setting current
+      % location's coordinates to (0,0)
+      \pdfliteral{#2}
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+    \tl_clear:N\l_pbs_usenum_tl
+    \tl_if_blank:oF{#1}{
+      \tl_set:Nx\l_pbs_usenum_tl{useobjnum~\pbs_reftonum:n{#1}}
+    }
+    \bool_if:nTF{\tl_if_blank_p:o{#1}&&\tl_if_blank_p:o{#3}}{
+      \pdfobj~reserveobjnum
+    }{
+      \str_case:nn{#2}{
+        {generic}{\immediate\pdfobj~\l_pbs_usenum_tl~{#3}}
+        {dict}{\immediate\pdfobj~\l_pbs_usenum_tl~{<<#3>>}}
+        {array}{\immediate\pdfobj~\l_pbs_usenum_tl~{[#3]}}
+        {stream}{\immediate\pdfobj~\l_pbs_usenum_tl~stream~
+          attr{\use_i:nn#3}~{\use_ii:nn#3}
+        }
+        {fstream}{\immediate\pdfobj~\l_pbs_usenum_tl~stream~
+          attr{\use_i:nn#3}~file~{\use_ii:nn#3}
+        }
+      }
+    }
+    \tl_gset:Nx\g_pbs_pdflastobj_tl{\the\pdflastobj\space 0~R}
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+    \immediate\pdfannot~width~#1~height~#2~depth~#3 {
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#4}
+    \tl_gset:Nx\g_pbs_pdflastann_tl{\the\pdflastannot\space 0~R}
+  }
+
+  \cs_new_protected:Nn\pbs_pdflink:nn{
+    \mode_leave_vertical:
+    \immediate\pdfstartlink~user~{
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#1}#2\pdfendlink
+  }
+
+  \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+    \mode_leave_vertical:
+    \str_case:nnTF{#2}{
+      {fit}{}
+      {fitb}{}
+      {fitbv}{}
+      {fitv}{}
+    }{
+      \pdfdest~name~{#1}~#2~#4
+    }{
+      \group_begin:
+      \hbox_set:Nn\l_tmpa_box{#4}
+      \str_case:nnTF{#2}{
+        {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{#2}}
+        {fith}{\tl_set:Nn\l_pbs_fittype_tl{#2}}
+        {xyz}{\tl_set:Nn\l_pbs_fittype_tl{#2~zoom~\int_eval:n{#3*1000}}}
+      }{
+        \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+          \pdfdest~name~{#1}~\l_pbs_fittype_tl
+        }}#4
+      }{
+        \pdfdest~name~{#1}~fitr~
+          width~\box_wd:N\l_tmpa_box~
+          height~\box_ht:N\l_tmpa_box~
+          depth~\box_dp:N\l_tmpa_box
+        \box_use:N\l_tmpa_box
+      }
+      \box_clear:N\l_tmpa_box
+      \group_end:
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{ % #1 not used
+    %additional resources
+    \tl_set:Nx\l_tmpa_tl{\the\pdfpageresources~#3}\tl_trim_spaces:N\l_tmpa_tl
+    %additional dict entries
+    \tl_set:Nx\l_tmpb_tl{#4}
+    \tl_trim_spaces:N\l_tmpb_tl
+    \int_compare:nT{#2>\c_zero_int}{\immediate}
+    \pdfxform~
+      \str_if_eq:eeF{\l_tmpb_tl}{}{attr~{\l_tmpb_tl}~}
+      \str_if_eq:eeF{\l_tmpa_tl}{}{resources~{\l_tmpa_tl}~}#5
+    \tl_gset:Nx\g_pbs_pdflastxform_tl{\the\pdflastxform\space 0~R}
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
+    \hbox_set:Nn\l_tmpa_box{\pdfrefxform\pbs_reftonum:n{#1}}
+    \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+    \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+    \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+    \filename@parse{#1}
+    \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+    \bool_if:nTF{
+      \str_if_eq_p:Vn\l_pbs_ext_tl{png}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpg}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpeg}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jbig2}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jb2}
+    }{
+      \immediate\pdfximage{#1}
+      \tl_gset:Nx\g_pbs_pdflastximage_tl{\the\pdflastximage\space 0~R}
+    }{
+      \msg_error:nnnnn{pdfbase}{wrong~image~resource}{#1}{pdftex}{
+        png,~jpeg~and~jbig2
+      }
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfcatalog:n{\pdfcatalog{#1}}
+
+  \int_new:N\g_pbs_oc_int %object ID for marked content Properties
+
+  \cs_new_protected_nopar:Nn\pbs_zap_properties:{ %strip /Properties dict from
+    \group_begin:                       %/pdfpageresources
+    \tl_set:Nx\l_pbs_temp_tl{\group_end:
+      \global\pdfpageresources{
+        \exp_after:wN\_pbs_zap_properties:w\the\pdfpageresources/Properties<<>>.
+      }
+    }\l_pbs_temp_tl
+  }
+  \cs_new_nopar:Npn\_pbs_zap_properties:w#1/Properties<<#2>>#3{
+    \bool_if:nTF{\tl_if_empty_p:n{#2}&&\str_if_eq_p:nn{#3}{.}}{#1}{
+      #1\_pbs_zap_properties:w#3
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+    \pdfliteral~page~{#1/rm@oc\int_use:N\g_pbs_oc_int\space BDC}
+    %decide whether the current property is to be written to the page
+    %resources or to the xobject resources, depending on whether marked content
+    %is written to a page stream or to an xobject stream (for compatibility with
+    %`xsavebox' package)
+    \bool_if:nTF{
+      \cs_if_exist:NTF\xsb_count_props:{
+        \int_compare_p:n{\xsb_count_props:>\c_zero_int}
+      }{
+        \c_false_bool
+      }
+    }{
+      \xsb_addto_props:n{/rm@oc\int_use:N\g_pbs_oc_int\space#2}
+    }{
+      \iow_shipout_x:Nx\@mainaux{\token_to_str:N\pbs@seq@push@cx{
+          pbs@props@\exp_not:N\int_use:N\g_pbs_page_int
+      }{/rm@oc\int_use:N\g_pbs_oc_int\space#2}}
+    }
+    \int_gincr:N\g_pbs_oc_int
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfemc:{\pdfliteral~page~{EMC}}
+
+  %inserts /Properties <<...>> entry into page resources
+  \cs_gset:Nn\pbs_insert_properties_entry:{
+    \pbs_zap_properties: %purge those from previous page
+    \tl_set:Nx\l_tmpa_tl{\seq_if_exist:cT{pbs@props@\int_use:N\g_pbs_page_int}{
+      \seq_use:cn{pbs@props@\int_use:N\g_pbs_page_int}{~}}}
+    \tl_trim_spaces:N\l_tmpa_tl
+    \str_if_eq:eeF{\l_tmpa_tl}{}{
+      \group_begin:
+      \tl_set:Nx\l_pbs_temp_tl{\group_end:
+        \global\pdfpageresources{
+          \the\pdfpageresources
+          /Properties<<\seq_if_exist:cT{pbs@props@\int_use:N\g_pbs_page_int}{
+            \seq_use:cn{pbs@props@\int_use:N\g_pbs_page_int}{~}
+          }>>
+        }
+      }\l_pbs_temp_tl
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_add_form_font:{
+    \cs_if_exist:cF{pbs_form_font_\pdffontobjnum\font}{
+      \tl_new:c{pbs_form_font_\pdffontobjnum\font}
+      \tl_gput_right:Nx\g_pbs_form_fonts_tl{
+        ~/FormFont\pdffontobjnum\font\space\pdffontobjnum\font\space 0~R
+      }
+    }
+    \tl_gset:Nx\g_pbs_last_form_font_tl{/FormFont\pdffontobjnum\font}
+  }
+  \cs_new_nopar:Nn\pbs_last_form_font:{\g_pbs_last_form_font_tl}
+}{
+  %pgf + transparency related settings
+  \bool_new:N\g_pbs_pgfloaded_bool
+  \bool_gset_false:N\g_pbs_pgfloaded_bool
+  \AtBeginDocument{
+    \@ifpackageloaded{pgf}{\bool_gset_true:N\g_pbs_pgfloaded_bool}{}
+  }
+  \int_new:N\g_pbs_obj_int %object ID
+  \bool_if:NTF\g_pbs_dvipdfmx_bool{ %dvipdfmx/XeTeX
+    \AtBeginDocument{
+      % suppress any annotation growth through (x)dvipdfmx option/config var `g'
+      \special{dvipdfmx:config~g~0}
+      % suppress link destination renaming (as in original dvipdfm
+      \special{dvipdfmx:config~C~0x10}   %  and in pre-2014 dvipdfmx)
+    }
+
+    %literal PDF code into content stream; open text objects are always closed
+    \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+      \str_case:nnF{#1}{                       % #2: raw PDF             `page'
+        % `pdf:code' inserts raw pdf code without translating origin (0,0) to
+        % the current position. Unlike pdftex, origin is (+72bp,-72bp) from the
+        % upper left page corner. In analogy to pdftex, newer dvipdfmx versions
+        % also provide `pdf:direct:' and `pdf:page:', but actually, both are
+        % just aliases for `pdf:code'.
+        {direct}{\special{pdf:code~#2}}
+        {page}{\special{pdf:code~#2}}
+      }{
+        % sets current location's coordinates to (0,0), while saving graphics
+        % state before and re-instating after insertion (this is different from
+        % \pdfliteral{...}
+        \special{pdf:content~#2}
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+      \tl_if_blank:oTF{#1}{
+        \tl_set:Nx\l_pbs_usenum_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }{
+        \tl_set:Nx\l_pbs_usenum_tl{#1}
+      }
+      \tl_if_blank:oF{#3}{
+        \str_case:nn{#2}{
+          {generic}{\special{pdf:obj~\l_pbs_usenum_tl\space #3}}
+          {dict}{\special{pdf:obj~\l_pbs_usenum_tl\space<<#3>>}}
+          {array}{\special{pdf:obj~\l_pbs_usenum_tl\space[#3]}}
+          {stream}{\special{pdf:stream~\l_pbs_usenum_tl\space
+            (\use_ii:nn#3)<<\use_i:nn#3>>
+          }}
+          {fstream}{
+            \message{<\use_ii:nn#3>}
+            \special{pdf:fstream~\l_pbs_usenum_tl\space
+              (\use_ii:nn#3)<<\use_i:nn#3>>
+            }
+          }
+        }
+      }
+      \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+      \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
+        width~\dim_eval:n{#1}~height~\dim_eval:n{#2}~depth~\dim_eval:n{#3}~
+        <<\cs_if_exist_use:N\ocgbase_insert_oc:~#4>>
+      }
+      \tl_gset:Nx\g_pbs_pdflastann_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+      \int_gincr:N\g_pbs_obj_int
+    }
+
+    \cs_new_protected:Nn\pbs_pdflink:nn{
+      \mode_leave_vertical:
+      \special{pdf:bann~<<\cs_if_exist_use:N\ocgbase_insert_oc:~#1>>}#2
+      \special{pdf:eann}
+    }
+
+    \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+      \mode_leave_vertical:
+      \str_case:nnTF{#2}{
+        {fit}{\tl_set:Nn\l_pbs_fittype_tl{/Fit}}
+        {fitb}{\tl_set:Nn\l_pbs_fittype_tl{/FitB}}
+        {fitbv}{\tl_set:Nn\l_pbs_fittype_tl{/FitBV~@xpos}}
+        {fitv}{\tl_set:Nn\l_pbs_fittype_tl{/FitV~@xpos}}
+      }{
+        \special{pdf:~dest~(#1)~[~@thispage~\l_pbs_fittype_tl]}#4
+      }{
+        \group_begin:
+        \hbox_set:Nn\l_tmpa_box{#4}
+        \str_case:nnTF{#2}{
+          {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{/FitBH~@ypos}}
+          {fith}{\tl_set:Nn\l_pbs_fittype_tl{/FitH~@ypos}}
+          {xyz}{\tl_set:Nn\l_pbs_fittype_tl{/XYZ~@xpos~@ypos~#3}}
+        }{
+          \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+            \special{pdf:~dest~(#1)~[~@thispage~\l_pbs_fittype_tl]}
+          }}#4
+        }{ % FitR
+          \box_move_down:nn{\box_dp:N\l_tmpa_box}{\hbox:n{
+            \pbs_pdfobj:nnn{}{generic}{@xpos}
+            \tl_gset_eq:NN\g_pbs_llx_tl\g_pbs_pdflastobj_tl
+            \pbs_pdfobj:nnn{}{generic}{@ypos}
+            \tl_gset_eq:NN\g_pbs_lly_tl\g_pbs_pdflastobj_tl
+          }}
+          \box_use:N\l_tmpa_box
+          \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+            \special{pdf:~dest~(#1)~[@thispage~
+              /FitR~
+               \g_pbs_llx_tl\space\g_pbs_lly_tl\space @xpos~@ypos
+            ]}
+          }}
+        }
+        \box_clear:N\l_tmpa_box
+        \group_end:
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{
+      \group_begin:
+        \hbox_set:Nn\l_tmpa_box{
+          \special{pdf:bxobj~@pbs@obj\int_use:N\g_pbs_obj_int\space
+            width~\dim_eval:n{\box_wd:N#5}~
+            height~\space\dim_eval:n{\box_ht:N#5}~
+            depth~\space \dim_eval:n{\box_dp:N#5}
+          }
+          \box_use:N#5
+          \tl_clear:N\l_tmpa_tl{}
+          %transparency et al. for PGF
+          \bool_if:nT{\int_compare_p:n{#1>\c_zero_int} && \g_pbs_pgfloaded_bool}{
+            \ifpgf@sys@pdf@extgs@exists
+              \tl_set:Nn\l_tmpa_tl{/ExtGState~@pgfextgs}
+            \fi
+            \ifpgf@sys@pdf@patterns@exists
+              \tl_put_right:Nn\l_tmpa_tl{/Pattern~@pgfpatterns}
+            \fi
+            \ifpgf@sys@pdf@colorspaces@exists
+              \tl_put_right:Nn\l_tmpa_tl{/ColorSpace~@pgfcolorspaces}
+            \fi
+          }
+          %additional resources
+          \tl_put_right:Nx\l_tmpa_tl{~#3}\tl_trim_spaces:N\l_tmpa_tl
+          \str_if_eq:eeF{\l_tmpa_tl}{}{
+            \special{pdf:put~@resources~<<\l_tmpa_tl>>}
+          }
+          %additional dict entries
+          \tl_set:Nx\l_tmpa_tl{#4}
+          \tl_trim_spaces:N\l_tmpa_tl
+          \special{pdf:exobj %close form xobject
+            \str_if_eq:eeF{\l_tmpa_tl}{}{<<\l_tmpa_tl>>}
+          }
+        }
+        \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+        \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+        \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+      \group_end:
+      \tl_gset:Nx\g_pbs_pdflastxform_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+      \int_gincr:N\g_pbs_obj_int
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{\special{pdf:uxobj~#1}}
+
+    \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+      \filename@parse{#1}
+      \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+      \bool_if:nTF{
+          \str_if_eq_p:Vn\l_pbs_ext_tl{png}
+        ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpg}
+        ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpeg}
+      }{
+        \special{pdf:image~@pbs@obj\int_use:N\g_pbs_obj_int\space hide~(#1)}
+        \tl_gset:Nx\g_pbs_pdflastximage_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }{
+        \msg_error:nnnnn{pdfbase}{wrong~image~resource}{#1}{dvipdfmx/xetex}{
+          png~and~jpeg
+        }
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfcatalog:n{
+      \special{pdf:put~@catalog~<<#1>>}}
+
+    \int_new:N\g_pbs_oc_int %object ID
+    \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+      \special{pdf:code~#1/rm@oc\int_use:N\g_pbs_oc_int\space BDC}
+      \special{pdf:put~@resources~<<
+        /Properties~<</rm@oc\int_use:N\g_pbs_oc_int\space#2>>>>}
+      \int_gincr:N\g_pbs_oc_int
+    }
+    \cs_new_nopar:Nn\pbs_pdfemc:{\special{pdf:code~EMC}}
+  }{
+    \bool_if:NTF\g_pbs_dvisvgm_bool{
+      \tl_gset:Nx\g_pbs_hash_tl{\token_to_str:N#}
+      %insert literal Postscript code
+      \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+        \str_if_eq:nnTF{#1}{}{                   % #2: raw Postscript   | `page'
+          % set current location's coordinates to (0,0) and set unit vectors to
+          % 1bp right and 1bp upwards; graphics state is saved before and
+          % re-instated after insertion
+          \special{"~#2}
+        }{
+          % `direct' does the same as `page': no origin translation,
+          % no gs saving
+          \special{ps::~#2}
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+        \special{dvisvgm:raw~{?nl}<path~d=}
+        \group_begin:
+          \hbox_set:Nn\l_tmpa_box{
+            \box_move_down:nn{#3}{\hbox_to_zero:n{% ll
+              \special{dvisvgm:raw~'M{?x}~{?y}}
+            }}
+            \hbox_to_zero:n{
+              \skip_horizontal:n{#1}
+              \box_move_down:nn{#3}{\hbox_to_zero:n{% lr
+                \special{dvisvgm:raw~L{?x}~{?y}}
+              }}
+              \box_move_up:nn{#2}{\hbox_to_zero:n{% ur
+                \special{dvisvgm:raw~L{?x}~{?y}}
+              }}\hss
+            }
+            \box_move_up:nn{#2}{\hbox_to_zero:n{% ul
+              \special{dvisvgm:raw~L{?x}~{?y}Z'}
+            }}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \special{dvisvgm:raw~{?nl}opacity='0'~#4~class='annot'/>}
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{
+        \group_begin:
+          \hbox_set:Nn\l_tmpa_box{
+            \special{dvisvgm:raw~{?nl}<defs>{?nl}
+              <g~
+                transform='translate({?(-(x))},{?(-(y))})'~#4~
+                id='_obj\int_use:N\g_pbs_obj_int'~class='xform'
+              >
+            }
+            \special{dvisvgm:bbox~lock}
+            \box_use_drop:N#5
+            \special{dvisvgm:bbox~unlock}
+            \special{dvisvgm:raw~{?nl}</g>{?nl}</defs>}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \tl_gset:Nx\g_pbs_pdflastxform_tl{
+          \g_pbs_hash_tl _obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{
+        \special{dvisvgm:raw~{?nl}
+          <use~x='{?x}'~y='{?y}'~transform='{?matrix}'~xlink:href='#1'/>}
+      }
+    }{
+      %dvips
+      \sys_if_engine_pdftex:TF{
+        \cs_new_nopar:Nn\pbs_filedump:nnn{\pdffiledump~offset~#1~length~#2~{#3}}
+      }{
+        \sys_if_engine_luatex:T{
+          \cs_new_nopar:Nn\pbs_filedump:nnn{\lua_now:e{
+            tex.sprint(ltx.utils.filedump(
+              "\lua_escape:e{#3}", \int_eval:n{#1}, \int_eval:n{#2}
+            ))
+          }}
+        }
+      }
+
+      \AtBeginDocument{
+        \@ifpackageloaded{hyperref}{}{                        % `hyperref'
+          %define `?pdfmark' operator as in file pdfmark.def from package
+          \special{!~
+            systemdict~/pdfmark~known
+            {
+              userdict~/?pdfmark~systemdict~/exec~get~put
+            }{
+              userdict~/?pdfmark~systemdict~/pop~get~put~
+              userdict~/pdfmark~systemdict~/cleartomark~get~put
+            }
+            ifelse
+          }
+        }
+        \special{!~
+          %back-transforms user coords to page coords (bigpoints with reference
+          %point [0,0] in the bottom-left page corner)
+          % user_x user_y pbs@user2page --> page_x page_y
+          /pbs@user2page~{
+            0~begin~% make everything local in here
+            /y~exch~def~/x~exch~def~
+            matrix~currentmatrix~
+            matrix~defaultmatrix~
+            matrix~invertmatrix~
+            matrix~concatmatrix~cvx~exec~
+            /ty~exch~def~/tx~exch~def~
+            /d~exch~def~/c~exch~def~
+            /b~exch~def~/a~exch~def~
+            x~a~mul~y~c~mul~add~tx~add~
+            x~b~mul~y~d~mul~add~ty~add~
+            end
+          }~def~
+          /pbs@user2page~load~0~1~dict~put % insert dict at index 0;
+        }                                  % dict is allocated only once
+      }
+      \cs_new:Nn\pbs_special:n{\special{ps:~SDict~begin~#1~end}}
+
+      \bool_if:NT\g_pbs_pkgbigfiles_bool{
+        \special{psfile=\c_sys_jobname_str.pbsdat}
+        %open auxiliary file \jobname.pbsdat for writing hex encoded streams of
+        %the files to be embedded. This file is inserted into PS during dvips.
+        \iow_new:N\g_pbs_mstreams_stream
+        \iow_open:Nn\g_pbs_mstreams_stream{\c_sys_jobname_str.pbsdat}
+        \iow_now:Nn\g_pbs_mstreams_stream{
+          /M9D~1~dict~def~M9D~begin
+          /o{mark/_objdef}bind~def/O{/type/stream/OBJ~pdfmark}bind~def
+          /m~systemdict/mark~get~def
+          /P{/ASCIIHexDecode~filter/PUT~pdfmark}bind~def
+          /PP{/PUT~pdfmark}bind~def
+          /C{/CLOSE~pdfmark}bind~def~end
+        }
+      }
+
+      %insert literal Postscript code
+      \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+        \str_if_eq:nnTF{#1}{}{                   % #2: raw Postscript     `page'
+          % set current location's coordinates to (0,0) and set unit vectors to
+          % 1bp right and 1bp upwards; graphics state is saved before and
+          % re-instated after insertion
+          \special{"~#2}
+        }{
+          % `direct' does the same as `page': no origin translation,
+          % no gs saving
+          \special{ps::~#2}
+        }
+      }
+
+      \msg_new:nnn{pdfbase}{generic-object-pdfmark}{
+        Generic~object~creation~not~supported~by~PDFmarks
+      }
+      \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+        \tl_clear:N\l_pbs_usenum_tl
+        \tl_if_blank:oTF{#1}{
+          \tl_set:Nx\l_pbs_usenum_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }{
+          \tl_set:Nx\l_pbs_usenum_tl{#1}
+        }
+        \str_if_eq:nnT{#2}{generic}{
+          \msg_error:nn{pdfbase}{generic-object-pdfmark}
+        }
+        \tl_if_blank:oF{#3}{
+          \bool_if:nTF{
+            \g_pbs_pkgbigfiles_bool &&
+            \str_if_eq_p:nn{#2}{fstream}
+          }{
+            \iow_now:Nx\g_pbs_mstreams_stream{
+              M9D~begin~o\l_pbs_usenum_tl O
+            }
+          }{
+            \pbs_special:n{mark~/_objdef~\l_pbs_usenum_tl\space/type
+              \str_case:nn{#2}{
+                {generic}{}
+                {dict}{/dict}
+                {array}{/array}
+                {stream}{/stream}
+                {fstream}{/stream}
+              }~
+              /OBJ~pdfmark
+            }
+          }
+          \str_case:nn{#2}{
+            {generic}{}
+            {dict}{\pbs_special:n{mark~\l_pbs_usenum_tl~<<#3>>/PUT~pdfmark}}
+            {array}{
+              \pbs_special:n{mark~\l_pbs_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark}
+            }
+            {stream}{\special{ps::[nobreak]~SDict~begin~
+              mark~\l_pbs_usenum_tl~(\use_ii:nn#3)/PUT~pdfmark~
+              mark~\l_pbs_usenum_tl~<<\use_i:nn#3>>/PUT~pdfmark~end
+            }}
+            {fstream}{
+              \tl_set:Nn\l_pbs_offset_tl{0}
+              \tl_set:Nx\l_pbs_fsize_tl{\file_size:n{\use_ii:nn#3}}
+              \message{<\use_ii:nn#3}
+              %embed file in chunks of 32768 Bytes into PS as chunks of
+              %65536 Bytes of HEX code
+              \bool_while_do:nn{
+                \int_compare_p:n{\l_pbs_offset_tl<\l_pbs_fsize_tl}
+              }{
+                \bool_if:NTF\g_pbs_pkgbigfiles_bool{
+                  \iow_now:Nx\g_pbs_mstreams_stream{
+                    m\l_pbs_usenum_tl
+                    (\pbs_filedump:nnn{\l_pbs_offset_tl}{32767}{
+                      \use_ii:nn#3
+                    })P
+                  }
+                }{
+                  \pbs_special:n{
+                    mark~
+                      \l_pbs_usenum_tl~
+                      (\pbs_filedump:nnn{\l_pbs_offset_tl}{32767}{
+                        \use_ii:nn#3
+                      })~
+                      /ASCIIHexDecode~filter~/PUT~
+                    pdfmark
+                  }
+                }
+                \tl_set:Nx\l_pbs_offset_tl{\int_eval:n{\l_pbs_offset_tl+32767}}
+                \message{.}
+              }
+              \bool_if:NTF\g_pbs_pkgbigfiles_bool{
+                \iow_now:Nx\g_pbs_mstreams_stream{
+                  m\l_pbs_usenum_tl<<\use_i:nn#3>>PP~
+                  m\l_pbs_usenum_tl~C~end
+                }
+              }{
+                \pbs_special:n{
+                  mark~\l_pbs_usenum_tl~<<\use_i:nn#3>>~/PUT~pdfmark~
+                  mark~\l_pbs_usenum_tl~/CLOSE~pdfmark
+                }
+              }
+              \message{>}
+            }
+          }
+        }
+        \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+        \group_begin:
+          % mark annotation rectangle
+          \hbox_set:Nn\l_tmpa_box{
+            % lower left
+            \box_move_down:nn{#3}{\hbox_to_zero:n{\pbs_special:n{
+              currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
+            }}}
+            \skip_horizontal:n{#1}
+            % upper right
+            \box_move_up:nn{#2}{\hbox_to_zero:n{\pbs_special:n{
+              currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
+            }}}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \str_if_eq:eeF{#4}{}{
+          \pbs_special:n{
+            mark~
+              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+              /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
+              \cs_if_exist_use:N\ocgbase_insert_oc:~#4
+            /ANN~pdfmark
+          }
+          \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }
+      }
+
+      \cs_new_protected:Nn\pbs_pdflink:nn{
+        \mode_leave_vertical:
+        \cs_if_exist:NTF\pdfmark{
+          \pdfmark[#2]{pdfmark=/ANN,Raw={
+            \cs_if_exist_use:N\ocgbase_insert_oc:~#1}}
+        }{
+          \hbox_set:Nn\l_tmpb_box{#2}
+          \pbs_pdfannot:nnnn{
+            \dim_use:N\box_wd:N\l_tmpb_box}{
+            \dim_use:N\box_ht:N\l_tmpb_box}{
+            \dim_use:N\box_dp:N\l_tmpb_box
+          }{#1}
+          \box_use_drop:N\l_tmpb_box
+        }
+      }
+
+      \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+        \mode_leave_vertical:
+        \group_begin:
+        %write destination page number to aux
+        \iow_shipout_x:Nx\@mainaux{
+          \token_to_str:N\pbs@newkey{pbs@#1@destpage}{
+            \exp_not:N\int_use:N\exp_not:N\g_pbs_page_int}
+        }
+        \cs_if_exist:cF{pbs@#1@destpage}{
+          \tl_set:cn{pbs@#1@destpage}{0}
+          \cs_if_exist:NF\g_pbs_rerunwarned_tl{
+            \tl_new:N\g_pbs_rerunwarned_tl
+            \msg_warning:nn{pdfbase}{rerun}
+          }
+        }
+        \str_case:nnTF{#2}{
+          {fit}{\tl_set:Nn\l_pbs_fittype_tl{/Fit}}
+          {fitb}{\tl_set:Nn\l_pbs_fittype_tl{/FitB}}
+        }{
+          \pbs_special:n{
+            mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+              \l_pbs_fittype_tl
+            ]~/DEST~pdfmark
+          }
+          #4
+        }{
+          \hbox_set:Nn\l_tmpa_box{#4}
+          %mark anchor/view rect, insert text, insert destination
+          \str_case:nnTF{#2}{
+            {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{/FitBH}}
+            {fith}{\tl_set:Nn\l_pbs_fittype_tl{/FitH}}
+          }{
+            \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+              \pbs_special:n{
+                currentpoint~pbs@user2page~/pbs@top~exch~def~pop~
+                mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+                  \l_pbs_fittype_tl\space pbs@top
+                ]~/DEST~pdfmark
+              }
+            }}
+            #4
+          }{
+            \str_case:nnTF{#2}{
+              {fitbv}{\tl_set:Nn\l_pbs_fittype_tl{/FitBV}}
+              {fitv}{\tl_set:Nn\l_pbs_fittype_tl{/FitV}}
+            }{
+              \pbs_special:n{
+                currentpoint~pbs@user2page~pop~/pbs@left~exch~def~
+                mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+                  \l_pbs_fittype_tl\space pbs@left
+                ]~/DEST~pdfmark
+              }
+              #4
+            }{
+              \str_case:nn{#2}{
+                {xyz}{
+                  \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@top~exch~def~/pbs@left~exch~def~
+                      mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~
+                      /View~[
+                        /XYZ~pbs@left~pbs@top~#3
+                      ]~/DEST~pdfmark
+                    }
+                  }}
+                  #4
+                }
+                {fitr}{
+                  \box_move_down:nn{\box_dp:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@lly~exch~def~/pbs@llx~exch~def
+                    }
+                  }}
+                  \box_use:N\l_tmpa_box
+                  \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@ury~exch~def~/pbs@urx~exch~def~
+                      mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~
+                      /View~[
+                        /FitR~pbs@llx~pbs@lly~pbs@urx~pbs@ury
+                      ]~/DEST~pdfmark
+                    }
+                  }}
+                }
+              }
+            }
+          }
+          \box_clear:N\l_tmpa_box
+        }
+        \group_end:
+      }
+
+      \msg_set:nnn{pdfbase}{content~too~large}{
+        Line~\msg_line_number: :\\
+        Content~exceeds~paper~size~(width~and/or~height)\\
+        of~the~document~and~may~be~clipped~in~the~final\\
+        output.
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{% #1, #3 not used as
+        \mode_leave_vertical:        % resources are managed automatically
+        %rescale box to fit within the papersize while distilling
+        \tl_gset:cx{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}{\fp_eval:n{min(1.0,
+          \dim_ratio:nn{\paperwidth}{\box_wd:N#5},
+          \dim_ratio:nn{\paperheight}{\box_ht:N#5+\box_dp:N#5}
+        )}}
+        \box_scale:Nnn#5{
+          \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
+        }{
+          \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
+        }
+        %store content dimensions in DPI units (Dots)
+        \tl_set:Nx\l_pbs_width_tl{
+          \dim_to_decimal_in_sp:n{\box_wd:N#5}~65536~div~72.27~div~DVImag~mul~
+          Resolution~mul~
+        }
+        \tl_set:Nx\l_pbs_height_tl{
+          \dim_to_decimal_in_sp:n{\box_ht:N#5}~65536~div~72.27~div~DVImag~mul~
+          VResolution~mul~
+        }
+        \tl_set:Nx\l_pbs_depth_tl{
+          \dim_to_decimal_in_sp:n{\box_dp:N#5}~65536~div~72.27~div~DVImag~mul~
+          VResolution~mul~
+        }
+        %additional dict entries
+        \tl_set:Nx\l_tmpa_tl{#4} \tl_trim_spaces:N\l_tmpa_tl
+        \pbs_special:n{
+          %translate graphics to upper left page corner, so we have the whole
+          %clipbox (i. e. page area) available for distilling; outlying parts
+          %get clipped
+          {
+            gsave~currentpoint~ % put graphic's ref point coords on the stack
+            initclip~ % restore default clipping path (page device/whole page)
+            clippath~pathbbox~newpath~pop~pop~ %page device top-left coordinates
+            isls {
+              landplus90 {
+                % pkg geometry with landscape option
+                exch~\l_pbs_height_tl~add~exch
+              }{
+                % landscape as class option
+                exch~\l_pbs_depth_tl~add~
+                exch~\l_pbs_width_tl~add
+              } ifelse
+            }{
+              % portrait
+              \l_pbs_depth_tl~add
+            } ifelse~translate~ % move origin (0,0) to page location as shown
+            mark~ % distill graphics to XObject                          below
+              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~
+              /BBox~[  % rotated BBoxes; o = origin (0,0), x = top-left page
+                isls { % corner, vert. coord downwards positive
+                  landplus90 {            %        x----o-+
+                    % geometry with landscape      |    | |
+                    \l_pbs_height_tl~neg~ % llx    |    | |
+                    \l_pbs_width_tl~      % lly    |    | |
+                    \l_pbs_depth_tl~0 % urx ury    +----+-+
+                  }{
+                    % landscape as class option        x-+----+
+                    \l_pbs_depth_tl~neg~0~ % llx lly   | |    |
+                    \l_pbs_height_tl~      % urx       | |    |
+                    \l_pbs_width_tl~neg    % ury       | |    |
+                  } ifelse                 %           +-o----+
+                }{
+                  % portrait                       x----------+
+                  0~\l_pbs_height_tl~  % llx lly   |          |
+                  \l_pbs_width_tl~     % urx       o----------+
+                  \l_pbs_depth_tl~neg  % ury       |          |
+                } ifelse               %           |          |
+              ]                        %           +----------+
+              %insert additional dict entries (the Distiller way)
+              \str_if_eq:eeF{\l_tmpa_tl}{}{
+                product~(Distiller)~search~{pop~pop~pop~\l_tmpa_tl}{pop}ifelse~
+              }
+            /BP~pdfmark~
+            % content transformations required for appearances, cf. BBox
+            % orientations above
+            1~-1~scale~                              % upside-down (mirrored)
+            isls {90~landplus90 {neg} if~rotate} if~ % rotated
+            %finally, move the graphic's ref point (still on the stack) to (0,0)
+            exch~neg~exch~neg~translate
+          }?pdfmark
+        }
+        \box_set_wd:Nn#5{\c_zero_dim}
+        \box_set_ht:Nn#5{\c_zero_dim}
+        \box_set_dp:Nn#5{\c_zero_dim}\box_use_drop:N#5
+        \pbs_special:n{mark~/EP~pdfmark~grestore}
+        %insert additional dict entries (the Ghostscript way)
+        \str_if_eq:eeF{\l_tmpa_tl}{}{
+          \pbs_special:n{
+            product~(Ghostscript)~search~{
+              pop~pop~pop~
+              mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~/PUT~pdfmark
+            }{pop}ifelse
+          }
+        }
+        \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+        \int_gincr:N\g_pbs_obj_int
+        \int_compare:nT{#2>\c_zero_int}{
+          %Form XObjects for use as annotation appearances require that
+          %dvips generated PostScript to be further processed with ps2pdf
+          %must not have the exaggerated dpi resolution resulting from dvips
+          %option `-Ppdf'.
+          \tl_if_exist:NF\g_pbs_dpiwarned_tl{
+            \tl_new:N\g_pbs_dpiwarned_tl
+            \AddToHook{shipout/lastpage}{
+              \special{ps::[nobreak]~SDict~begin~\pbs_dpiwarning:\space end}
+            }
+          }
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
+        %The /SP pdfmark for placement of Form XObjects works reliably only
+        %since gs-9.14. As gs-9.14 had some other TeX-related issues, we
+        %require 9.15.
+        \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
+          \tl_new:N\g_pbs_gsoldwarned_tl
+          \AddToHook{shipout/lastpage}{
+            \special{ps::[nobreak]~SDict~begin~\pbs_gsoldwarning:\space end}
+          }
+        }
+        \pbs_special:n{
+          gsave~currentpoint~translate~
+          % undo appearance-related content transformations
+          isls {90~landplus90~not {neg} if~rotate} if~
+          1~\tl_use:c{scale_#1}~div~dup~neg~scale~
+          mark~#1~/SP~pdfmark~grestore
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+        \filename@parse{#1}
+        \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+        \bool_if:nTF{
+            \str_if_eq_p:Vn\l_pbs_ext_tl{ps}
+          ||\str_if_eq_p:Vn\l_pbs_ext_tl{eps}
+        }{
+          \pbs_special:n{
+            mark~/_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~/NI~pdfmark
+          }
+          \special{psfile=#1~hsize=0~vsize=0}
+          \pbs_special:n{
+            {
+              0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
+            }?pdfmark                      %a valid raster image file
+          }
+          \tl_gset:Nx\g_pbs_pdflastximage_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }{
+          \msg_error:nnxxx{pdfbase}{wrong~image~resource}{#1}{dvips}{
+            Postscript~(ps/eps)~with~bitmapped~content
+          }
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfcatalog:n{
+        \pbs_special:n{~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
+      }
+
+      %marked content BDC/EMC operators
+      %require Ghostscript v. >= 9.15
+      \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+        \pbs_special:n{~mark~#1~#2~/BDC~pdfmark}
+        \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
+          \tl_new:N\g_pbs_gsoldwarned_tl
+          \AddToHook{shipout/lastpage}{
+            \special{ps::[nobreak]~SDict~begin~\pbs_gsoldwarning:\space end}
+          }
+        }
+      }
+      \cs_new_nopar:Nn\pbs_pdfemc:{\pbs_special:n{~mark~/EMC~pdfmark}}
+    }
+  }
+}
+
+\cs_new_nopar:Nn\pbs_pdflastobj:{\g_pbs_pdflastobj_tl}
+\cs_new_nopar:Nn\pbs_pdflastann:{\g_pbs_pdflastann_tl}
+\cs_new_nopar:Nn\pbs_pdflastxform:{\g_pbs_pdflastxform_tl}
+\cs_new_nopar:Nn\pbs_pdflastximage:{\g_pbs_pdflastximage_tl}
+
+%adding AcroForm dict to PDF Catalog
+\tl_new:N\g_pbs_fields_tl %takes object IDs of Fields (aka annots with
+\tl_new:N\g_pbs_form_fonts_tl %name tree of font resources used in text fields
+\AddToHook{shipout/lastpage}{
+  \tl_if_empty:NF\g_pbs_fields_tl{
+    \pbs_pdfobj:nnn{}{array}{\g_pbs_fields_tl}
+    \pbs_pdfcatalog:n{
+      /AcroForm~<<
+        /Fields~\pbs_pdflastobj:/NeedAppearances~false~
+        \tl_if_empty:NF\g_pbs_form_fonts_tl{
+          /DR~<</Font~<<\g_pbs_form_fonts_tl>> >>
+        }
+      >>
+    }
+  }
+}
+\cs_new_protected_nopar:Nn\pbs_appendtofields:n{
+  \tl_gput_left:Nx\g_pbs_fields_tl{#1\space}
+}
+
+%modify output routine for output box insertions
+\bool_new:N\l_pbs_is_vertical_bool
+\cs_set_eq:NN\pbs_outputpage_orig:\@outputpage
+\cs_set_nopar:Npn\@outputpage{
+  \int_gincr:N\g_pbs_page_int
+  \box_if_vertical:cTF{@outputbox}{
+    \bool_set_true:N\l_pbs_is_vertical_bool
+  }{
+    \bool_set_false:N\l_pbs_is_vertical_bool
+  }
+  \hbox_set:Nn\@outputbox{
+    %begin of page
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_bop_seq{##1}}
+    \box_use_drop:N\@outputbox
+    %end of page
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eop_seq{##1}}
+  }
+  \bool_if:NT\l_pbs_is_vertical_bool{
+    \vbox_set:Nn\@outputbox{\box_use_drop:N\@outputbox}
+  }
+  \pbs_outputpage_orig:
+}
+
+\AtBeginDocument{
+  \bool_new:N\g_pbs_ocgbase_loaded_bool
+  \@ifpackageloaded{ocgbase}{\bool_gset_true:N\g_pbs_ocgbase_loaded_bool}{}
+}
+\AddToHook{shipout/foreground}{
+  %insert /Properties into current page's resources
+  \put(0,0){\pbs_insert_properties_entry:}
+}
+\AddToHook{shipout/background}{
+  % workaround for curious AR bug (pdf annot or link placed on
+  % OCG remains active although OCG is hidden)
+  % This can be fixed by placing a dumb (non-interactive) Widget dummy
+  % somewhere on the page.
+  \bool_if:NT\g_pbs_ocgbase_loaded_bool{
+    \put(1,-1){
+      \pbs_pdfannot:nnnn{3bp}{\c_zero_dim}{3bp}{
+        /Ff~65537/FT/Btn/Subtype/Widget
+        /T~(pbs@ARFix@\int_use:N\g_pbs_page_int)
+      }
+    }
+  }
+}
+
+\cs_new_nopar:Nx\pbs_gsoldwarning:{
+  {product~(Ghostscript)~search~{pop~pop~pop~true}{pop~false}ifelse~
+   revision~915~lt~and~{
+  (\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ Warning:\ Ghostscript\ too\ old!\ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ Ghostscript\ version\ >=\ 9.15.\ required!\ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ Various\ advanced\ PDF\ features\ such\ as\ Layers\ (OCGs)\ @@\token_to_str:N\n
+  @@\ and\ animations\ may\ not\ work.\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ Get\ current\ version\ from\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ http://www.ghostscript.com/download\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
+  print}~if}~?pdfmark
+}
+
+\cs_new_nopar:Nx\pbs_dpiwarning:{
+  {Resolution~1200~gt~VResolution~1200~gt~or~product~(Ghostscript)~
+  search~{pop~pop~pop~true}{pop~false}ifelse~and~{
+  (\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@\ \ \ \ \ Warning:\ DVI\ resolution\ greater\ than\ 1200\ dpi!\ \ \ \ \ @@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ PDF\ Annotation\ appearances\ (buttons,\ animation\ frames)\ @@\token_to_str:N\n
+  @@\ may\ be\ poorly\ scaled,\ clipped\ or\ invisible.\ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ Dvips\ should\ be\ called\ either\ without\ option\ `-Ppdf':\ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ dvips\ \c_sys_jobname_str\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ or\ with\ a\ different\ resolution\ setting,\ e.g.:\ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@\ \ \ dvips\ -Ppdf\ -D1200\ \c_sys_jobname_str\token_to_str:N\n
+  @@\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ @@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
+  print}~if}~?pdfmark
+}
+}
+\ExplSyntaxOff
+\begingroup
+\if@pbs@testphase\else\aftergroup\endinput\fi
+\endgroup
+%%%%%%%%%%%%%%%%%%%%%% /pdfmanagement-testphase %%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% pdfbase.sty
+%
+% driver independent access to low-level pdf features
+%
+% Copyright 2015--\today, Alexander Grahn
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This package implements commands for the creation of PDF Objects,
+% Form XObjects, Image XObjects, annotations, links, marked content (BDC/EMC)
+%
+% Supported workflows:
+%
+%   pdflatex, lualatex
+%   latex-->dvips-->ps2pdf or Distiller
+%   latex-->dvipdfmx
+%   xelatex
+%
+% Package options:
+%
+%   xetex
+%   dvipdfmx
+%   dvisvgm  (basic support: \pbs_literal:nn, \pbs_pdfannot:nnnn,
+%                            \pbs_pdfxform:nnnnn\pbs_pdfrefxform:n)
+%   bigfiles (for embedding large files as stream objects; only relevant for
+%     dvips mode, ignored otherwise)
+%
+% Commands defined:
+%
+%   \pbs_pdfobj:nnn
+%     #1: predefined PDF object ID to be used for the current obj; may be empty
+%     #2: type of object ( generic | dict | array | stream | fstream )
+%     #3: if #2==
+%        `generic', then single basic object, such as 3.141, (foo), true, /Name
+%        `dict', then PDF key-value dictionary
+%        `stream', then
+%           {stream attributes as PDF key-value dictionary}{content string}
+%        `fstream', then
+%           {stream attributes as PDF key-value dictionary}{file name}
+%
+%     if #3 && #1 are both empty, an object reference will be reserved for later
+%     use as #1
+%
+%   \pbs_pdflastobj:
+%     inserts object ID of PDF object created/processed during most recent call
+%     of \pbs_pdfobj:nnn
+%
+%   --------
+%
+%   \pbs_pdfannot:nnnn
+%     #1: width, #2: height, #3: depth, #4: dictionary (key-value)
+%
+%   \pbs_pdflastann:
+%     inserts object ID of PDF object created during most recent call of
+%     \pbs_pdfannot:nnnn
+%
+%   --------
+%
+%   \pbs_appendtofields:n
+%     #1 object ID of PDF annotation; annotations of /Subtype/Widget
+%     should be appended to the /Fields array of the global /AcroForm dictionary
+%
+%   --------
+%
+%   \pbs_pdflink:nn
+%     #1: dictionary (key-value), #2: text
+%
+%   --------
+%
+%   \pbs_pdfdest:nnnn
+%     #1: name, #2: fit | fitb | fitbh | fith | fitbv | fitv | xyz | fitr
+%     #3: zoom, #4: text
+%
+%   --------
+%
+%   \pbs_pdfxform:nnnnn
+%     #1: add pgf/tikz resources (transparency, shading)? (0|1) %dvipdfmx/xetex
+%     #2: write immediately to PDF? (0|1); eg 1 for appearances; pdftex/luatex
+%     #3: additional resources                                  %all BUT dvips
+%     #4: additional dictionary entries
+%     #5: savebox number
+%     creates PDF Form XObject from savebox content
+%
+%   \pbs_pdflastxform:
+%     inserts object ID of PDF Form XObject created during most recent call of
+%     \pbs_pdfxform:nnnnn
+%
+%   \pbs_pdfrefxform:n
+%     #1: xform object ID
+%     inserts the PDF Form XObject into the current content stream, that is,
+%     typsets the PDF Form XObject
+%
+%   --------
+%
+%   \pbs_pdfximage:n
+%     #1: bitmap image file name
+%     creates PDF Image XObject from /bitmap/ file for use as bitmap resource
+%     in 3D context
+%
+%   \pbs_pdflastximage:
+%     inserts object ID of PDF Image XObject created during most recent call of
+%     \pbs_pdfximage:n
+%
+%   --------
+%
+%   \pbs_literal:nn
+%     #1: keyword (empty) | direct | page
+%     #2: raw PDF/Postscript code
+%     implements \pdfliteral{...}, \pdfliteral direct {...},
+%     \pdfliteral page {...} from pdfTeX, and
+%     \special{" ...} and  \special{ps: ...} from dvips
+%
+%   --------
+%
+%   marked content BDC/EMC operators
+%   \pbs_pdfbdc:nn ...
+%   ... \pbs_pdfemc:
+%     #1: tag, #2: properties dictionary obj ID
+%
+%   --------
+%
+%   \pbs_add_form_font: (pdfLaTeX, LuaLaTeX)
+%     adds current font as a resource to the global /AcroForm dict, allowing
+%     the font to be used in PDF Forms (theoretically, see
+%     https://acrobat.uservoice.com/forums/590923-acrobat-for-windows-and-mac/
+%       suggestions/33077827-bug-in-text-field-forms-embedded-opentype-font )
+%
+%   \pbs_last_form_font: (pdfLaTeX, LuaLaTeX)
+%     expands to current font's resource name; to be used in the /DA (...)
+%     entry of the Form dictionary
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License.
+%
+% The latest version of this license is in
+%
+%   http://mirrors.ctan.org/macros/latex/base/lppl.txt
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+% The Current Maintainer of this work is A. Grahn.
+
+\RequirePackage{l3keys2e}
+
+\def\g@pbs@date@tl{2021/09/02}
+\def\g@pbs@version@tl{0.52}
+
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
+{driver independent access to low-level PDF features}
+
+\int_new:N\g_pbs_page_int %abs. page counter
+
+%creating global definitions
+\cs_new:Npn\pbs@newkey#1#2{\tl_gset:cx{#1}{#2}}
+
+\msg_set:nnn{pdfbase}{rerun}{Rerun~to~get~internal~references~right!}
+
+%LaTeX2e wrapper
+\cs_new_nopar:Npn\pbs@seq@push@cx#1#2{
+  \seq_if_exist:cF{#1}{\seq_new:c{#1}}
+  \seq_gput_right:cx{#1}{#2}
+}
+
+%wrong image file type for Image XObject generation
+\msg_gset:nnn{pdfbase}{wrong~image~resource}{
+  Image~resource~file\\~~'#1'\\has~wrong~type.\\\\
+  Driver~#2~only~accepts~files~of~type\\#3\\
+  as~image~resources.
+}
+
+% page (bop, eop) hooks
+\cs_new_protected:Nn\pbs_bop_action:n{\seq_gput_right:Nn\g_pbs_bop_seq{#1}}
+\cs_new_protected:Nn\pbs_eop_action:n{\seq_gput_right:Nn\g_pbs_eop_seq{#1}}
+\seq_new:N\g_pbs_bop_seq
+\seq_new:N\g_pbs_eop_seq
+
+\AtBeginDocument{
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@newkey[2]{}
+  }
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@seq@push@cx[2]{}
+  }
+}
+
+%%%%%%%%%%%%%%%%%
+%package options
+%%%%%%%%%%%%%%%%%
+%unknown package option error message
+\msg_gset:nnnn{pdfbase}{unknown~package~option}{Unknown~package~option~`#1'.}{
+  Package option~'#1'~is~unknown;\\
+  perhaps~it~is~spelled~incorrectly.
+}
+
+\bool_new:N\g_pbs_pkgbigfiles_bool
+\bool_new:N\g_pbs_dvipdfmx_bool
+\bool_new:N\g_pbs_dvisvgm_bool
+\bool_new:N\g_pbs_lscape_bool %if we are inside landscape env
+\AtBeginDocument{
+  \cs_if_exist:NT\landscape{%
+    \tl_put_right:Nn\landscape{\bool_gset_true:N\g_pbs_lscape_bool}
+    \tl_put_left:Nn\endlandscape{\bool_gset_false:N\g_pbs_lscape_bool}
+  }
+}
+
+\keys_define:nn{pdfbase}{
+  xetex .code:n = {}, %dummy, we use engine test instead
+
+  dvipdfmx .choice:,
+  dvipdfmx / true .code:n = {
+    \bool_gset_true:N\g_pbs_dvipdfmx_bool
+    \bool_gset_false:N\g_pbs_dvisvgm_bool
+  },
+  dvipdfmx / false .code:n = {\bool_gset_false:N\g_pbs_dvipdfmx_bool},
+  dvipdfmx .default:n = {true},
+
+  dvisvgm .choice:,
+  dvisvgm / true .code:n = {
+    \bool_gset_true:N\g_pbs_dvisvgm_bool
+    \bool_gset_false:N\g_pbs_dvipdfmx_bool
+  },
+  dvisvgm / false .code:n = {\bool_gset_false:N\g_pbs_dvisvgm_bool},
+  dvisvgm .default:n = {true},
+
+  bigfiles .bool_gset:N = \g_pbs_pkgbigfiles_bool,
+
+  unknown .code:n = {
+    \msg_error:nnx{pdfbase}{unknown~package~option}{\l_keys_key_tl}
+  }
+}
+\ProcessKeysOptions{pdfbase}
+
+\sys_if_output_pdf:T{
+  \bool_gset_false:N\g_pbs_dvipdfmx_bool
+  \bool_gset_false:N\g_pbs_dvisvgm_bool
+}
+
+\sys_if_engine_xetex:T{
+  \bool_if:NF\g_pbs_dvisvgm_bool{\bool_gset_true:N\g_pbs_dvipdfmx_bool}
+}
+
+% writing to core objects in the PDF, using the new
+% pdfmanagement interface
+\cs_new_protected_nopar:Nn\pbs_appendtofields:n{
+  \pdfmanagement_add:nnx{Catalog/AcroForm}{Fields}{#1}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%commands for creating PDF objects, annots etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\sys_if_output_pdf:TF{
+  %in LuaTeX-0.95.0, pdfTeX primitives got new names
+  \bool_lazy_and:nnT{
+    \sys_if_engine_luatex_p:
+  }{
+    !\int_compare_p:n{\luatexversion<95}
+  }{
+    \cs_set:Npx\pdfpageresources{\pdfvariable~pageresources}
+    \cs_set_protected:Npn\pdfobj{\pdfextension~obj~}
+    \cs_set_protected:Npn\pdfrefobj{\pdfextension~refobj~}
+    \cs_set_protected:Npn\pdfannot{\pdfextension~annot~}
+    \cs_set_protected:Npn\pdfstartlink{\pdfextension~startlink~}
+    \cs_set_protected:Npn\pdfendlink{\pdfextension~endlink\relax}
+    \cs_set_protected:Npn\pdfdest{\pdfextension~dest~}
+    \cs_set_protected:Npn\pdfliteral{\pdfextension~literal~}
+    \cs_set:Npn\pdflastlink{\numexpr\pdffeedback~lastlink\relax}
+    \cs_set:Npn\pdflastobj{\numexpr\pdffeedback~lastobj\relax}
+    \cs_set:Npn\pdflastannot{\numexpr\pdffeedback~lastannot\relax}
+    \cs_set:Npn\pdfpageref{\numexpr\pdffeedback~pageref\relax}
+    \cs_set_eq:NN\pdfximage\saveimageresource
+    \cs_set_eq:NN\pdfrefximage\useimageresource
+    \cs_set_eq:NN\pdflastximage\lastsavedimageresourceindex
+    \cs_set_eq:NN\pdflastximagepages\lastsavedimageresourcepages
+    \cs_set_eq:NN\pdfxform\saveboxresource
+    \cs_set_eq:NN\pdfrefxform\useboxresource
+    \cs_set_eq:NN\pdflastxform\lastsavedboxresourceindex
+    \cs_set:Npn\pdffontobjnum{\pdffeedback~fontobjnum}
+  }
+
+  %helper func to remove `0 R' part from pdf obj reference
+  \cs_new_nopar:Nn\pbs_reftonum:n{\_pbs_reftonum:f{#1}}
+  \cs_new_nopar:Nn\_pbs_reftonum:n{\exp_after:wN\_pbs_reftonum:w#1}
+  \cs_generate_variant:Nn\_pbs_reftonum:n{f}
+  \cs_new_nopar:Npn\_pbs_reftonum:w #1~0~R{#1}
+
+  %literal PDF code into content stream, no saving of graphics state
+  \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+    \str_case:nnF{#1}{                       % #2: raw PDF           `page'
+      % `direct' inserts raw pdf code without translating origin (0,0) to
+      % current position: origin is lower left page corner
+      {direct}{\pdfliteral~direct~{#2}}
+      % same as above, but closing text object if necessary
+      {page}{\pdfliteral~page~{#2}}
+    }{
+      % closing text object if necessary and setting current
+      % location's coordinates to (0,0)
+      \pdfliteral{#2}
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+    \tl_clear:N\l_pbs_usenum_tl
+    \tl_if_blank:oF{#1}{
+      \tl_set:Nx\l_pbs_usenum_tl{useobjnum~\pbs_reftonum:n{#1}}
+    }
+    \bool_if:nTF{\tl_if_blank_p:o{#1}&&\tl_if_blank_p:o{#3}}{
+      \pdfobj~reserveobjnum
+    }{
+      \str_case:nn{#2}{
+        {generic}{\immediate\pdfobj~\l_pbs_usenum_tl~{#3}}
+        {dict}{\immediate\pdfobj~\l_pbs_usenum_tl~{<<#3>>}}
+        {array}{\immediate\pdfobj~\l_pbs_usenum_tl~{[#3]}}
+        {stream}{\immediate\pdfobj~\l_pbs_usenum_tl~stream~
+          attr{\use_i:nn#3}~{\use_ii:nn#3}
+        }
+        {fstream}{\immediate\pdfobj~\l_pbs_usenum_tl~stream~
+          attr{\use_i:nn#3}~file~{\use_ii:nn#3}
+        }
+      }
+    }
+    \tl_gset:Nx\g_pbs_pdflastobj_tl{\the\pdflastobj\space 0~R}
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+    \immediate\pdfannot~width~#1~height~#2~depth~#3 {
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#4}
+    \tl_gset:Nx\g_pbs_pdflastann_tl{\the\pdflastannot\space 0~R}
+  }
+
+  \cs_new_protected:Nn\pbs_pdflink:nn{
+    \mode_leave_vertical:
+    \immediate\pdfstartlink~user~{
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#1}#2\pdfendlink
+  }
+
+  \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+    \mode_leave_vertical:
+    \str_case:nnTF{#2}{
+      {fit}{}
+      {fitb}{}
+      {fitbv}{}
+      {fitv}{}
+    }{
+      \pdfdest~name~{#1}~#2~#4
+    }{
+      \group_begin:
+      \hbox_set:Nn\l_tmpa_box{#4}
+      \str_case:nnTF{#2}{
+        {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{#2}}
+        {fith}{\tl_set:Nn\l_pbs_fittype_tl{#2}}
+        {xyz}{\tl_set:Nn\l_pbs_fittype_tl{#2~zoom~\int_eval:n{#3*1000}}}
+      }{
+        \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+          \pdfdest~name~{#1}~\l_pbs_fittype_tl
+        }}#4
+      }{
+        \pdfdest~name~{#1}~fitr~
+          width~\box_wd:N\l_tmpa_box~
+          height~\box_ht:N\l_tmpa_box~
+          depth~\box_dp:N\l_tmpa_box
+        \box_use:N\l_tmpa_box
+      }
+      \box_clear:N\l_tmpa_box
+      \group_end:
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{ % #1 not used
+    %additional resources
+    \tl_set:Nx\l_tmpa_tl{\the\pdfpageresources~#3}\tl_trim_spaces:N\l_tmpa_tl
+    %additional dict entries
+    \tl_set:Nx\l_tmpb_tl{#4}
+    \tl_trim_spaces:N\l_tmpb_tl
+    \int_compare:nT{#2>\c_zero_int}{\immediate}
+    \pdfxform~
+      \str_if_eq:eeF{\l_tmpb_tl}{}{attr~{\l_tmpb_tl}~}
+      \str_if_eq:eeF{\l_tmpa_tl}{}{resources~{\l_tmpa_tl}~}#5
+    \tl_gset:Nx\g_pbs_pdflastxform_tl{\the\pdflastxform\space 0~R}
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
+    \hbox_set:Nn\l_tmpa_box{\pdfrefxform\pbs_reftonum:n{#1}}
+    \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+    \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+    \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+    \filename@parse{#1}
+    \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+    \bool_if:nTF{
+      \str_if_eq_p:Vn\l_pbs_ext_tl{png}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpg}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpeg}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jbig2}
+      ||\str_if_eq_p:Vn\l_pbs_ext_tl{jb2}
+    }{
+      \immediate\pdfximage{#1}
+      \tl_gset:Nx\g_pbs_pdflastximage_tl{\the\pdflastximage\space 0~R}
+    }{
+      \msg_error:nnnnn{pdfbase}{wrong~image~resource}{#1}{pdftex}{
+        png,~jpeg~and~jbig2
+      }
+    }
+  }
+
+  \int_new:N\g_pbs_oc_int %object ID for marked content Properties
+
+  \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+    %decide whether the current property is to be written to the page
+    %resources or to the xobject resources, depending on whether marked content
+    %is written to a page stream or to an xobject stream (for compatibility with
+    %`xsavebox' package)
+    \bool_if:nTF{
+      \cs_if_exist:NTF\xsb_count_props:{
+        \int_compare_p:n{\xsb_count_props:>\c_zero_int}
+      }{
+        \c_false_bool
+      }
+    }{
+      \pdfliteral~page~{/#1/rm@oc\int_use:N\g_pbs_oc_int\space BDC}
+      \xsb_addto_props:n{/rm@oc\int_use:N\g_pbs_oc_int\space#2}
+      \int_gincr:N\g_pbs_oc_int
+    }{
+      \pdf_bdcobject:nx{#1}{\tl_use:c{g_pbs_objname_#2_tl}}
+    }
+  }
+
+  \cs_new_protected_nopar:Nn\pbs_add_form_font:{
+    \cs_if_exist:cF{pbs_form_font_\pdffontobjnum\font}{
+      \tl_new:c{pbs_form_font_\pdffontobjnum\font}
+      \pdfmanagement_add:nxx{Catalog/AcroForm/DR/Font}{
+        FormFont\pdffontobjnum\font}{\pdffontobjnum\font\space 0~R}
+      \tl_gset:Nx\g_pbs_last_form_font_tl{/FormFont\pdffontobjnum\font}
+    }
+  }
+  \cs_new_nopar:Nn\pbs_last_form_font:{\g_pbs_last_form_font_tl}
+}{
+  %pgf + transparency related settings
+  \bool_new:N\g_pbs_pgfloaded_bool
+  \bool_gset_false:N\g_pbs_pgfloaded_bool
+  \AtBeginDocument{
+    \@ifpackageloaded{pgf}{\bool_gset_true:N\g_pbs_pgfloaded_bool}{}
+  }
+  \int_new:N\g_pbs_obj_int %object ID
+  \bool_if:NTF\g_pbs_dvipdfmx_bool{ %dvipdfmx/XeTeX
+    \AtBeginDocument{
+      % suppress any annotation growth through (x)dvipdfmx option/config var `g'
+      \special{dvipdfmx:config~g~0}
+      % suppress link destination renaming (as in original dvipdfm
+      \special{dvipdfmx:config~C~0x10}   %  and in pre-2014 dvipdfmx)
+    }
+
+    %literal PDF code into content stream; open text objects are always closed
+    \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+      \str_case:nnF{#1}{                       % #2: raw PDF             `page'
+        % `pdf:code' inserts raw pdf code without translating origin (0,0) to
+        % the current position. Unlike pdftex, origin is (+72bp,-72bp) from the
+        % upper left page corner. In analogy to pdftex, newer dvipdfmx versions
+        % also provide `pdf:direct:' and `pdf:page:', but actually, both are
+        % just aliases for `pdf:code'.
+        {direct}{\special{pdf:code~#2}}
+        {page}{\special{pdf:code~#2}}
+      }{
+        % sets current location's coordinates to (0,0), while saving graphics
+        % state before and re-instating after insertion (this is different from
+        % \pdfliteral{...}
+        \special{pdf:content~#2}
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+      \tl_if_blank:oTF{#1}{
+        \tl_set:Nx\l_pbs_usenum_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }{
+        \tl_set:Nx\l_pbs_usenum_tl{#1}
+      }
+      \tl_if_blank:oF{#3}{
+        \str_case:nn{#2}{
+          {generic}{\special{pdf:obj~\l_pbs_usenum_tl\space #3}}
+          {dict}{\special{pdf:obj~\l_pbs_usenum_tl\space<<#3>>}}
+          {array}{\special{pdf:obj~\l_pbs_usenum_tl\space[#3]}}
+          {stream}{\special{pdf:stream~\l_pbs_usenum_tl\space
+            (\use_ii:nn#3)<<\use_i:nn#3>>
+          }}
+          {fstream}{
+            \message{<\use_ii:nn#3>}
+            \special{pdf:fstream~\l_pbs_usenum_tl\space
+              (\use_ii:nn#3)<<\use_i:nn#3>>
+            }
+          }
+        }
+      }
+      \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+      \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
+        width~\dim_eval:n{#1}~height~\dim_eval:n{#2}~depth~\dim_eval:n{#3}~
+        <<\cs_if_exist_use:N\ocgbase_insert_oc:~#4>>
+      }
+      \tl_gset:Nx\g_pbs_pdflastann_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+      \int_gincr:N\g_pbs_obj_int
+    }
+
+    \cs_new_protected:Nn\pbs_pdflink:nn{
+      \mode_leave_vertical:
+      \special{pdf:bann~<<\cs_if_exist_use:N\ocgbase_insert_oc:~#1>>}#2
+      \special{pdf:eann}
+    }
+
+    \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+      \mode_leave_vertical:
+      \str_case:nnTF{#2}{
+        {fit}{\tl_set:Nn\l_pbs_fittype_tl{/Fit}}
+        {fitb}{\tl_set:Nn\l_pbs_fittype_tl{/FitB}}
+        {fitbv}{\tl_set:Nn\l_pbs_fittype_tl{/FitBV~@xpos}}
+        {fitv}{\tl_set:Nn\l_pbs_fittype_tl{/FitV~@xpos}}
+      }{
+        \special{pdf:~dest~(#1)~[~@thispage~\l_pbs_fittype_tl]}#4
+      }{
+        \group_begin:
+        \hbox_set:Nn\l_tmpa_box{#4}
+        \str_case:nnTF{#2}{
+          {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{/FitBH~@ypos}}
+          {fith}{\tl_set:Nn\l_pbs_fittype_tl{/FitH~@ypos}}
+          {xyz}{\tl_set:Nn\l_pbs_fittype_tl{/XYZ~@xpos~@ypos~#3}}
+        }{
+          \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+            \special{pdf:~dest~(#1)~[~@thispage~\l_pbs_fittype_tl]}
+          }}#4
+        }{ % FitR
+          \box_move_down:nn{\box_dp:N\l_tmpa_box}{\hbox:n{
+            \pbs_pdfobj:nnn{}{generic}{@xpos}
+            \tl_gset_eq:NN\g_pbs_llx_tl\g_pbs_pdflastobj_tl
+            \pbs_pdfobj:nnn{}{generic}{@ypos}
+            \tl_gset_eq:NN\g_pbs_lly_tl\g_pbs_pdflastobj_tl
+          }}
+          \box_use:N\l_tmpa_box
+          \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+            \special{pdf:~dest~(#1)~[@thispage~
+              /FitR~
+               \g_pbs_llx_tl\space\g_pbs_lly_tl\space @xpos~@ypos
+            ]}
+          }}
+        }
+        \box_clear:N\l_tmpa_box
+        \group_end:
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{ % #2 not used
+      \group_begin:
+        \hbox_set:Nn\l_tmpa_box{
+          \special{pdf:bxobj~@pbs@obj\int_use:N\g_pbs_obj_int\space
+            width~\dim_eval:n{\box_wd:N#5}~
+            height~\space\dim_eval:n{\box_ht:N#5}~
+            depth~\space \dim_eval:n{\box_dp:N#5}
+          }
+          \box_use:N#5
+          \tl_clear:N\l_tmpa_tl{}
+          %transparency et al. for PGF
+          \bool_if:nT{\int_compare_p:n{#1>\c_zero_int} && \g_pbs_pgfloaded_bool}{
+            \ifpgf@sys@pdf@extgs@exists
+              \tl_set:Nn\l_tmpa_tl{/ExtGState~@pgfextgs}
+            \fi
+            \ifpgf@sys@pdf@patterns@exists
+              \tl_put_right:Nn\l_tmpa_tl{/Pattern~@pgfpatterns}
+            \fi
+            \ifpgf@sys@pdf@colorspaces@exists
+              \tl_put_right:Nn\l_tmpa_tl{/ColorSpace~@pgfcolorspaces}
+            \fi
+          }
+          %additional resources
+          \tl_put_right:Nx\l_tmpa_tl{~#3}\tl_trim_spaces:N\l_tmpa_tl
+          \str_if_eq:eeF{\l_tmpa_tl}{}{
+            \special{pdf:put~@resources~<<\l_tmpa_tl>>}
+          }
+          %additional dict entries
+          \tl_set:Nx\l_tmpa_tl{#4}
+          \tl_trim_spaces:N\l_tmpa_tl
+          \special{pdf:exobj %close form xobject
+            \str_if_eq:eeF{\l_tmpa_tl}{}{<<\l_tmpa_tl>>}
+          }
+        }
+        \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+        \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+        \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+      \group_end:
+      \tl_gset:Nx\g_pbs_pdflastxform_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+      \int_gincr:N\g_pbs_obj_int
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{\special{pdf:uxobj~#1}}
+
+    \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+      \filename@parse{#1}
+      \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+      \bool_if:nTF{
+          \str_if_eq_p:Vn\l_pbs_ext_tl{png}
+        ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpg}
+        ||\str_if_eq_p:Vn\l_pbs_ext_tl{jpeg}
+      }{
+        \special{pdf:image~@pbs@obj\int_use:N\g_pbs_obj_int\space hide~(#1)}
+        \tl_gset:Nx\g_pbs_pdflastximage_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }{
+        \msg_error:nnnnn{pdfbase}{wrong~image~resource}{#1}{dvipdfmx/xetex}{
+          png~and~jpeg
+        }
+      }
+    }
+
+    \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+      \pdf_bdcobject:nx{#1}{\tl_use:c{g_pbs_objname_#2_tl}}
+    }
+  }{
+    \bool_if:NTF\g_pbs_dvisvgm_bool{
+      \tl_gset:Nx\g_pbs_hash_tl{\token_to_str:N#}
+      %insert literal Postscript code
+      \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+        \str_if_eq:nnTF{#1}{}{                   % #2: raw Postscript   | `page'
+          % set current location's coordinates to (0,0) and set unit vectors to
+          % 1bp right and 1bp upwards; graphics state is saved before and
+          % re-instated after insertion
+          \special{"~#2}
+        }{
+          % `direct' does the same as `page': no origin translation,
+          % no gs saving
+          \special{ps::~#2}
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+        \special{dvisvgm:raw~{?nl}<path~d=}
+        \group_begin:
+          \hbox_set:Nn\l_tmpa_box{
+            \box_move_down:nn{#3}{\hbox_to_zero:n{% ll
+              \special{dvisvgm:raw~'M{?x}~{?y}}
+            }}
+            \hbox_to_zero:n{
+              \skip_horizontal:n{#1}
+              \box_move_down:nn{#3}{\hbox_to_zero:n{% lr
+                \special{dvisvgm:raw~L{?x}~{?y}}
+              }}
+              \box_move_up:nn{#2}{\hbox_to_zero:n{% ur
+                \special{dvisvgm:raw~L{?x}~{?y}}
+              }}\hss
+            }
+            \box_move_up:nn{#2}{\hbox_to_zero:n{% ul
+              \special{dvisvgm:raw~L{?x}~{?y}Z'}
+            }}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \special{dvisvgm:raw~{?nl}opacity='0'~#4~class='annot'/>}
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{
+        \group_begin:
+          \hbox_set:Nn\l_tmpa_box{
+            \special{dvisvgm:raw~{?nl}<defs>{?nl}
+              <g~
+                transform='translate({?(-(x))},{?(-(y))})'~#4~
+                id='_obj\int_use:N\g_pbs_obj_int'~class='xform'
+              >
+            }
+            \special{dvisvgm:bbox~lock}
+            \box_use_drop:N#5
+            \special{dvisvgm:bbox~unlock}
+            \special{dvisvgm:raw~{?nl}</g>{?nl}</defs>}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \tl_gset:Nx\g_pbs_pdflastxform_tl{
+          \g_pbs_hash_tl _obj\int_use:N\g_pbs_obj_int}
+        \int_gincr:N\g_pbs_obj_int
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{
+        \special{dvisvgm:raw~{?nl}
+          <use~x='{?x}'~y='{?y}'~transform='{?matrix}'~xlink:href='#1'/>}
+      }
+    }{
+      %dvips
+      \sys_if_engine_pdftex:TF{
+        \cs_new_nopar:Nn\pbs_filedump:nnn{\pdffiledump~offset~#1~length~#2~{#3}}
+      }{
+        \sys_if_engine_luatex:T{
+          \cs_new_nopar:Nn\pbs_filedump:nnn{\lua_now:e{
+            tex.sprint(ltx.utils.filedump(
+              "\lua_escape:e{#3}", \int_eval:n{#1}, \int_eval:n{#2}
+            ))
+          }}
+        }
+      }
+
+      \AtBeginDocument{
+        \special{!
+          systemdict~/pdfmark~known
+          {
+            userdict~/?pdfmark~systemdict~/exec~get~put
+          }{
+            userdict~/?pdfmark~systemdict~/pop~get~put~
+            userdict~/pdfmark~systemdict~/cleartomark~get~put
+          }
+          ifelse
+          %back-transforms user coords to page coords (bigpoints with reference
+          %point [0,0] in the bottom-left page corner)
+          % user_x user_y pbs@user2page --> page_x page_y
+          /pbs@user2page~{
+            0~begin~% make everything local in here
+            /y~exch~def~/x~exch~def~
+            matrix~currentmatrix~
+            matrix~defaultmatrix~
+            matrix~invertmatrix~
+            matrix~concatmatrix~cvx~exec~
+            /ty~exch~def~/tx~exch~def~
+            /d~exch~def~/c~exch~def~
+            /b~exch~def~/a~exch~def~
+            x~a~mul~y~c~mul~add~tx~add~
+            x~b~mul~y~d~mul~add~ty~add~
+            end
+          }~def~
+          /pbs@user2page~load~0~1~dict~put % insert dict at index 0;
+        }                                  % dict is allocated only once
+      }
+      \cs_new:Nn\pbs_special:n{\special{ps:~SDict~begin~#1~end}}
+
+      \bool_if:NT\g_pbs_pkgbigfiles_bool{
+        \special{psfile=\c_sys_jobname_str.pbsdat}
+        %open auxiliary file \jobname.pbsdat for writing hex encoded streams of
+        %the files to be embedded. This file is inserted into PS during dvips.
+        \iow_new:N\g_pbs_mstreams_stream
+        \iow_open:Nn\g_pbs_mstreams_stream{\c_sys_jobname_str.pbsdat}
+        \iow_now:Nn\g_pbs_mstreams_stream{
+          /M9D~1~dict~def~M9D~begin
+          /o{mark/_objdef}bind~def/O{/type/stream/OBJ~pdfmark}bind~def
+          /m~systemdict/mark~get~def
+          /P{/ASCIIHexDecode~filter/PUT~pdfmark}bind~def
+          /PP{/PUT~pdfmark}bind~def
+          /C{/CLOSE~pdfmark}bind~def~end
+        }
+      }
+
+      %insert literal Postscript code
+      \cs_new_protected_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or
+        \str_if_eq:nnTF{#1}{}{                   % #2: raw Postscript     `page'
+          % set current location's coordinates to (0,0) and set unit vectors to
+          % 1bp right and 1bp upwards; graphics state is saved before and
+          % re-instated after insertion
+          \special{"~#2}
+        }{
+          % `direct' does the same as `page': no origin translation,
+          % no gs saving
+          \special{ps::~#2}
+        }
+      }
+
+      \msg_new:nnn{pdfbase}{generic-object-pdfmark}{
+        Generic~object~creation~not~supported~by~PDFmarks
+      }
+      \cs_new_protected_nopar:Nn\pbs_pdfobj:nnn{
+        \tl_clear:N\l_pbs_usenum_tl
+        \tl_if_blank:oTF{#1}{
+          \tl_set:Nx\l_pbs_usenum_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }{
+          \tl_set:Nx\l_pbs_usenum_tl{#1}
+        }
+        \str_if_eq:nnT{#2}{generic}{
+          \msg_error:nn{pdfbase}{generic-object-pdfmark}
+        }
+        \tl_if_blank:oF{#3}{
+          \bool_if:nTF{
+            \g_pbs_pkgbigfiles_bool &&
+            \str_if_eq_p:nn{#2}{fstream}
+          }{
+            \iow_now:Nx\g_pbs_mstreams_stream{
+              M9D~begin~o\l_pbs_usenum_tl O
+            }
+          }{
+            \pbs_special:n{mark~/_objdef~\l_pbs_usenum_tl\space/type
+              \str_case:nn{#2}{
+                {generic}{}
+                {dict}{/dict}
+                {array}{/array}
+                {stream}{/stream}
+                {fstream}{/stream}
+              }~
+              /OBJ~pdfmark
+            }
+          }
+          \str_case:nn{#2}{
+            {generic}{}
+            {dict}{\pbs_special:n{mark~\l_pbs_usenum_tl~<<#3>>/PUT~pdfmark}}
+            {array}{
+              \pbs_special:n{mark~\l_pbs_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark}
+            }
+            {stream}{\special{ps::[nobreak]~SDict~begin~
+              mark~\l_pbs_usenum_tl~(\use_ii:nn#3)/PUT~pdfmark~
+              mark~\l_pbs_usenum_tl~<<\use_i:nn#3>>/PUT~pdfmark~end
+            }}
+            {fstream}{
+              \tl_set:Nn\l_pbs_offset_tl{0}
+              \tl_set:Nx\l_pbs_fsize_tl{\file_size:n{\use_ii:nn#3}}
+              \message{<\use_ii:nn#3}
+              %embed file in chunks of 32768 Bytes into PS as chunks of
+              %65536 Bytes of HEX code
+              \bool_while_do:nn{
+                \int_compare_p:n{\l_pbs_offset_tl<\l_pbs_fsize_tl}
+              }{
+                \bool_if:NTF\g_pbs_pkgbigfiles_bool{
+                  \iow_now:Nx\g_pbs_mstreams_stream{
+                    m\l_pbs_usenum_tl
+                    (\pbs_filedump:nnn{\l_pbs_offset_tl}{32767}{
+                      \use_ii:nn#3
+                    })P
+                  }
+                }{
+                  \pbs_special:n{
+                    mark~
+                      \l_pbs_usenum_tl~
+                      (\pbs_filedump:nnn{\l_pbs_offset_tl}{32767}{
+                        \use_ii:nn#3
+                      })~
+                      /ASCIIHexDecode~filter~/PUT~
+                    pdfmark
+                  }
+                }
+                \tl_set:Nx\l_pbs_offset_tl{\int_eval:n{\l_pbs_offset_tl+32767}}
+                \message{.}
+              }
+              \bool_if:NTF\g_pbs_pkgbigfiles_bool{
+                \iow_now:Nx\g_pbs_mstreams_stream{
+                  m\l_pbs_usenum_tl<<\use_i:nn#3>>PP~
+                  m\l_pbs_usenum_tl~C~end
+                }
+              }{
+                \pbs_special:n{
+                  mark~\l_pbs_usenum_tl~<<\use_i:nn#3>>~/PUT~pdfmark~
+                  mark~\l_pbs_usenum_tl~/CLOSE~pdfmark
+                }
+              }
+              \message{>}
+            }
+          }
+        }
+        \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfannot:nnnn{
+        \group_begin:
+          % mark annotation rectangle
+          \hbox_set:Nn\l_tmpa_box{
+            % lower left
+            \box_move_down:nn{#3}{\hbox_to_zero:n{\pbs_special:n{
+              currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
+            }}}
+            \skip_horizontal:n{#1}
+            % upper right
+            \box_move_up:nn{#2}{\hbox_to_zero:n{\pbs_special:n{
+              currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
+            }}}
+          }
+          \box_set_wd:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_ht:Nn\l_tmpa_box{\c_zero_dim}
+          \box_set_dp:Nn\l_tmpa_box{\c_zero_dim}\box_use_drop:N\l_tmpa_box
+        \group_end:
+        \str_if_eq:eeF{#4}{}{
+          \pbs_special:n{
+            mark~
+              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+              /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
+              \cs_if_exist_use:N\ocgbase_insert_oc:~#4
+            /ANN~pdfmark
+          }
+          \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }
+      }
+
+      \cs_new_protected:Nn\pbs_pdflink:nn{
+        \mode_leave_vertical:
+        \cs_if_exist:NTF\pdfmark{
+          \pdfmark[#2]{pdfmark=/ANN,Raw={
+            \cs_if_exist_use:N\ocgbase_insert_oc:~#1}}
+        }{
+          \hbox_set:Nn\l_tmpb_box{#2}
+          \pbs_pdfannot:nnnn{
+            \dim_use:N\box_wd:N\l_tmpb_box}{
+            \dim_use:N\box_ht:N\l_tmpb_box}{
+            \dim_use:N\box_dp:N\l_tmpb_box
+          }{#1}
+          \box_use_drop:N\l_tmpb_box
+        }
+      }
+
+      \cs_new_protected:Nn\pbs_pdfdest:nnnn{
+        \mode_leave_vertical:
+        \group_begin:
+        %write destination page number to aux
+        \iow_shipout_x:Nx\@mainaux{
+          \token_to_str:N\pbs@newkey{pbs@#1@destpage}{
+            \exp_not:N\int_use:N\exp_not:N\g_pbs_page_int}
+        }
+        \cs_if_exist:cF{pbs@#1@destpage}{
+          \tl_set:cn{pbs@#1@destpage}{0}
+          \cs_if_exist:NF\g_pbs_rerunwarned_tl{
+            \tl_new:N\g_pbs_rerunwarned_tl
+            \msg_warning:nn{pdfbase}{rerun}
+          }
+        }
+        \str_case:nnTF{#2}{
+          {fit}{\tl_set:Nn\l_pbs_fittype_tl{/Fit}}
+          {fitb}{\tl_set:Nn\l_pbs_fittype_tl{/FitB}}
+        }{
+          \pbs_special:n{
+            mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+              \l_pbs_fittype_tl
+            ]~/DEST~pdfmark
+          }
+          #4
+        }{
+          \hbox_set:Nn\l_tmpa_box{#4}
+          %mark anchor/view rect, insert text, insert destination
+          \str_case:nnTF{#2}{
+            {fitbh}{\tl_set:Nn\l_pbs_fittype_tl{/FitBH}}
+            {fith}{\tl_set:Nn\l_pbs_fittype_tl{/FitH}}
+          }{
+            \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+              \pbs_special:n{
+                currentpoint~pbs@user2page~/pbs@top~exch~def~pop~
+                mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+                  \l_pbs_fittype_tl\space pbs@top
+                ]~/DEST~pdfmark
+              }
+            }}
+            #4
+          }{
+            \str_case:nnTF{#2}{
+              {fitbv}{\tl_set:Nn\l_pbs_fittype_tl{/FitBV}}
+              {fitv}{\tl_set:Nn\l_pbs_fittype_tl{/FitV}}
+            }{
+              \pbs_special:n{
+                currentpoint~pbs@user2page~pop~/pbs@left~exch~def~
+                mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~/View~[
+                  \l_pbs_fittype_tl\space pbs@left
+                ]~/DEST~pdfmark
+              }
+              #4
+            }{
+              \str_case:nn{#2}{
+                {xyz}{
+                  \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@top~exch~def~/pbs@left~exch~def~
+                      mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~
+                      /View~[
+                        /XYZ~pbs@left~pbs@top~#3
+                      ]~/DEST~pdfmark
+                    }
+                  }}
+                  #4
+                }
+                {fitr}{
+                  \box_move_down:nn{\box_dp:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@lly~exch~def~/pbs@llx~exch~def
+                    }
+                  }}
+                  \box_use:N\l_tmpa_box
+                  \box_move_up:nn{\box_ht:N\l_tmpa_box}{\hbox:n{
+                    \pbs_special:n{
+                      currentpoint~pbs@user2page~
+                      /pbs@ury~exch~def~/pbs@urx~exch~def~
+                      mark~/Dest~(#1)~cvn~/Page~\tl_use:c{pbs@#1@destpage}~
+                      /View~[
+                        /FitR~pbs@llx~pbs@lly~pbs@urx~pbs@ury
+                      ]~/DEST~pdfmark
+                    }
+                  }}
+                }
+              }
+            }
+          }
+          \box_clear:N\l_tmpa_box
+        }
+        \group_end:
+      }
+
+      \msg_set:nnn{pdfbase}{content~too~large}{
+        Line~\msg_line_number: :\\
+        Content~exceeds~paper~size~(width~and/or~height)\\
+        of~the~document~and~may~be~clipped~in~the~final\\
+        output.
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfxform:nnnnn{% #1, #3 not used as
+        \mode_leave_vertical:        % resources are managed automatically
+        %rescale box to fit within the papersize while distilling
+        \tl_gset:cx{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}{\fp_eval:n{min(1.0,
+          \dim_ratio:nn{\paperwidth}{\box_wd:N#5},
+          \dim_ratio:nn{\paperheight}{\box_ht:N#5+\box_dp:N#5}
+        )}}
+        \box_scale:Nnn#5{
+          \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
+        }{
+          \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
+        }
+        %store content dimensions in DPI units (Dots)
+        \tl_set:Nx\l_pbs_width_tl{
+          \dim_to_decimal_in_sp:n{\box_wd:N#5}~65536~div~72.27~div~DVImag~mul~
+          Resolution~mul~
+        }
+        \tl_set:Nx\l_pbs_height_tl{
+          \dim_to_decimal_in_sp:n{\box_ht:N#5}~65536~div~72.27~div~DVImag~mul~
+          VResolution~mul~
+        }
+        \tl_set:Nx\l_pbs_depth_tl{
+          \dim_to_decimal_in_sp:n{\box_dp:N#5}~65536~div~72.27~div~DVImag~mul~
+          VResolution~mul~
+        }
+        %additional dict entries
+        \tl_set:Nx\l_tmpa_tl{#4} \tl_trim_spaces:N\l_tmpa_tl
+        \pbs_special:n{
+          %translate graphics to upper left page corner, so we have the whole
+          %clipbox (i. e. page area) available for distilling; outlying parts
+          %get clipped
+          {
+            gsave~currentpoint~ % put graphic's ref point coords on the stack
+            initclip~ % restore default clipping path (page device/whole page)
+            clippath~pathbbox~newpath~pop~pop~ %page device top-left coordinates
+            isls {
+              landplus90 {
+                % pkg geometry with landscape option
+                exch~\l_pbs_height_tl~add~exch
+              }{
+                % landscape as class option
+                exch~\l_pbs_depth_tl~add~
+                exch~\l_pbs_width_tl~add
+              } ifelse
+            }{
+              % portrait
+              \l_pbs_depth_tl~add
+            } ifelse~translate~ % move origin (0,0) to page location as shown
+            mark~ % distill graphics to XObject                          below
+              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~
+              /BBox~[  % rotated BBoxes; o = origin (0,0), x = top-left page
+                isls { % corner, vert. coord downwards positive
+                  landplus90 {            %        x----o-+
+                    % geometry with landscape      |    | |
+                    \l_pbs_height_tl~neg~ % llx    |    | |
+                    \l_pbs_width_tl~      % lly    |    | |
+                    \l_pbs_depth_tl~0 % urx ury    +----+-+
+                  }{
+                    % landscape as class option        x-+----+
+                    \l_pbs_depth_tl~neg~0~ % llx lly   | |    |
+                    \l_pbs_height_tl~      % urx       | |    |
+                    \l_pbs_width_tl~neg    % ury       | |    |
+                  } ifelse                 %           +-o----+
+                }{
+                  % portrait                       x----------+
+                  0~\l_pbs_height_tl~  % llx lly   |          |
+                  \l_pbs_width_tl~     % urx       o----------+
+                  \l_pbs_depth_tl~neg  % ury       |          |
+                } ifelse               %           |          |
+              ]                        %           +----------+
+              %insert additional dict entries (the Distiller way)
+              \str_if_eq:eeF{\l_tmpa_tl}{}{
+                product~(Distiller)~search~{pop~pop~pop~\l_tmpa_tl}{pop}ifelse~
+              }
+            /BP~pdfmark~
+            % content transformations required for appearances, cf. BBox
+            % orientations above
+            1~-1~scale~                              % upside-down (mirrored)
+            isls {90~landplus90 {neg} if~rotate} if~ % rotated
+            %finally, move the graphic's ref point (still on the stack) to (0,0)
+            exch~neg~exch~neg~translate
+          }?pdfmark
+        }
+        \box_set_wd:Nn#5{\c_zero_dim}
+        \box_set_ht:Nn#5{\c_zero_dim}
+        \box_set_dp:Nn#5{\c_zero_dim}\box_use_drop:N#5
+        \pbs_special:n{mark~/EP~pdfmark~grestore}
+        %insert additional dict entries (the Ghostscript way)
+        \str_if_eq:eeF{\l_tmpa_tl}{}{
+          \pbs_special:n{
+            product~(Ghostscript)~search~{
+              pop~pop~pop~
+              mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~/PUT~pdfmark
+            }{pop}ifelse
+          }
+        }
+        \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+        \int_gincr:N\g_pbs_obj_int
+        \int_compare:nT{#2>\c_zero_int}{
+          %Form XObjects for use as annotation appearances require that
+          %dvips generated PostScript to be further processed with ps2pdf
+          %must not have the exaggerated dpi resolution resulting from dvips
+          %option `-Ppdf'.
+          \tl_if_exist:NF\g_pbs_dpiwarned_tl{
+            \tl_new:N\g_pbs_dpiwarned_tl
+            \AddToHook{shipout/lastpage}{
+              \special{ps::[nobreak]~SDict~begin~\pbs_dpiwarning:\space end}
+            }
+          }
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
+        %The /SP pdfmark for placement of Form XObjects works reliably only
+        %since gs-9.14. As gs-9.14 had some other TeX-related issues, we
+        %require 9.15.
+        \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
+          \tl_new:N\g_pbs_gsoldwarned_tl
+          \AddToHook{shipout/lastpage}{
+            \special{ps::[nobreak]~SDict~begin~\pbs_gsoldwarning:\space end}
+          }
+        }
+        \pbs_special:n{
+          gsave~currentpoint~translate~
+          % undo appearance-related content transformations
+          isls {90~landplus90~not {neg} if~rotate} if~
+          1~\tl_use:c{scale_#1}~div~dup~neg~scale~
+          mark~#1~/SP~pdfmark~grestore
+        }
+      }
+
+      \cs_new_protected_nopar:Nn\pbs_pdfximage:n{
+        \filename@parse{#1}
+        \tl_set:Nx\l_pbs_ext_tl{\text_lowercase:n{\filename@ext}}
+        \bool_if:nTF{
+            \str_if_eq_p:Vn\l_pbs_ext_tl{ps}
+          ||\str_if_eq_p:Vn\l_pbs_ext_tl{eps}
+        }{
+          \pbs_special:n{
+            mark~/_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~/NI~pdfmark
+          }
+          \special{psfile=#1~hsize=0~vsize=0}
+          \pbs_special:n{
+            {
+              0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
+            }?pdfmark                      %a valid raster image file
+          }
+          \tl_gset:Nx\g_pbs_pdflastximage_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+          \int_gincr:N\g_pbs_obj_int
+        }{
+          \msg_error:nnxxx{pdfbase}{wrong~image~resource}{#1}{dvips}{
+            Postscript~(ps/eps)~with~bitmapped~content
+          }
+        }
+      }
+
+      %marked content BDC operators
+      %require Ghostscript v. >= 9.15
+      \cs_new_protected_nopar:Nn\pbs_pdfbdc:nn{
+        \pbs_special:n{~mark~/#1~#2~/BDC~pdfmark}
+        \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
+          \tl_new:N\g_pbs_gsoldwarned_tl
+          \AddToHook{shipout/lastpage}{
+            \special{ps::[nobreak]~SDict~begin~\pbs_gsoldwarning:\space end}
+          }
+        }
+      }
+    }
+  }
+}
+\cs_generate_variant:Nn\pdf_bdcobject:nn{nx}
+\cs_new_eq:NN\pbs_pdfemc:\pdf_emc:
+
+\cs_new_nopar:Nn\pbs_pdflastobj:{\g_pbs_pdflastobj_tl}
+\cs_new_nopar:Nn\pbs_pdflastann:{\g_pbs_pdflastann_tl}
+\cs_new_nopar:Nn\pbs_pdflastxform:{\g_pbs_pdflastxform_tl}
+\cs_new_nopar:Nn\pbs_pdflastximage:{\g_pbs_pdflastximage_tl}
+
+%modify output routine for output box insertions
+\bool_new:N\l_pbs_is_vertical_bool
+\cs_set_eq:NN\pbs_outputpage_orig:\@outputpage
+\cs_set_nopar:Npn\@outputpage{
+  \int_gincr:N\g_pbs_page_int
+  \box_if_vertical:cTF{@outputbox}{
+    \bool_set_true:N\l_pbs_is_vertical_bool
+  }{
+    \bool_set_false:N\l_pbs_is_vertical_bool
+  }
+  \hbox_set:Nn\@outputbox{
+    %begin of page
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_bop_seq{##1}}
+    \box_use_drop:N\@outputbox
+    %end of page
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eop_seq{##1}}
+  }
+  \bool_if:NT\l_pbs_is_vertical_bool{
+    \vbox_set:Nn\@outputbox{\box_use_drop:N\@outputbox}
+  }
+  \pbs_outputpage_orig:
+}
+
+\AtBeginDocument{
+  \bool_new:N\g_pbs_ocgbase_loaded_bool
+  \@ifpackageloaded{ocgbase}{\bool_gset_true:N\g_pbs_ocgbase_loaded_bool}{}
+}
+\AddToHook{shipout/background}{
+  % workaround for curious AR bug (pdf annot or link placed on
+  % OCG remains active although OCG is hidden)
+  % This can be fixed by placing a dumb (non-interactive) Widget dummy
+  % somewhere on the page.
+  \bool_if:NT\g_pbs_ocgbase_loaded_bool{
+    \put(1,-1){
+      \pbs_pdfannot:nnnn{3bp}{\c_zero_dim}{3bp}{
+        /Ff~65537/FT/Btn/Subtype/Widget
+        /T~(pbs@ARFix@\int_use:N\g_pbs_page_int)
+      }
+    }
+  }
+}
+
+\group_begin:
+\char_set_catcode_active:N\+\let+\space
+\cs_new_nopar:Nx\pbs_gsoldwarning:{
+  {product~(Ghostscript)~search~{pop~pop~pop~true}{pop~false}ifelse~
+   revision~915~lt~and~{
+  (\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@++++++++++++Warning:+Ghostscript+too+old!++++++++++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Ghostscript+version+>=+9.15.+required!++++++++++++++@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Various+advanced+PDF+features+such+as+Layers+(OCGs)+@@\token_to_str:N\n
+  @@+and+animations+may+not+work.++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Get+current+version+from++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+http://www.ghostscript.com/download+++++++++++++++++@@\token_to_str:N\n
+  @@+++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
+  print}~if}~?pdfmark
+}
+
+\cs_new_nopar:Nx\pbs_dpiwarning:{
+  {Resolution~1200~gt~VResolution~1200~gt~or~product~(Ghostscript)~
+  search~{pop~pop~pop~true}{pop~false}ifelse~and~{
+  (\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@+++++Warning:+DVI+resolution+greater+than+1200+dpi!+++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+PDF+Annotation+appearances+(buttons,+animation+frames)+@@\token_to_str:N\n
+  @@+may+be+poorly+scaled,+clipped+or+invisible.++++++++++++@@\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+Dvips+should+be+called+either+without+option+`-Ppdf':++@@\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+++dvips+\c_sys_jobname_str\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+or+with+a+different+resolution+setting,+e.g.:++++++++++@@\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@+++dvips+-Ppdf+-D1200+\c_sys_jobname_str\token_to_str:N\n
+  @@++++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
+  print}~if}~?pdfmark
+}
+\group_end:

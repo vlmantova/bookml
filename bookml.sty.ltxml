@@ -43,7 +43,7 @@ if (!defined &ProgressSpinup) {
   $bml_ProgressSpindown = \&NoteEnd;
   $bml_ProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
   $bml_Note             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bml_NoteLog = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
+  $bml_NoteLog          = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
 } else {
   $bml_ProgressSpinup   = \&ProgressSpinup;
   $bml_ProgressSpindown = \&ProgressSpindown;
@@ -94,8 +94,9 @@ if (-d 'bmluser') {
   File::Find::find({
       wanted => sub {
         if (-f $_) {
-          $_ =~ /\.([^.]*)\.css$/i;
-          my @styles = split(/,/, $1);
+          my @styles = ();
+          if ($_ =~ /\.([^.]*)\.css$/i) {
+            @styles = split(/,/, $1 // ''); }
           if (!@styles || grep { /^_all$/ } @styles) { @styles = ('_all'); }
           for my $s (@styles) {
             push(@{ $bml_user{$s} }, $_);
@@ -157,17 +158,14 @@ if ($bml_style eq 'gitbook') {
     bookml/gitbook/css/plugin-table.css
     bookml/gitbook/css/plugin-bookdown.css
     bookml/gitbook/css/plugin-fontsettings.css
-    bookml/gitbook/css/plugin-clipboard.css
     )
   ) { RequireResource($res); }
 
   # end of body
   for my $res (qw(
     bookml/gitbook/js/app.min.js
-    bookml/gitbook/js/clipboard.min.js
     bookml/gitbook/js/plugin-fontsettings.js
     bookml/gitbook/js/plugin-bookdown.js
-    bookml/gitbook/js/plugin-clipboard.js
     )) { BMLRequireResource($res, location => 'body'); }
 
   # additional files to be copied over
@@ -179,14 +177,14 @@ if ($bml_style eq 'gitbook') {
 
 # styles that must be loaded after the other packages
 AtBeginDocument(sub {
-    RequireResource('bookml/style.css');
+    RequireResource('bookml/CSS/style.css');
     if ($bml_style eq 'gitbook') {
-      RequireResource('bookml/style.gitbook.css');
-      RequireResource('bookml/style.gitbook,plain.css');
+      RequireResource('bookml/CSS/style.gitbook.css');
+      RequireResource('bookml/CSS/style.gitbook,plain.css');
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'gitbook'} }; }
     elsif ($bml_style eq 'plain') {
-      RequireResource('bookml/style.plain.css');
-      RequireResource('bookml/style.gitbook,plain.css');
+      RequireResource('bookml/CSS/style.plain.css');
+      RequireResource('bookml/CSS/style.gitbook,plain.css');
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'plain'} }; }
     elsif ($bml_style eq 'none') {
       map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'none'} }; }

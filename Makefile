@@ -16,68 +16,54 @@
 
 VERSION = $(shell git describe)
 RELEASE = bookml-$(VERSION).zip
+
+GITBOOK_SOURCE = bookdown/inst/resources/gitbook
+GITBOOK_CSS    = $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
+GITBOOK_JS     = $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js plugin-fontsettings.js plugin-bookdown.js)
+GITBOOK_DIRS   = $(patsubst %,gitbook/%,css/fontawesome css js) gitbook
+GITBOOK_OUT    = $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
+
+BOOKML_CSS   = $(patsubst %,bookml/%,$(wildcard CSS/*))
+BOOKML_XSLT  = $(patsubst %,bookml/%,$(wildcard XSLT/*))
+BOOKML_LTX   = bookml/bookml.sty
+BOOKML_LTXML = bookml/bookml.sty.ltxml
+BOOKML_DIRS  = $(patsubst %,bookml/%,$(GITBOOK_DIRS)) bookml/CSS bookml/XSLT bookml
+BOOKML_OUT   = $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML)
+
+RELEASE_OUT  = $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
+
 SPLIT   = $(patsubst %,--splitat=%,$(SPLITAT))
 
-BOOKDOWN_SOURCE = bookdown-source/inst/resources
-GITBOOK_CSS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css plugin-clipboard.css fontawesome/fontawesome-webfont.ttf)
-GITBOOK_JS = $(patsubst %,$(BOOKDOWN_SOURCE)/gitbook/js/%,app.min.js clipboard.min.js plugin-fontsettings.js plugin-bookdown.js plugin-clipboard.js)
-BOOKDOWN_OUT_DIRS = $(patsubst %,bookml/%,gitbook/css/fontawesome gitbook/css gitbook/js gitbook)
-BOOKDOWN_OUT = $(patsubst $(BOOKDOWN_SOURCE)/%,bookml/%,$(GITBOOK_CSS) $(GITBOOK_JS) $(JQUERY))
-
-TEX_DEPS = bookml/bookml.sty
-XML_DEPS = bookml/bookml.sty.ltxml
-HTML_DEPS = LaTeXML-html5.xsl $(wildcard bookml/*.xsl) $(wildcard bookml/*.css) $(BOOKDOWN_OUT)
-EPUB_DEPS = LaTeXML-epub3.xsl $(wildcard bookml/*.xsl) $(wildcard bookml/*.css) $(BOOKDOWN_OUT)
-
-.PHONY: all clean release
+.PHONY: release clean
 .PRECIOUS:
 .SECONDARY:
 
-all: docs.pdf docs.epub docs/index.html docs/index.plain.html
-
-clean:
-	-latexmk -C docs.tex
-	-rm -f -r docs.*.log docs*.xml docs.epub bmlimages docs
-	-rm -f -d $(BOOKDOWN_OUT) $(BOOKDOWN_OUT_DIRS) $(RELEASE)
-
 release: $(RELEASE)
 
-$(RELEASE): $(TEX_DEPS) $(XML_DEPS) $(HTML_DEPS) $(EPUB_DEPS)
+clean:
+	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(RELEASE)
+
+$(GITBOOK_SOURCE):
+	git submodule update bookdown
+
+$(BOOKML_DIRS) $(GITBOOK_DIRS):
+	mkdir --parents "$@"
+
+gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
+	cp "$<" "$@"
+
+bookml/%: % | $(BOOKML_DIRS)
+	cp "$<" "$@"
+
+$(RELEASE): $(RELEASE_OUT)
 	-rm -f "$@"
 	TZ=UTC+00 zip -r "$@" $^
 
-$(BOOKDOWN_OUT_DIRS):
-	mkdir --parents "$@"
-
-bookml/%: $(BOOKDOWN_SOURCE)/% | $(BOOKDOWN_OUT_DIRS)
-	cp "$<" "$@"
-
 # fix erratic positioning of the prev/next buttons due to buggy rounding
-bookml/gitbook/js/app.min.js: $(BOOKDOWN_SOURCE)/gitbook/js/app.min.js | $(BOOKDOWN_OUT_DIRS)
+gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 	sed -e 's/parseInt(\([^;]*\)\.css("width"),10)/\1[0].getBoundingClientRect().width/g' "$<" > "$@"
 
 # patch automatic TOC highlighting and scrolling
-bookml/gitbook/js/plugin-bookdown.js: $(BOOKDOWN_SOURCE)/gitbook/js/plugin-bookdown.js bookml/plugin-bookdown.js.patch | $(BOOKDOWN_OUT_DIRS)
+gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)
 	cp "$<" "$@"
-	patch -p1 <bookml/plugin-bookdown.js.patch
-
-%.pdf: %.tex $(TEX_DEPS)
-	latexmk -pdf -interaction=nonstopmode -halt-on-error "$<"
-
-%.bib.xml: %.bib
-	$(LML_PREFIX)latexml --preload=amssymb --dest="$@" "$<"
-
-%.xml: %.tex $(XML_DEPS)
-	$(LML_PREFIX)latexml --dest="$@" "$<"
-
-%.plain.xml: %.tex $(XML_DEPS) $(wildcard bmluser/*.plain.*css)
-	$(LML_PREFIX)latexml --preload=[style=plain]bookml/bookml --dest="$@" "$<"
-
-%.epub: %.tex $(XML_DEPS) $(EPUB_DEPS) $(wildcard bmluser/*.plain.*css)
-	$(LML_PREFIX)latexmlc --preload=[style=plain]bookml/bookml --dest="$@" --splitat=section "$<"
-
-%/index.html: %.xml $(HTML_DEPS) %.pdf %.epub
-	$(LML_PREFIX)latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 $(SPLIT) "$<"
-
-%/index.plain.html: %.plain.xml $(HTML_DEPS) %.pdf $(wildcard bmluser/*.plain.*css)
-	$(LML_PREFIX)latexmlpost --dest="$@" --timestamp=0 $(SPLIT) "$<"
+	patch -p1 <plugin-bookdown.js.patch

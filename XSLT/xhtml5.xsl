@@ -24,8 +24,10 @@
     xmlns:ltx = "http://dlmf.nist.gov/LaTeXML"
     xmlns:f   = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:b   = "https://vlmantova.github.io/bookml/functions"
+    xmlns:svg = "http://www.w3.org/2000/svg"
+    xmlns:xlink = "http://www.w3.org/1999/xlink"
     xmlns     = "http://www.w3.org/1999/xhtml"
-    exclude-result-prefixes = "ltx f b">
+    exclude-result-prefixes = "ltx f b svg xlink">
 
   <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
   <xsl:template match="/" mode="head-content-type">
@@ -290,6 +292,52 @@
         <xsl:with-param name="context" select="$context"/>
       </xsl:apply-templates>
     </xsl:element>
+  </xsl:template>
+
+  <!-- use the <img> tag for SVG images with no scripts -->
+  <xsl:template match="ltx:graphics[f:ends-with(@imagesrc,'.svg')='true' and not(
+    document(@imagesrc)//svg:script or
+    document(@imagesrc)//@*[starts-with(local-name(),'on')] or
+    document(@imagesrc)//@href[starts-with(normalize-space(),'javascript:')] or
+    document(@imagesrc)//@xlink:href[starts-with(normalize-space(),'javascript:')]
+  )]">
+    <xsl:param name="context"/>
+    <xsl:variable name="description">
+      <xsl:choose>
+        <xsl:when test="@description">
+          <xsl:value-of select="@description"/>
+        </xsl:when>
+        <xsl:when test="ancestor::ltx:figure/ltx:caption">
+          <xsl:value-of select="ancestor::ltx:figure/ltx:caption/text()"/>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <img src="{f:url(@imagesrc)}" alt="{$description}">
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_style">
+          <xsl:if test="@imagedepth">
+            <xsl:value-of select="concat('vertical-align:-',@imagedepth,'px')"/>
+          </xsl:if>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:if test="@imagewidth">
+        <xsl:attribute name='width'>
+          <xsl:value-of select="@imagewidth"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:if test="@imageheight">
+        <xsl:attribute name='height'>
+          <xsl:value-of select="@imageheight"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </img>
   </xsl:template>
 
 </xsl:stylesheet>

@@ -1,5 +1,5 @@
---- a/bookml/gitbook/js/plugin-bookdown.js
-+++ b/bookml/gitbook/js/plugin-bookdown.js
+--- a/gitbook/js/plugin-bookdown.js
++++ b/gitbook/js/plugin-bookdown.js
 @@ -95,12 +95,8 @@
      });
  

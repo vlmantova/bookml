@@ -1,8 +1,5 @@
-bmlimages
-bookml/gitbook
-bookml/jquery
-docs
-.vscode
+bookml
+gitbook
 
 *.xml
 *.zip

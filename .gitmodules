@@ -1,4 +1,4 @@
-[submodule "bookdown-source"]
-	path = bookdown-source
+[submodule "bookdown"]
+	path = bookdown
 	url = https://github.com/rstudio/bookdown.git
 	branch = v0.23

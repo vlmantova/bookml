@@ -30,7 +30,7 @@
 li.ltx_item .ltx_tag {
   box-sizing: border-box;
   min-width: max(min(3.75%,2.5em),1.5em); /* same as padding-left */
-  margin-left: -max(min(3.75%,2.5em),1.5em);
+  margin-left: min(max(-3.75%,-2.5em),-1.5em);
 }
 
 ul.ltx_itemize>li.ltx_item>.ltx_tag {
@@ -46,6 +46,12 @@ ol.ltx_enumerate>li.ltx_item>.ltx_tag {
   margin-right: 0;
   max-width: 100%;
   width: 100%;
+}
+
+/* Enlarge blockquote's */
+.ltx_quote {
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Ensure that oversized figures are scrollable */
@@ -71,4 +77,15 @@ dl.ltx_description dd {
 /* Force no indentation */
 .ltx_p {
   text-indent: 0em !important;
+}
+
+/* Remove margins from first/last paragraphs in other containers */
+/* The list of containers is likely not exhaustive */
+td > .ltx_p:first-child,
+th > .ltx_p:first-child {
+  margin-top: 0 !important;
+}
+td > .ltx_p:last-child,
+th > .ltx_p:last-child {
+  margin-bottom: 0 !important;
 }

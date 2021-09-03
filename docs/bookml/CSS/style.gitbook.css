@@ -180,3 +180,20 @@ h1.title {
 .dropdown-menu .buttons .button {
   color: #717171;
 }
+
+/* Force LaTeX table borders over GitBook */
+/* double in top borders is to win the border conflict resolution */
+.ltx_border_t  { border-top:1px double !important; }
+.ltx_border_r  { border-right:1px solid !important; }
+.ltx_border_b  { border-bottom:1px solid !important; }
+.ltx_border_l  { border-left:1px solid !important; }
+
+.ltx_border_tt { border-top:3px double !important; }
+.ltx_border_rr { border-right:3px double !important; }
+.ltx_border_bb { border-bottom:3px double !important; }
+.ltx_border_ll { border-left:3px double !important; }
+
+.ltx_border_T  { border-top:1px double gray; }
+.ltx_border_R  { border-right:1px solid gray; }
+.ltx_border_B  { border-bottom:1px solid gray; }
+.ltx_border_L  { border-left:1px solid gray; }

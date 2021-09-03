@@ -58,7 +58,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{2 September 2021}
+\date{3 September 2021}
 
 \begin{document}
 
@@ -111,9 +111,9 @@ latexmlc --preload='[style=plain]bookml/bookml' \
     \end{lstlisting}
 \end{enumerate}
 
-If you use git, you can also add BookML as a submodule with
+You can also use bookml directly from source:
 \begin{lstlisting}
-git submodule add https://github.com/vlmantova/bookml.git
+git clone https://github.com/vlmantova/bookml.git
 cd bookml && make
 \end{lstlisting}
 then copy the files \lstinline|bookml/XSLT/LaTeXML-*.xsl| next to your \lstinline|.tex| files.

@@ -43,8 +43,15 @@ clean:
 	-latexmk -C docs.tex
 	-rm -f -r docs.*.log docs*.xml docs.epub bmlimages docs
 
-$(TEX_DEPS) $(XML_DEPS) $(POST_DEPS):
+bookml/gitbook:
 	make -C bookml
+
+bookml/bookml.sty:
+	git submodule update --init bookml
+
+$(BOOKML_CSS) $(BOOKML_XSLT) $(XML_DEPS): bookml/bookml.sty
+
+$(GITBOOK_OUT): bookml/gitbook | bookml/bookml.sty
 
 %.pdf: %.tex $(TEX_DEPS)
 	latexmk -pdf -interaction=nonstopmode -halt-on-error "$<"

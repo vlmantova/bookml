@@ -4,6 +4,7 @@ gitbook
 *.xml
 *.zip
 *.epub
+*.bak
 
 ### Copied from https://github.com/github/gitignore
 

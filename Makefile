@@ -32,19 +32,25 @@ BOOKML_OUT   = $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML)
 
 RELEASE_OUT  = $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
 
-SPLIT   = $(patsubst %,--splitat=%,$(SPLITAT))
-
-.PHONY: release clean
+.PHONY: all release clean
 .PRECIOUS:
 .SECONDARY:
 
+all: $(GITBOOK_OUT)
+
 release: $(RELEASE)
 
+$(RELEASE): $(RELEASE_OUT)
+	-rm -f "$@"
+	TZ=UTC+00 zip -r "$@" $^
+
 clean:
-	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(RELEASE)
+	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) *.zip
 
 $(GITBOOK_SOURCE):
-	git submodule update bookdown
+	git submodule update --init bookdown
+
+$(GITBOOK_CSS) $(GITBOOK_JS): $(GITBOOK_SOURCE)
 
 $(BOOKML_DIRS) $(GITBOOK_DIRS):
 	mkdir --parents "$@"
@@ -54,10 +60,6 @@ gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
 
 bookml/%: % | $(BOOKML_DIRS)
 	cp "$<" "$@"
-
-$(RELEASE): $(RELEASE_OUT)
-	-rm -f "$@"
-	TZ=UTC+00 zip -r "$@" $^
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)

@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml}[2021/09/02 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2021/09/03 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 
@@ -32,7 +32,7 @@
 \IfFileExists{latexml.sty}{
   \RequirePackage{latexml}
 }{
-  \newif\iflatexml\latexmlfalse
+  \ifcsname iflatexml\endcsname\else\expandafter\newif\csname iflatexml\endcsname\latexmlfalse\fi
 }
 
 % HTML

@@ -43,7 +43,7 @@ if (!defined &ProgressSpinup) {
   $bml_ProgressSpindown = \&NoteEnd;
   $bml_ProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
   $bml_Note             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bml_NoteLog          = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
+  $bml_NoteLog = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
 } else {
   $bml_ProgressSpinup   = \&ProgressSpinup;
   $bml_ProgressSpindown = \&ProgressSpindown;
@@ -85,27 +85,6 @@ sub BMLRequireResource {
 
   delete $options{location};
   return RequireResource($resource, %options);
-}
-
-# Import user files from bmluser
-my %bml_user;
-
-if (-d 'bmluser') {
-  File::Find::find({
-      wanted => sub {
-        if (-f $_) {
-          my @styles = ();
-          if ($_ =~ /\.([^.]*)\.css$/i) {
-            @styles = split(/,/, $1 // ''); }
-          if (!@styles || grep { /^_all$/ } @styles) { @styles = ('_all'); }
-          for my $s (@styles) {
-            push(@{ $bml_user{$s} }, $_);
-        } }
-      },
-      preprocess => sub { sort @_; },
-      no_chdir   => 1
-    },
-    'bmluser');
 }
 
 my $bml_style      = 'gitbook';
@@ -175,20 +154,22 @@ if ($bml_style eq 'gitbook') {
   }
 }
 
-# styles that must be loaded after the other packages
+# CSS files
 AtBeginDocument(sub {
-    RequireResource('bookml/CSS/style.css');
-    if ($bml_style eq 'gitbook') {
-      RequireResource('bookml/CSS/style.gitbook.css');
-      RequireResource('bookml/CSS/style.gitbook,plain.css');
-      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'gitbook'} }; }
-    elsif ($bml_style eq 'plain') {
-      RequireResource('bookml/CSS/style.plain.css');
-      RequireResource('bookml/CSS/style.gitbook,plain.css');
-      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'plain'} }; }
-    elsif ($bml_style eq 'none') {
-      map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{'none'} }; }
-    map { RequireResource($_) } grep { /.css$/i } @{ $bml_user{''} };
+    File::Find::find({
+        preprocess => sub { sort @_; },
+        no_chdir   => 1,
+        wanted     => sub {
+          if (-f $_ && m/\.css$/i) {
+            my $styles = ',_all,';
+            if ($_ =~ /\.([^.]+)\.css$/i) {
+              $styles = ",$1,"; }
+            if ($styles =~ /,(?:_all|$bml_style),/) {
+              RequireResource($_); } }
+        }
+      },
+      'bookml/CSS', 'bmluser');
+    return;
 });
 
 # HTML-in-LaTeX mechanism

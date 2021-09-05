@@ -25,6 +25,7 @@
     xmlns:f    = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:func = "http://exslt.org/functions"
     xmlns:b    = "https://vlmantova.github.io/bookml/functions"
+    xmlns:ltx  = "http://dlmf.nist.gov/LaTeXML"
     extension-element-prefixes = "exsl func"
     exclude-result-prefixes    = "f func b">
 
@@ -161,5 +162,45 @@
     <xsl:param name="v"/>
     <func:result select="b:version-leq($v,$LATEXML_VERSION)"/>
   </func:function>
+
+  <xsl:template match="ltx:xmlelem">
+    <xsl:param name="context"/>
+    <xsl:variable name="innercontext">
+      <xsl:choose>
+        <xsl:when test="@innercontext">
+          <xsl:value-of select="@innercontext"/>
+        </xsl:when>
+        <xsl:otherwise><xsl:value-of select="$context"/></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="@ns">
+        <xsl:element name="{@name}" namespace="{@ns}">
+          <xsl:apply-templates>
+            <xsl:with-param name="context" select="$innercontext"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:element name="{@name}">
+          <xsl:apply-templates>
+            <xsl:with-param name="context" select="$innercontext"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="ltx:xmlattr[@ns]">
+    <xsl:attribute name="{@name}" namespace="{@ns}">
+      <xsl:value-of select="@value"/>
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="ltx:xmlattr">
+    <xsl:attribute name="{@name}">
+      <xsl:value-of select="@value"/>
+    </xsl:attribute>
+  </xsl:template>
 
 </xsl:stylesheet>

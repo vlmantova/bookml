@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2021/09/03 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2021/09/06 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 
@@ -37,6 +37,7 @@
 
 % HTML
 \def\bmlHTMLEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
+\def\bmlHTMLInlineEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
 
 % Raw HTML
 \RequirePackage[T1]{fontenc} % required for proper parsing of <, >

@@ -173,32 +173,36 @@ AtBeginDocument(sub {
 });
 
 # HTML-in-LaTeX mechanism
+AtBeginDocument( sub { RelaxNGSchema('bookml/schema'); });
+
+sub BMLHTMLEnvironment {
+  my ($name, %opts) = @_;
+
+  DefEnvironment("{h:$name} OptionalKeyVals", sub {
+      my ($document, $kv, %properties) = @_;
+      my $body = $properties{body};
+      $kv = $kv && $kv->getKeyVals;
+
+      my $node = $document->openElement('ltx:xmlelem', ns => 'http://www.w3.org/1999/xhtml', name => $name, innercontext => $opts{innercontext});
+      for my $attr (keys %$kv) {
+        $document->insertElement('ltx:xmlattr', undef, name => $attr, value => ToString($$kv{$attr})); }
+
+      $document->absorb($body);    # emit content of the environment
+
+      $document->closeElement('ltx:xmlelem');
+  });
+
+  return;
+}
+
 DefPrimitive('\bmlHTMLEnvironment{}', sub {
     my ($gullet, $name) = @_;
-    $name = ToString(Expand($name));
+    BMLHTMLEnvironment(ToString(Expand($name)));
+});
 
-    DefEnvironment("{h:$name} OptionalKeyVals", sub {
-        my ($document, $kv, %properties) = @_;
-        my $body = $properties{body};
-        $kv = $kv && $kv->getKeyVals;
-
-        # convert the options to serialised xml attributes
-        my @attrs = ();
-        for my $key (keys %$kv) {
-          my $attr = XML::LibXML::Attr->new($key, ToString($$kv{$key}));
-          my $val  = $attr->serializeContent();
-          if (!defined $val) { $val = ''; }
-          push(@attrs, "$key=\"$val\""); }
-        my $attrs = @attrs ? join(' ', @attrs) : undef;
-
-        # <$name $attrs>
-        my $node = $document->insertElement('ltx:rawliteral', $attrs, open => $name);
-        $document->absorb($body);                     # emit content of the environment
-        $document->closeToNode($node->parentNode);    # close everything
-
-        # </$name>
-        $document->insertElement('ltx:rawliteral', undef, open => "/$name");
-    });
+DefPrimitive('\bmlHTMLInlineEnvironment{}', sub {
+    my ($gullet, $name) = @_;
+    BMLHTMLEnvironment(ToString(Expand($name)), innercontext => 'inline');
 });
 
 # Raw HTML mechanism

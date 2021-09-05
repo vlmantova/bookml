@@ -26,7 +26,7 @@ GITBOOK_OUT    = $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBO
 BOOKML_CSS   = $(patsubst %,bookml/%,$(wildcard CSS/*))
 BOOKML_XSLT  = $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   = bookml/bookml.sty
-BOOKML_LTXML = bookml/bookml.sty.ltxml
+BOOKML_LTXML = bookml/bookml.sty.ltxml bookml/schema.rng
 BOOKML_DIRS  = $(patsubst %,bookml/%,$(GITBOOK_DIRS)) bookml/CSS bookml/XSLT bookml
 BOOKML_OUT   = $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML)
 

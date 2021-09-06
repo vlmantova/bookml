@@ -26,10 +26,10 @@ BOOKML_XSLT = $(patsubst %,bookml/%,$(wildcard XSLT/*))
 
 # up to date animate, media9, pdfbase for producing compliant SVGs
 TEX_DEPS     = bookml/bookml.sty animate.sty media9.sty pdfbase.sty
-XML_DEPS     = bookml/bookml.sty.ltxml
+XML_DEPS     = bookml/bookml.sty.ltxml bookml/schema.rg
 GITBOOK_DEPS = $(wildcard bmluser/*.*gitbook*.css) $(wildcard bmluser/*.*_all*.css)
 PLAIN_DEPS   = $(wildcard bmluser/*.*plain*.css) $(wildcard bmluser/*.*_all*.css)
-POST_DEPS    = $(BOOKML_CSS) $(BOOKML_XSLT) $(GITBOOK_OUT)
+POST_DEPS    = $(BOOKML_CSS) $(BOOKML_XSLT) $(GITBOOK_OUT) bookml/schema.rng
 
 SPLIT = $(patsubst %,--splitat=%,$(SPLITAT))
 

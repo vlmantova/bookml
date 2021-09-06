@@ -49,7 +49,7 @@
   texcsstyle=*{\color{blue}\bfseries},%
   texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
   moretexcs={xymatrix,ltxinline,href},%
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass}%
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment}%
   }
 
 \def\ltxinline{\lstinline[style=bookml]}
@@ -58,7 +58,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{3 September 2021}
+\date{6 September 2021}
 
 \begin{document}
 
@@ -306,37 +306,35 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
   \label{fig:youtube-ducks}
 \end{figure}
 
-\subsection{Wrapping \LaTeX{} in \HTML{} tags (experimental)}
+\subsection{Interspersing \LaTeX{} and \HTML{} (beta)}
 
 The command \ltxinline|\bmlHTMLEnvironment{tag}| defines an environment \ltxinline|\begin{h:tag} ... \end{h:tag}| which wraps the content between \lstinline[language=html,frame=none]|<tag> ... </tag>|. One can also add attributes as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|.
 
-This approach is very fragile because \LaTeXML{} cannot cope well with unknown tags, and the implementation may change in the future. For now, this is best used for tags which behave like blocks and can contain paragraphs. See Figure~\ref{fig:details} for an example.
+Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `phrasing' content, for instance they should not contain \htmlinline|<p>| paragraphs.
 
-  \begin{figure}
-    \bmlHTMLEnvironment{details}
-    \begin{h:details}[style={text-align: left; width: 100\%}]
-      % <summary> cannot contain <p>, better use \bmlRawHTML
-      \bmlRawHTML{<summary><strong>Code for
-        <code>\&lt;details\&gt;</code>.</strong></summary>}
-      \iflatexml\else {\bfseries Code for
-        \lstinline[language=html,frame=none]|<details>|.}\fi
+\begin{figure}
+  \bmlHTMLEnvironment{details}
+  \bmlHTMLInlineEnvironment{summary}
+  \begin{h:details}[style={text-align: left; width: 100\%},open]
+    \begin{h:summary}
+      \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
+    \end{h:summary}
 
-      Completing the quine is left as an exercise for the reader.
-      \begin{lstlisting}[style=bookml]
+    Completing the quine is left as an exercise for the reader.
+    \begin{lstlisting}[style=bookml]
 \bmlHTMLEnvironment{details}
-\begin{h:details}[style={text-align: left; width: 100\%}]
-  % <summary> cannot contain <p>, better use \bmlRawHTML
-  \bmlRawHTML{<summary>Code for
-    <code>\&lt;details\&gt;</code>.</summary>}
-  \iflatexml\else {\bfseries Code for
-    \lstinline[language=html,frame=none]|<details>|.}\fi
+\bmlHTMLInlineEnvironment{summary}
+\begin{h:details}[style={text-align: left; width: 100\%},open]
+  \begin{h:summary}
+    \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
+  \end{h:summary}
 
   Completing the quine is left as an exercise for the reader.
 \end{h:details}
-          \end{lstlisting}
-    \end{h:details}
-    \caption{Implementation of the \htmlinline|<details>| tag.}
-    \label{fig:details}
-  \end{figure}
+    \end{lstlisting}
+  \end{h:details}
+  \caption{Implementation of the \htmlinline|<details>| tag.}
+  \label{fig:details}
+\end{figure}
 
 \end{document}

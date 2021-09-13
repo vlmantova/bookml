@@ -76,7 +76,7 @@ h1.title {
 .level1 h4 .header-section-number,
 .level1 h5 .header-section-number,
 .level1 h6 .header-section-number {
-  border-bottom: none;
+  border-bottom: revert;
 }
 
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
@@ -109,7 +109,7 @@ h1.title {
 
 /* ...except in a few places */
 .ltx_item .ltx_para {
-  overflow-x: initial;
+  overflow-x: revert;
 }
 
 /* Adjust colours in sepia and night modes */
@@ -137,6 +137,17 @@ h1.title {
   filter: saturate(70%);
 }
 
+/* do not apply filters twice */
+.book.color-theme-1 *[style*=";color:"],
+.book.color-theme-1 *[style^="color:"],
+.book.color-theme-2 *[style*=";color:"],
+.book.color-theme-2 *[style^="color:"] {
+  & object[type="image/svg+xml"], & iframe[src$=".svg"], & img,
+  & *[style*=";color:"], & *[style^="color:"] {
+    filter: revert;
+  }
+}
+
 /* Fix <dt> margin (a GitBook bug?) */
 .book .book-body .page-wrapper .page-inner section.normal dl dt {
   margin-top: 0;
@@ -162,18 +173,21 @@ h1.title {
   text-indent: 0em !important;
 }
 
-/* WCAG 2.1 AA 1.4.3: Contrast */
+/* WCAG 2.1 AA 1.4.3: Contrast + link contrast from WCAG 2.0 */
 .book .book-body .page-wrapper .page-inner section.normal a {
-  color: #3975b0;
+  color: #3B78B5;
 }
 
 .book .book-summary ul.summary li a:hover, .book .book-summary ul.summary li.active>a {
-  color: #0071ce;
+  color: #0073D1;
 }
 
+.book .book-body .page-wrapper .page-inner section.normal {
+  color: #292929;
+}
 .book .book-summary ul.summary li span {
   opacity: 0.8;
-  filter: inherit;
+  filter: revert;
 }
 
 .book .book-header .btn,
@@ -197,3 +211,51 @@ h1.title {
 .ltx_border_R  { border-right:1px solid gray; }
 .ltx_border_B  { border-bottom:1px solid gray; }
 .ltx_border_L  { border-left:1px solid gray; }
+
+.book .book-body .page-wrapper .page-inner section.normal table tr:last-child td { border-bottom-width: 1px; }
+
+/* Adjust and uniformise equation styling */
+.book .book-body .page-wrapper .page-inner section.normal table {
+  & td.ltx_eqn_cell, & th.ltx_eqn_cell {
+    padding: 0.85em 0;
+  }
+  & tr>td:first-child.ltx_eqn_eqno {
+    padding-left: 0.85em;
+  }
+  & tr>td:last-child.ltx_eqn_eqno {
+    padding-right: 0.85em;
+  }
+}
+
+.ltx_equation.ltx_eqn_div {
+  border-top: solid 1px #ddd;
+  border-bottom: solid 1px #ddd;
+  & + .ltx_equation.ltx_eqn_div {
+    border-top: none;
+  }
+
+  margin-bottom: 0.85em;
+  .ltx_runin + .ltx_para &, .ltx_runin + .ltx_para p &, .ltx_runin + p & {
+    margin-top: 0.85em;
+  }
+
+  max-width: 100%;
+  min-height: 2.75em;
+  overflow-x: auto;
+
+  padding: 0.85em;
+
+  .book.color-theme-1 & {
+    background-color: #fdf6e3;
+    border-color: #f5d06c;
+  }
+
+  .book.color-theme-2 & {
+    background-color: #2d3143;
+    border-color: #3b3f54;
+  }
+}
+
+mjx-container[jax="CHTML"][display="true"] {
+  margin: 0 !important;
+}

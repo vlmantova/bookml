@@ -5,6 +5,7 @@ gitbook
 *.zip
 *.epub
 *.bak
+CSS/*.css
 
 ### Copied from https://github.com/github/gitignore
 

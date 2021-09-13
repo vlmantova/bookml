@@ -40,6 +40,7 @@
   </xsl:param>
 
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
+  <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
   <xsl:variable name="MATHJAX3"
     select="not(b:if-option('nomathjax') or $MATHJAX2)"/>

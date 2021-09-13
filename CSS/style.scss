@@ -18,6 +18,12 @@
 
 */
 
+@function max($numbers...) {
+  @return m#{a}x(#{$numbers}); }
+
+@function min($numbers...) {
+  @return m#{i}n(#{$numbers}); }
+
 /* Reduce margin continuously on small screens (backported from 0.8.6) */
 .ltx_page_main {
   padding:min(1em,1.5%) min(3em,4.5%) min(1em,1.5%) min(2em, 3%);

@@ -186,7 +186,7 @@
   <xsl:template match="/" mode="navbar">
     <xsl:choose>
       <xsl:when test="$GITBOOK">
-        <nav class="ltx_page_navbar" role="navigation">
+        <nav class="ltx_page_navbar">
           <xsl:apply-templates select="//ltx:navigation/ltx:TOC"/>
           <xsl:text>&#x0A;</xsl:text>
         </nav>
@@ -401,7 +401,7 @@
 
   <!-- ensure that block elements wider than the page can be scrolled -->
   <!-- this list is likely not exhaustive -->
-  <xsl:template match="ltx:equation | ltx:equationgroup | ltx:picture | ltx:tabular | ltx:graphics">
+  <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture | ltx:tabular | ltx:graphics">
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="$GITBOOK and $context != 'inline'">

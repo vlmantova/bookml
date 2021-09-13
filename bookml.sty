@@ -28,11 +28,11 @@
 
 \ProcessOptions
 
-% import latexml.sty if available, otherwise at least define \iflatexml
+% import system latexml.sty if available, otherwise use local copy
 \IfFileExists{latexml.sty}{
   \RequirePackage{latexml}
 }{
-  \ifcsname iflatexml\endcsname\else\expandafter\newif\csname iflatexml\endcsname\latexmlfalse\fi
+  \RequirePackage{bookml/latexml}
 }
 
 % HTML

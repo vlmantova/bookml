@@ -23,7 +23,8 @@ GITBOOK_JS     = $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js plugin-fontsetti
 GITBOOK_DIRS   = $(patsubst %,gitbook/%,css/fontawesome css js) gitbook
 GITBOOK_OUT    = $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
 
-BOOKML_CSS   = $(patsubst %,bookml/%,$(wildcard CSS/*))
+CSS          = $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
+BOOKML_CSS   = $(patsubst %,bookml/%,$(CSS))
 BOOKML_XSLT  = $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   = bookml/bookml.sty
 BOOKML_LTXML = bookml/bookml.sty.ltxml bookml/schema.rng
@@ -36,7 +37,7 @@ RELEASE_OUT  = $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
 .PRECIOUS:
 .SECONDARY:
 
-all: $(GITBOOK_OUT)
+all: $(GITBOOK_OUT) $(CSS)
 
 release: $(RELEASE)
 
@@ -45,7 +46,7 @@ $(RELEASE): $(RELEASE_OUT)
 	TZ=UTC+00 zip -r "$@" $^
 
 clean:
-	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) *.zip
+	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip
 
 $(GITBOOK_SOURCE):
 	git submodule update --init bookdown
@@ -69,3 +70,6 @@ gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)
 	cp "$<" "$@"
 	patch -p1 <plugin-bookdown.js.patch
+
+CSS/%.css: CSS/%.scss
+	sassc "$<" "$@"

@@ -168,7 +168,7 @@ AtBeginDocument(sub {
               RequireResource($_); } }
         }
       },
-      'bookml/CSS', 'bmluser');
+      'bookml/CSS', (-d 'bmluser') ? 'bmluser' : ());
     return;
 });
 

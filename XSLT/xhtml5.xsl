@@ -82,7 +82,7 @@
   <xsl:template name="maketitle">
     <xsl:param name="context"/>
     <xsl:choose>
-      <xsl:when test="b:max-version('0.8.5') and (not($GITBOOK) or //ltx:navigation/ltx:ref[@rel='up'] or f:seclev-aux(local-name(..))!='0')">
+      <xsl:when test="b:max-version('0.8.5') and (not($GITBOOK) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')">
         <xsl:element name="{concat('h',f:section-head-level(parent::*))}">
           <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
           <xsl:call-template name="add_id"/>
@@ -105,7 +105,7 @@
             <xsl:with-param name="context" select="$context"/>
           </xsl:call-template>
           <!-- date on front page only (backported from v0.8.6) -->
-          <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='up'])">
+          <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='start'])">
             <xsl:call-template name="dates">
               <xsl:with-param name="context" select="$context"/>
               <xsl:with-param name="dates" select="../ltx:date"/>
@@ -338,6 +338,21 @@
         <xsl:with-param name="context" select="$context"/>
       </xsl:apply-templates>
     </img>
+  </xsl:template>
+
+  <!-- do not use tables for simple equations -->
+  <xsl:template match="ltx:equation[f:countcolumns() &lt;= 1]">
+    <xsl:param name="context"/>
+    <xsl:choose>
+      <xsl:when test="$GITBOOK or $PLAIN">
+        <xsl:apply-templates select="." mode="unaligned">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-imports/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>

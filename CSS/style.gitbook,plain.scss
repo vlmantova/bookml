@@ -18,6 +18,12 @@
 
 */
 
+@function max($numbers...) {
+  @return m#{a}x(#{$numbers}); }
+
+@function min($numbers...) {
+  @return m#{i}n(#{$numbers}); }
+
 /* Responsive margins are based on the simple rule 1.5% ~ 1em */
 
 /* Reduce margins on lists and ensure consistent positioning of the tags */
@@ -88,4 +94,27 @@ th > .ltx_p:first-child {
 td > .ltx_p:last-child,
 th > .ltx_p:last-child {
   margin-bottom: 0 !important;
+}
+
+/* Use flex for non-aligned equations */
+.ltx_equation.ltx_eqn_div {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  &>span:not(.ltx_tag) {
+    flex: 1;
+    text-align: center;
+    display: block;
+    width: 100%;
+  }
+  /* leqno */
+  &>span:first-child.ltx_tag {
+    width: 100%;
+    margin-right: -100%;
+  }
+  /* reqno */
+  &>span:last-child.ltx_tag {
+    width: 100%;
+    margin-left: -100%;
+  }
 }

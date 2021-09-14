@@ -58,7 +58,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{6 September 2021}
+\date{14 September 2021}
 
 \begin{document}
 
@@ -154,7 +154,7 @@ You can modify \lstinline|LaTeXML-html5.xsl| to change the \HTML{} output. Just 
 \section{Commands}
 
 \subsection{Conditional execution}
-Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively. \lstinline|bookml| will try to use the \lstinline|latexml| package, which offers the same functionality (and much more), if available. See Figure~\ref{fig:iflatexml}.
+Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively. \lstinline|bookml| will try to use the \lstinline|latexml| package, if available, or use its own embedded copy. See Figure~\ref{fig:iflatexml}.
 
 \begin{figure}[hb]
   \begin{lstlisting}[style=bookml]

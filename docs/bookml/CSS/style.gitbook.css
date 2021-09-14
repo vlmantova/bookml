@@ -17,7 +17,6 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
-
 /* from bookdown 'style.css' */
 /* disabled in BookML
 p.caption {
@@ -25,50 +24,48 @@ p.caption {
   margin-top: 10px;
 } */
 p code {
-  white-space: inherit;
-}
+  white-space: inherit; }
+
 pre {
   word-break: normal;
-  word-wrap: normal;
-}
+  word-wrap: normal; }
+
 pre code {
-  white-space: inherit;
-}
+  white-space: inherit; }
+
 p.flushright {
-  text-align: right;
-}
+  text-align: right; }
+
 blockquote > p:last-child {
-  text-align: right;
-}
+  text-align: right; }
+
 blockquote > p:first-child {
-  text-align: inherit;
-}
+  text-align: inherit; }
+
 .header-section-number {
   padding-right: .2em;
-  font-weight: 500;
-}
+  font-weight: 500; }
+
 .level1 .header-section-number {
   display: inline-block;
-  border-bottom: 3px solid;
-}
+  border-bottom: 3px solid; }
+
 .level1 h1 {
-  border-bottom: 1px solid;
-}
+  border-bottom: 1px solid; }
+
 h1, h2, h3, h4, h5, h6 {
-  font-weight: normal;
-}
+  font-weight: normal; }
+
 h1.title {
-  font-weight: 700;
-}
+  font-weight: 700; }
+
 .smallcaps {
-  font-variant: small-caps;
-}
+  font-variant: small-caps; }
+
 .book .book-body .page-wrapper .page-inner section.normal strong {
-  font-weight: 600;
-}
+  font-weight: 600; }
 
 /* BookML tweaks */
-
 /* Disable bottom border on titles below level 1 */
 .level1 .level2 .header-section-number,
 .level1 h2 .header-section-number,
@@ -76,41 +73,33 @@ h1.title {
 .level1 h4 .header-section-number,
 .level1 h5 .header-section-number,
 .level1 h6 .header-section-number {
-  border-bottom: none;
-}
+  border-bottom: revert; }
 
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
 .book .book-body .page-wrapper .page-inner section.normal h6 {
-  color: inherit;
-}
+  color: inherit; }
 
 .book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
-  color: inherit;
-}
+  color: inherit; }
 
 .book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h6 {
-  color: #fffffa;
-}
+  color: #fffffa; }
 
 /* Disable section padding */
 .book .book-body .page-wrapper .page-inner section {
-  padding: 0px;
-}
+  padding: 0px; }
 
 /* Disable header number padding */
 .header-section-number {
-  padding-right: 0;
-}
+  padding-right: 0; }
 
 /* Ensure the paragraphs are scrollable if necessary */
 .ltx_para {
-  overflow-x: auto;
-}
+  overflow-x: auto; }
 
 /* ...except in a few places */
 .ltx_item .ltx_para {
-  overflow-x: initial;
-}
+  overflow-x: revert; }
 
 /* Adjust colours in sepia and night modes */
 .book.color-theme-1 object[type="image/svg+xml"],
@@ -118,82 +107,148 @@ h1.title {
 .book.color-theme-1 img,
 .book.color-theme-1 *[style*=";color:"],
 .book.color-theme-1 *[style^="color:"] {
-  filter: sepia(40%);
-}
+  filter: sepia(40%); }
 
 .book.color-theme-2 object[type="image/svg+xml"],
 .book.color-theme-2 iframe[src$=".svg"],
 .book.color-theme-2 img,
 .book.color-theme-2 *[style*=";color:"],
 .book.color-theme-2 *[style^="color:"] {
-  filter: invert(100%) saturate(70%);
-}
+  filter: invert(100%) saturate(70%); }
 
 .book.color-theme-2 object[type="image/svg+xml"].bml_no_invert,
 .book.color-theme-2 iframe[src$=".svg"].bml_no_invert,
 .book.color-theme-2 img.bml_no_invert,
 .book.color-theme-2 *[style*=";color:"].bml_no_invert,
 .book.color-theme-2 *[style^="color:"].bml_no_invert {
-  filter: saturate(70%);
-}
+  filter: saturate(70%); }
+
+/* do not apply filters twice */
+.book.color-theme-1 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-1 *[style*=";color:"] img, .book.color-theme-1 *[style*=";color:"] *[style*=";color:"], .book.color-theme-1 *[style*=";color:"] *[style^="color:"],
+.book.color-theme-1 *[style^="color:"] object[type="image/svg+xml"],
+.book.color-theme-1 *[style^="color:"] iframe[src$=".svg"],
+.book.color-theme-1 *[style^="color:"] img,
+.book.color-theme-1 *[style^="color:"] *[style*=";color:"],
+.book.color-theme-1 *[style^="color:"] *[style^="color:"],
+.book.color-theme-2 *[style*=";color:"] object[type="image/svg+xml"],
+.book.color-theme-2 *[style*=";color:"] iframe[src$=".svg"],
+.book.color-theme-2 *[style*=";color:"] img,
+.book.color-theme-2 *[style*=";color:"] *[style*=";color:"],
+.book.color-theme-2 *[style*=";color:"] *[style^="color:"],
+.book.color-theme-2 *[style^="color:"] object[type="image/svg+xml"],
+.book.color-theme-2 *[style^="color:"] iframe[src$=".svg"],
+.book.color-theme-2 *[style^="color:"] img,
+.book.color-theme-2 *[style^="color:"] *[style*=";color:"],
+.book.color-theme-2 *[style^="color:"] *[style^="color:"] {
+  filter: revert; }
 
 /* Fix <dt> margin (a GitBook bug?) */
 .book .book-body .page-wrapper .page-inner section.normal dl dt {
-  margin-top: 0;
-}
+  margin-top: 0; }
 
 /* Tweak listings */
 .ltx_listing {
   background-color: #f7f7f7;
   margin: 0 0 1.275em;
-  padding: .85em 1em;
-}
+  padding: .85em 1em; }
 
 .book.color-theme-1 .ltx_listing {
-  background-color: #fdf6e3;
-}
+  background-color: #fdf6e3; }
 
 .book.color-theme-2 .ltx_listing {
-  background-color: #2d3143;
-}
+  background-color: #2d3143; }
 
 /* Remove indentation on paragraphs */
 .ltx_title_abstract + .ltx_p {
-  text-indent: 0em !important;
-}
+  text-indent: 0em !important; }
 
-/* WCAG 2.1 AA 1.4.3: Contrast */
+/* WCAG 2.1 AA 1.4.3: Contrast + link contrast from WCAG 2.0 */
 .book .book-body .page-wrapper .page-inner section.normal a {
-  color: #3975b0;
-}
+  color: #3B78B5; }
 
-.book .book-summary ul.summary li a:hover, .book .book-summary ul.summary li.active>a {
-  color: #0071ce;
-}
+.book .book-summary ul.summary li a:hover, .book .book-summary ul.summary li.active > a {
+  color: #0073D1; }
+
+.book .book-body .page-wrapper .page-inner section.normal {
+  color: #292929; }
 
 .book .book-summary ul.summary li span {
   opacity: 0.8;
-  filter: inherit;
-}
+  filter: revert; }
 
 .book .book-header .btn,
 .dropdown-menu .buttons .button {
-  color: #717171;
-}
+  color: #717171; }
 
 /* Force LaTeX table borders over GitBook */
 /* double in top borders is to win the border conflict resolution */
-.ltx_border_t  { border-top:1px double !important; }
-.ltx_border_r  { border-right:1px solid !important; }
-.ltx_border_b  { border-bottom:1px solid !important; }
-.ltx_border_l  { border-left:1px solid !important; }
+.ltx_border_t {
+  border-top: 1px double !important; }
 
-.ltx_border_tt { border-top:3px double !important; }
-.ltx_border_rr { border-right:3px double !important; }
-.ltx_border_bb { border-bottom:3px double !important; }
-.ltx_border_ll { border-left:3px double !important; }
+.ltx_border_r {
+  border-right: 1px solid !important; }
 
-.ltx_border_T  { border-top:1px double gray; }
-.ltx_border_R  { border-right:1px solid gray; }
-.ltx_border_B  { border-bottom:1px solid gray; }
-.ltx_border_L  { border-left:1px solid gray; }
+.ltx_border_b {
+  border-bottom: 1px solid !important; }
+
+.ltx_border_l {
+  border-left: 1px solid !important; }
+
+.ltx_border_tt {
+  border-top: 3px double !important; }
+
+.ltx_border_rr {
+  border-right: 3px double !important; }
+
+.ltx_border_bb {
+  border-bottom: 3px double !important; }
+
+.ltx_border_ll {
+  border-left: 3px double !important; }
+
+.ltx_border_T {
+  border-top: 1px double gray; }
+
+.ltx_border_R {
+  border-right: 1px solid gray; }
+
+.ltx_border_B {
+  border-bottom: 1px solid gray; }
+
+.ltx_border_L {
+  border-left: 1px solid gray; }
+
+.book .book-body .page-wrapper .page-inner section.normal table tr:last-child td {
+  border-bottom-width: 1px; }
+
+/* Adjust and uniformise equation styling */
+.book .book-body .page-wrapper .page-inner section.normal table td.ltx_eqn_cell, .book .book-body .page-wrapper .page-inner section.normal table th.ltx_eqn_cell {
+  padding: 0.85em 0; }
+
+.book .book-body .page-wrapper .page-inner section.normal table tr > td:first-child.ltx_eqn_eqno {
+  padding-left: 0.85em; }
+
+.book .book-body .page-wrapper .page-inner section.normal table tr > td:last-child.ltx_eqn_eqno {
+  padding-right: 0.85em; }
+
+.ltx_equation.ltx_eqn_div {
+  border-top: solid 1px #ddd;
+  border-bottom: solid 1px #ddd;
+  margin-bottom: 0.85em;
+  max-width: 100%;
+  min-height: 2.75em;
+  overflow-x: auto;
+  padding: 0.85em; }
+  .ltx_equation.ltx_eqn_div + .ltx_equation.ltx_eqn_div {
+    border-top: none; }
+  .ltx_runin + .ltx_para .ltx_equation.ltx_eqn_div, .ltx_runin + .ltx_para p .ltx_equation.ltx_eqn_div, .ltx_runin + p .ltx_equation.ltx_eqn_div {
+    margin-top: 0.85em; }
+  .book.color-theme-1 .ltx_equation.ltx_eqn_div {
+    background-color: #fdf6e3;
+    border-color: #f5d06c; }
+  .book.color-theme-2 .ltx_equation.ltx_eqn_div {
+    background-color: #2d3143;
+    border-color: #3b3f54; }
+
+mjx-container[jax="CHTML"][display="true"] {
+  margin: 0 !important; }

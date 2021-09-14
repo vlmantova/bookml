@@ -17,8 +17,6 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
-
 /* Reduce margin continuously on small screens (backported from 0.8.6) */
 .ltx_page_main {
-  padding:min(1em,1.5%) min(3em,4.5%) min(1em,1.5%) min(2em, 3%);
-}
+  padding: min(1em, 1.5%) min(3em, 4.5%) min(1em, 1.5%) min(2em, 3%); }

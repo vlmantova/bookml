@@ -17,9 +17,8 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
-
 /* Set a max-width */
 .ltx_page_main {
   max-width: 100ex;
-  margin-left: auto; margin-right: auto;
-}
+  margin-left: auto;
+  margin-right: auto; }

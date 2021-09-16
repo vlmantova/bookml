@@ -173,7 +173,7 @@ AtBeginDocument(sub {
 });
 
 # HTML-in-LaTeX mechanism
-AtBeginDocument( sub { RelaxNGSchema('bookml/schema'); });
+AtBeginDocument(sub { RelaxNGSchema('bookml/schema'); });
 
 sub BMLHTMLEnvironment {
   my ($name, %opts) = @_;
@@ -259,17 +259,17 @@ AtEndDocument(sub {
     &$bml_ProgressSpinup('BookML generating bmlimages');
 
     # code to activate bmlimages and add dvisvgm as global option
-    my $preclass = '\PassOptionsToPackage{_bmlimages}{bookml}';     # activate bmlimages
+    my $preclass = '\PassOptionsToPackage{_bmlimages}{bookml/bookml}';    # activate bmlimages
     $preclass .= '\makeatletter';
-    $preclass .= '\let\bml@dcl@ss\documentclass';                   # save \documentclass
-    $preclass .= '\renewcommand{\documentclass}[1][]{';             # renew \documentclass[]
-    $preclass .= '\def\bml@dcl@ss@pts{#1}';                         # save options
-    $preclass .= '\let\documentclass\bml@dcl@ss';                   # restore \documentclass
-    $preclass .= '\ifx\bml@dcl@ss@pts\@empty';                      # no options?
-    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm]}';       # add dvisvgm
-    $preclass .= '\else';                                           # with options?
-    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm,#1]}';    # prepend dvisvgm
-    $preclass .= '\fi\bml@dcl@ss@}';                                # close definition
+    $preclass .= '\let\bml@dcl@ss\documentclass';                         # save \documentclass
+    $preclass .= '\renewcommand{\documentclass}[1][]{';                   # renew \documentclass[]
+    $preclass .= '\def\bml@dcl@ss@pts{#1}';                               # save options
+    $preclass .= '\let\documentclass\bml@dcl@ss';                         # restore \documentclass
+    $preclass .= '\ifx\bml@dcl@ss@pts\@empty';                            # no options?
+    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm]}';             # add dvisvgm
+    $preclass .= '\else';                                                 # with options?
+    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm,#1]}';          # prepend dvisvgm
+    $preclass .= '\fi\bml@dcl@ss@}';                                      # close definition
     $preclass .= '\makeatother';
 
     my $jobname = ToString(Expand(T_CS('\jobname')));

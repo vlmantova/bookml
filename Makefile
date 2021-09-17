@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION = $(shell git describe)
+VERSION = $(shell git describe --dirty)
 RELEASE = bookml-$(VERSION).zip
 
 GITBOOK_SOURCE = bookdown/inst/resources/gitbook

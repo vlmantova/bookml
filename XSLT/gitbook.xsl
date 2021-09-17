@@ -151,6 +151,20 @@
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template match="/ltx:*" mode="end">
+    <xsl:choose>
+      <xsl:when test="$GITBOOK">
+        <xsl:if test="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']">
+          <xsl:text>&#x0A;</xsl:text>
+          <footer class="bml_footer">
+            <xsl:apply-templates select="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']/*"/>
+          </footer>
+        </xsl:if>
+      </xsl:when>
+      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <!-- add 'levelN' class where N is the sectioning level -->
   <xsl:template match="ltx:document | ltx:part | ltx:chapter | ltx:section | ltx:subsection | ltx:subsubsection | ltx:paragraph | ltx:subparagraph | ltx:bibliography | ltx:appendix | ltx:index | ltx:glossary | ltx:slide">
     <xsl:param name="context"/>

@@ -355,4 +355,11 @@
     </xsl:choose>
   </xsl:template>
 
+  <!-- ugly fix for backslashes in URLs on Windows -->
+  <xsl:template match="@href | @src" mode="bml-alter">
+    <xsl:attribute name="{local-name()}">
+      <xsl:value-of select="b:fix-windows-paths(.)"/>
+    </xsl:attribute>
+  </xsl:template>
+
 </xsl:stylesheet>

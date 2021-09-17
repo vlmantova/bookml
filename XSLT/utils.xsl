@@ -204,4 +204,9 @@
     </xsl:attribute>
   </xsl:template>
 
+  <func:function name="b:fix-windows-paths">
+    <xsl:param name="path"/>
+    <func:result select="f:subst($path,'\','/')"/>
+  </func:function>
+
 </xsl:stylesheet>

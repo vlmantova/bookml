@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2021/09/17 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2021/10/02 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 
@@ -59,3 +59,6 @@
 
 % Add class to previous node
 \newcommand\bmlPlusClass[1]{}
+
+% Disable MathJax locally
+\let\bmlDisableMathJax\relax

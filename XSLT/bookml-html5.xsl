@@ -74,6 +74,31 @@
       <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"/>
       <!-- mml-chtml component only (maths is already in MathML) -->
       <xsl:text>&#x0A;</xsl:text>
+      <!-- do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone) -->
+      <script>
+        MathJax = {
+          startup: {
+            ready() {
+              class bmlFindMathML extends MathJax._.input.mathml.FindMathML.FindMathML {
+                processMath(set) {
+                  const adaptor = this.adaptor;
+                  for (const node of set.values()) {
+                    if (adaptor.hasClass(node, 'bml_disable_mathjax')) {
+                      set.delete(node);
+                    }
+                  }
+                  return super.processMath(set);
+                }
+              }
+
+              MathJax._.components.global.combineDefaults(MathJax.config, 'mml', {FindMathML: new bmlFindMathML()});
+
+              MathJax.startup.defaultReady();
+            }
+          }
+        };
+      </script>
+      <xsl:text>&#x0A;</xsl:text>
       <script id="MathJax-script" async=""
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-chtml.js"/>
       <xsl:text>&#x0A;</xsl:text>

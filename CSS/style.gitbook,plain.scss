@@ -118,3 +118,8 @@ th > .ltx_p:last-child {
     margin-left: -100%;
   }
 }
+
+/* Improve alignment of numbers in all tags (enumerate, equation numbers, ...) */
+.ltx_tag {
+  font-variant-numeric: tabular-nums;
+}

@@ -351,4 +351,15 @@ DefConstructor('\bmlPlusClass Semiverbatim', sub {
     $document->addClass($node, ToString($class));
 });
 
+# Disable MathJax locally
+DefConstructor('\bmlDisableMathJax', sub {
+    my ($document) = @_;
+    my $node       = $document->getElement;
+    my @eqnodes    = $document->findnode('ancestor-or-self::ltx:equation[1]//ltx:Math', $node);
+    if (!@eqnodes) {
+      @eqnodes = ($node); }
+    for my $eqnode (@eqnodes) {
+      $document->addClass($eqnode, 'bml_disable_mathjax'); }
+}, reversion => '');
+
 1;

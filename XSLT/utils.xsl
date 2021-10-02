@@ -161,7 +161,7 @@
   <!-- test that the LaTeXML version is at most $v -->
   <func:function name="b:max-version">
     <xsl:param name="v"/>
-    <func:result select="b:version-leq($v,$LATEXML_VERSION)"/>
+    <func:result select="b:version-leq($LATEXML_VERSION,$v)"/>
   </func:function>
 
   <xsl:template match="ltx:xmlelem">

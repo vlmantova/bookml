@@ -79,11 +79,23 @@
   </xsl:template>
 
   <!-- remove date from subpages, add 'hasAnchor' class for GitBook -->
-  <xsl:template name="maketitle">
+  <xsl:template match="ltx:title">
+    <xsl:param name="context"/>
+    <xsl:if test="not(parent::*/child::ltx:titlepage)">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:call-template name="bml-maketitle">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="ltx:TOC/ltx:title"/>
+
+  <xsl:template name="bml-maketitle">
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="b:max-version('0.8.5') and (not($GITBOOK) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')">
-        <xsl:element name="{concat('h',f:section-head-level(parent::*))}">
+        <xsl:element name="{concat('h',f:section-head-level(parent::*))}" namespace="{$html_ns}">
           <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
           <xsl:call-template name="add_id"/>
           <xsl:call-template name="add_attributes"/>
@@ -360,6 +372,33 @@
     <xsl:attribute name="{local-name()}">
       <xsl:value-of select="b:fix-windows-paths(.)"/>
     </xsl:attribute>
+  </xsl:template>
+
+  <!-- remove parentheses around dates -->
+  <xsl:template name="dates">
+    <xsl:param name="context"/>
+    <xsl:param name="dates" select="ltx:date"/>
+    <xsl:choose>
+      <xsl:when test="$GITBOOK or $PLAIN">
+        <xsl:if test="$dates and normalize-space(string($dates))">
+          <xsl:text>&#x0A;</xsl:text>
+          <div class="ltx_dates">
+            <xsl:apply-templates select="." mode="begin">
+              <xsl:with-param name="context" select="$context"/>
+            </xsl:apply-templates>
+            <xsl:apply-templates select="$dates" mode="intitle">
+              <xsl:with-param name="context" select="$context"/>
+            </xsl:apply-templates>
+            <xsl:apply-templates select="." mode="end">
+              <xsl:with-param name="context" select="$context"/>
+            </xsl:apply-templates>
+          </div>
+        </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-imports/>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>

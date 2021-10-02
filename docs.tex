@@ -55,10 +55,12 @@
 \def\ltxinline{\lstinline[style=bookml]}
 \def\htmlinline{\lstinline[language=html]}
 
+\usepackage{amsmath}
+
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{14 September 2021}
+\date{2 October 2021}
 
 \begin{document}
 
@@ -79,7 +81,7 @@
 \end{abstract}
 
 \begin{center}
-  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://vlmantova.github.io/bookml/docs.epub}{EPUB}.
+  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://vlmantova.github.io/bookml/docs.epub}{EPUB}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
 \end{center}
 
 \tableofcontents
@@ -168,6 +170,24 @@ Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed onl
 
 \subsection{Alternative text for images}
 Call \ltxinline|\bmlDescription{textual description}| \emph{right after} an image to populate its \htmlinline|alt| attribute (or \ltxinline|aria-label| if appropriate). Inspect the \HTML{} source of Figure~\ref{fig:duck} or use a screen reader to check its text description.
+
+\subsection{Disable MathJax for some equations}
+Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from processing the equation. Useful if you want to use MathJax, but you have equations that are better handled by the browser. When used inside an environment creating multiple equations, it applies only to the ones containing the command. See Figure~\ref{fig:disable-mathjax}.
+
+\begin{figure}
+  \begin{lstlisting}[style=bookml]
+\begin{align*}
+  \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by MathJax} \\
+  \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by the browser}
+\end{align*}
+  \end{lstlisting}
+  \begin{align*}
+    \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by MathJax} \\
+    \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by the browser}
+  \end{align*}
+  \caption{How to disable MathJax for a single equation.}
+  \label{fig:disable-mathjax}
+\end{figure}
 
 \subsection{Add custom CSS classes}
 Call \ltxinline|\bmlPlusClass{class}| \emph{right after} some piece of content to add a CSS class. If done within text, its effect may be unpredictable. Its main use is to call \ltxinline|\bmlPlusClass{bml_no_invert}| after an image to prevent the picture from getting inverted in night mode. Compare how Figure~\ref{fig:duck} (with \ltxinline|bml_no_invert|) and Figure~\ref{fig:xymatrix} (no additional classes) change in night mode to see the difference.
@@ -336,5 +356,8 @@ Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `p
   \caption{Implementation of the \htmlinline|<details>| tag.}
   \label{fig:details}
 \end{figure}
+
+\subsection{...and everything from \texttt{latexml.sty}}
+By using \ltxinline|\usepackage{bookml/bookml}|, you will also import \texttt{latexml.sty}, making several \LaTeXML{}-related commands available, for instance \ltxinline|\lxBeginTableHead| for marking table headers. Please read the \href{https://github.com/brucemiller/LaTeXML/blob/81f2f004bdaa6860d673382837c4d4e3951a602e/lib/LaTeXML/texmf/latexml.sty}{source of \texttt{latexml.sty}} to learn what is included.
 
 \end{document}

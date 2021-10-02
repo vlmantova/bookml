@@ -252,3 +252,9 @@ h1.title {
 
 mjx-container[jax="CHTML"][display="true"] {
   margin: 0 !important; }
+
+/* lxFooter */
+.bml_footer {
+  border-top: solid 1px;
+  margin-top: 0.85em;
+  padding-top: 0.85em; }

@@ -1,9 +1,9 @@
+\RequirePackage{bookml/bookml}
 \documentclass[a4paper,british]{article}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
-\usepackage{bookml/bookml}
 \usepackage{latexml}
 
 \usepackage{babel}
@@ -48,7 +48,7 @@
 \lstdefinestyle{bookml}{language=[LaTeX]TeX,%
   texcsstyle=*{\color{blue}\bfseries},%
   texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
-  moretexcs={xymatrix,ltxinline,href},%
+  moretexcs={xymatrix,ltxinline,href,RequirePackage},%
   moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment}%
   }
 
@@ -60,7 +60,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{2 October 2021}
+\date{8 October 2021}
 
 \begin{document}
 
@@ -96,7 +96,7 @@
   \end{itemize}
   \item {}[Install/upgrade] Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} and put the \lstinline|bookml| folder next to your \lstinline|.tex| files.
   \item {}[First install only] Copy the files \lstinline|bookml/XSLT/LaTeXML-*.xsl| next to your \lstinline|.tex| files.
-  \item Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml/bookml}|.
+  \item \label{edit-tex-file} Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml/bookml}|. Alternatively, you can also add \ltxinline|\RequirePackage{bookml/bookml}| before \ltxinline|\documentclass| (for instance, if you want to use a different class when compiling with \LaTeXML{}).
   \item Compile your file to HTML:
     \begin{lstlisting}
 latexmlc --navigationtoc=context \
@@ -112,6 +112,8 @@ latexmlc --preload='[style=plain]bookml/bookml' \
   my_latex_file.tex
     \end{lstlisting}
 \end{enumerate}
+
+If you do not want to modify your \lstinline|.tex| in step~\ref{edit-tex-file}, add the option \lstinline|--preload=bookml/bookml| when calling \lstinline|latexml| or \lstinline|latexmlc|.
 
 You can also use bookml directly from source:
 \begin{lstlisting}

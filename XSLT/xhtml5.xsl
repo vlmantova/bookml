@@ -378,27 +378,23 @@
   <xsl:template name="dates">
     <xsl:param name="context"/>
     <xsl:param name="dates" select="ltx:date"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK or $PLAIN">
-        <xsl:if test="$dates and normalize-space(string($dates))">
-          <xsl:text>&#x0A;</xsl:text>
-          <div class="ltx_dates">
-            <xsl:apply-templates select="." mode="begin">
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-            <xsl:apply-templates select="$dates" mode="intitle">
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-            <xsl:apply-templates select="." mode="end">
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-          </div>
-        </xsl:if>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:apply-imports/>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:if test="$dates and normalize-space(string($dates))">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:element name="div" namespace="{$html_ns}">
+        <xsl:attribute name="class">ltx_dates</xsl:attribute>
+        <xsl:apply-templates select="." mode="begin">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:if test="not($GITBOOK or $PLAIN)"><xsl:text>(</xsl:text></xsl:if>
+        <xsl:apply-templates select="$dates" mode="intitle">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:if test="not($GITBOOK or $PLAIN)"><xsl:text>)</xsl:text></xsl:if>
+        <xsl:apply-templates select="." mode="end">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:element>
+    </xsl:if>
   </xsl:template>
 
 </xsl:stylesheet>

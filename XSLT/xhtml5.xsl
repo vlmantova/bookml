@@ -26,8 +26,10 @@
     xmlns:b   = "https://vlmantova.github.io/bookml/functions"
     xmlns:svg = "http://www.w3.org/2000/svg"
     xmlns:xlink = "http://www.w3.org/1999/xlink"
+    xmlns:xhtml = "http://www.w3.org/1999/xhtml"
+    xmlns:m   = "http://www.w3.org/1998/Math/MathML"
     xmlns     = "http://www.w3.org/1999/xhtml"
-    exclude-result-prefixes = "ltx f b svg xlink">
+    exclude-result-prefixes = "ltx f b svg xlink m">
 
   <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
   <xsl:template match="/" mode="head-content-type">
@@ -395,6 +397,32 @@
         </xsl:apply-templates>
       </xsl:element>
     </xsl:if>
+  </xsl:template>
+
+  <!-- fix wrong framed padding -->
+  <xsl:template match="@style[b:in-list(../@class,'ltx_framed_rectangle',' ')]" mode="bml-alter">
+    <xsl:attribute name="style">
+      <xsl:value-of select="substring-before(.,'padding-top:')"/>
+      <xsl:text>padding:</xsl:text>
+      <xsl:value-of select="substring-after(.,'padding-bottom:')"/>
+    </xsl:attribute>
+  </xsl:template>
+
+  <!-- MathJax workaround for non-text content in <mtext> -->
+  <xsl:template match="m:math[not(b:in-list(@class,'bml_disable_mathjax',' '))]//m:mtext[*]">
+    <xsl:choose>
+      <xsl:when test="$MATHJAX3 or $MATHJAX2">
+        <m:semantics>
+          <xsl:for-each select="@*">
+            <xsl:apply-templates select="." mode="copy-attribute"/>
+          </xsl:for-each>
+          <m:annotation-xml encoding="application/xhtml+xml" style="display: block;">
+            <xsl:apply-templates/>
+          </m:annotation-xml>
+        </m:semantics>
+      </xsl:when>
+      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>

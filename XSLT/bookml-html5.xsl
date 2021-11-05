@@ -25,8 +25,9 @@
     xmlns:ltx  = "http://dlmf.nist.gov/LaTeXML"
     xmlns:f    = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:b    = "https://vlmantova.github.io/bookml/functions"
+    xmlns:m    = "http://www.w3.org/1998/Math/MathML"
     extension-element-prefixes = "exsl"
-    exclude-result-prefixes    = "exsl ltx f b">
+    exclude-result-prefixes    = "exsl ltx f b m">
 
   <!-- include the standard LaTeXML html5 stylesheet -->
   <xsl:import href="urn:x-LaTeXML:XSLT:LaTeXML-html5.xsl"/>
@@ -53,6 +54,10 @@
     <xsl:element name="{local-name()}">
       <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
     </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="m:annotation-xml/@encoding[.='application/xhtml+xml']" mode="bml-alter">
+    <xsl:attribute name="encoding">text/html</xsl:attribute>
   </xsl:template>
 
   <!-- modern and mobile friendly tags (backported from 0.8.6) -->

@@ -419,7 +419,7 @@
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="$GITBOOK and $context != 'inline'">
-        <div style="max-width: 100%; overflow-x: auto;">
+        <div style="max-width: 100%; overflow-x: auto; overflow-y: hidden;">
           <xsl:apply-imports/>
         </div>
       </xsl:when>

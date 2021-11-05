@@ -70,26 +70,22 @@ h1.title {
 /* BookML tweaks */
 
 /* Disable bottom border on titles below level 1 */
-.level1 .level2 .header-section-number,
-.level1 h2 .header-section-number,
-.level1 h3 .header-section-number,
-.level1 h4 .header-section-number,
-.level1 h5 .header-section-number,
-.level1 h6 .header-section-number {
-  border-bottom: revert;
+.level1 {
+  .level2, h2, h3, h4, h5, h6 {
+    .header-section-number {
+      border-bottom: revert;
+    }
+  }
 }
 
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
-.book .book-body .page-wrapper .page-inner section.normal h6 {
-  color: inherit;
-}
-
-.book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
-  color: inherit;
-}
-
-.book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h6 {
-  color: #fffffa;
+.book-body .page-wrapper .page-inner section.normal h6 {
+  .book &, .book.color-theme-1 & {
+    color: inherit;
+  }
+  .book.color-theme-2 & {
+    color: #fffffa;
+  }
 }
 
 /* Disable section padding */
@@ -105,6 +101,7 @@ h1.title {
 /* Ensure the paragraphs are scrollable if necessary */
 .ltx_para {
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* ...except in a few places */
@@ -113,38 +110,26 @@ h1.title {
 }
 
 /* Adjust colours in sepia and night modes */
-.book.color-theme-1 object[type="image/svg+xml"],
-.book.color-theme-1 iframe[src$=".svg"],
-.book.color-theme-1 img,
-.book.color-theme-1 *[style*=";color:"],
-.book.color-theme-1 *[style^="color:"] {
-  filter: sepia(40%);
-}
-
-.book.color-theme-2 object[type="image/svg+xml"],
-.book.color-theme-2 iframe[src$=".svg"],
-.book.color-theme-2 img,
-.book.color-theme-2 *[style*=";color:"],
-.book.color-theme-2 *[style^="color:"] {
-  filter: invert(100%) saturate(70%);
-}
-
-.book.color-theme-2 object[type="image/svg+xml"].bml_no_invert,
-.book.color-theme-2 iframe[src$=".svg"].bml_no_invert,
-.book.color-theme-2 img.bml_no_invert,
-.book.color-theme-2 *[style*=";color:"].bml_no_invert,
-.book.color-theme-2 *[style^="color:"].bml_no_invert {
-  filter: saturate(70%);
+object[type="image/svg+xml"], iframe[src$=".svg"], img, svg,
+*[style*=";color:"], *[style^="color:"] {
+  .book.color-theme-1 & {
+    filter: sepia(40%);
+  }
+  .book.color-theme-2 & {
+    filter: invert(100%) saturate(70%);
+    &.bml_no_invert {
+      filter: saturate(70%);
+    }
+  }
 }
 
 /* do not apply filters twice */
-.book.color-theme-1 *[style*=";color:"],
-.book.color-theme-1 *[style^="color:"],
-.book.color-theme-2 *[style*=";color:"],
-.book.color-theme-2 *[style^="color:"] {
-  & object[type="image/svg+xml"], & iframe[src$=".svg"], & img,
-  & *[style*=";color:"], & *[style^="color:"] {
-    filter: revert;
+.book.color-theme-1, .book.color-theme-2 {
+  *[style*=";color:"], *[style^="color:"] {
+    object[type="image/svg+xml"], iframe[src$=".svg"], img, svg,
+    *[style*=";color:"], *[style^="color:"] {
+      filter: revert;
+    }
   }
 }
 
@@ -216,13 +201,13 @@ h1.title {
 
 /* Adjust and uniformise equation styling */
 .book .book-body .page-wrapper .page-inner section.normal table {
-  & td.ltx_eqn_cell, & th.ltx_eqn_cell {
+  td.ltx_eqn_cell, th.ltx_eqn_cell {
     padding: 0.85em 0;
   }
-  & tr>td:first-child.ltx_eqn_eqno {
+  tr>td:first-child.ltx_eqn_eqno {
     padding-left: 0.85em;
   }
-  & tr>td:last-child.ltx_eqn_eqno {
+  tr>td:last-child.ltx_eqn_eqno {
     padding-right: 0.85em;
   }
 }
@@ -242,6 +227,7 @@ h1.title {
   max-width: 100%;
   min-height: 2.75em;
   overflow-x: auto;
+  overflow-y: hidden;
 
   padding: 0.85em;
 
@@ -265,4 +251,12 @@ mjx-container[jax="CHTML"][display="true"] {
   border-top: solid 1px;
   margin-top: 0.85em;
   padding-top: 0.85em;
+}
+
+/* maintain aspect ratio of images */
+.book .book-body .page-wrapper .page-inner section.normal {
+  iframe[src$=".svg"], svg, object[type="image/svg+xml"], img {
+    max-width: 100%;
+    height: auto;
+  }
 }

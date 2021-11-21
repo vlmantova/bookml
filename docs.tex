@@ -60,7 +60,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{8 October 2021}
+\date{21 November 2021}
 
 \begin{document}
 
@@ -179,13 +179,13 @@ Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from pr
 \begin{figure}
   \begin{lstlisting}[style=bookml]
 \begin{align*}
-  \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by MathJax} \\
-  \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by the browser}
+  \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \href{https://www.mathjax.org/}{MathJax}} \\
+  \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \emph{the browser}}
 \end{align*}
   \end{lstlisting}
   \begin{align*}
-    \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by MathJax} \\
-    \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by the browser}
+    \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \href{https://www.mathjax.org/}{MathJax}} \\
+    \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \emph{the browser}}
   \end{align*}
   \caption{How to disable MathJax for a single equation.}
   \label{fig:disable-mathjax}

@@ -21,8 +21,8 @@ GITBOOK_CSS = style.css plugin-table.css plugin-bookdown.css plugin-fontsettings
 GITBOOK_JS  = app.min.js plugin-fontsettings.js plugin-bookdown.js
 GITBOOK_OUT = $(patsubst %,bookml/gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
 
-BOOKML_CSS  = $(patsubst %.scss,bookml/%.css,$(wildcard CSS/*.scss))
-BOOKML_XSLT = $(patsubst %,bookml/%,$(wildcard XSLT/*))
+BOOKML_CSS  = $(patsubst %.scss,%.css,$(wildcard bookml/CSS/*.scss))
+BOOKML_XSLT = $(wildcard bookml/XSLT/*)
 
 # up to date animate, media9, pdfbase for producing compliant SVGs
 TEX_DEPS     = bookml/bookml.sty animate.sty media9.sty pdfbase.sty

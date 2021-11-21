@@ -67,19 +67,11 @@ h1.title {
 
 /* BookML tweaks */
 /* Disable bottom border on titles below level 1 */
-.level1 .level2 .header-section-number,
-.level1 h2 .header-section-number,
-.level1 h3 .header-section-number,
-.level1 h4 .header-section-number,
-.level1 h5 .header-section-number,
-.level1 h6 .header-section-number {
+.level1 .level2 .header-section-number, .level1 h2 .header-section-number, .level1 h3 .header-section-number, .level1 h4 .header-section-number, .level1 h5 .header-section-number, .level1 h6 .header-section-number {
   border-bottom: revert; }
 
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
-.book .book-body .page-wrapper .page-inner section.normal h6 {
-  color: inherit; }
-
-.book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
+.book .book-body .page-wrapper .page-inner section.normal h6, .book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
   color: inherit; }
 
 .book.color-theme-2 .book-body .page-wrapper .page-inner section.normal h6 {
@@ -95,51 +87,28 @@ h1.title {
 
 /* Ensure the paragraphs are scrollable if necessary */
 .ltx_para {
-  overflow-x: auto; }
+  overflow-x: auto;
+  overflow-y: hidden; }
 
 /* ...except in a few places */
 .ltx_item .ltx_para {
   overflow-x: revert; }
 
 /* Adjust colours in sepia and night modes */
-.book.color-theme-1 object[type="image/svg+xml"],
-.book.color-theme-1 iframe[src$=".svg"],
-.book.color-theme-1 img,
-.book.color-theme-1 *[style*=";color:"],
-.book.color-theme-1 *[style^="color:"] {
+.book.color-theme-1 object[type="image/svg+xml"], .book.color-theme-1 iframe[src$=".svg"], .book.color-theme-1 img, .book.color-theme-1 svg, .book.color-theme-1 *[style*=";color:"], .book.color-theme-1 *[style^="color:"] {
   filter: sepia(40%); }
 
-.book.color-theme-2 object[type="image/svg+xml"],
-.book.color-theme-2 iframe[src$=".svg"],
-.book.color-theme-2 img,
-.book.color-theme-2 *[style*=";color:"],
-.book.color-theme-2 *[style^="color:"] {
+.book.color-theme-2 object[type="image/svg+xml"], .book.color-theme-2 iframe[src$=".svg"], .book.color-theme-2 img, .book.color-theme-2 svg, .book.color-theme-2 *[style*=";color:"], .book.color-theme-2 *[style^="color:"] {
   filter: invert(100%) saturate(70%); }
-
-.book.color-theme-2 object[type="image/svg+xml"].bml_no_invert,
-.book.color-theme-2 iframe[src$=".svg"].bml_no_invert,
-.book.color-theme-2 img.bml_no_invert,
-.book.color-theme-2 *[style*=";color:"].bml_no_invert,
-.book.color-theme-2 *[style^="color:"].bml_no_invert {
-  filter: saturate(70%); }
+  .book.color-theme-2 object[type="image/svg+xml"].bml_no_invert, .book.color-theme-2 iframe[src$=".svg"].bml_no_invert, .book.color-theme-2 img.bml_no_invert, .book.color-theme-2 svg.bml_no_invert, .book.color-theme-2 *[style*=";color:"].bml_no_invert, .book.color-theme-2 *[style^="color:"].bml_no_invert {
+    filter: saturate(70%); }
 
 /* do not apply filters twice */
-.book.color-theme-1 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-1 *[style*=";color:"] img, .book.color-theme-1 *[style*=";color:"] *[style*=";color:"], .book.color-theme-1 *[style*=";color:"] *[style^="color:"],
-.book.color-theme-1 *[style^="color:"] object[type="image/svg+xml"],
-.book.color-theme-1 *[style^="color:"] iframe[src$=".svg"],
-.book.color-theme-1 *[style^="color:"] img,
-.book.color-theme-1 *[style^="color:"] *[style*=";color:"],
-.book.color-theme-1 *[style^="color:"] *[style^="color:"],
-.book.color-theme-2 *[style*=";color:"] object[type="image/svg+xml"],
-.book.color-theme-2 *[style*=";color:"] iframe[src$=".svg"],
-.book.color-theme-2 *[style*=";color:"] img,
-.book.color-theme-2 *[style*=";color:"] *[style*=";color:"],
-.book.color-theme-2 *[style*=";color:"] *[style^="color:"],
-.book.color-theme-2 *[style^="color:"] object[type="image/svg+xml"],
-.book.color-theme-2 *[style^="color:"] iframe[src$=".svg"],
-.book.color-theme-2 *[style^="color:"] img,
-.book.color-theme-2 *[style^="color:"] *[style*=";color:"],
-.book.color-theme-2 *[style^="color:"] *[style^="color:"] {
+.book.color-theme-1 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-1 *[style*=";color:"] img, .book.color-theme-1 *[style*=";color:"] svg,
+.book.color-theme-1 *[style*=";color:"] *[style*=";color:"], .book.color-theme-1 *[style*=";color:"] *[style^="color:"], .book.color-theme-1 *[style^="color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style^="color:"] iframe[src$=".svg"], .book.color-theme-1 *[style^="color:"] img, .book.color-theme-1 *[style^="color:"] svg,
+.book.color-theme-1 *[style^="color:"] *[style*=";color:"], .book.color-theme-1 *[style^="color:"] *[style^="color:"], .book.color-theme-2 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-2 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-2 *[style*=";color:"] img, .book.color-theme-2 *[style*=";color:"] svg,
+.book.color-theme-2 *[style*=";color:"] *[style*=";color:"], .book.color-theme-2 *[style*=";color:"] *[style^="color:"], .book.color-theme-2 *[style^="color:"] object[type="image/svg+xml"], .book.color-theme-2 *[style^="color:"] iframe[src$=".svg"], .book.color-theme-2 *[style^="color:"] img, .book.color-theme-2 *[style^="color:"] svg,
+.book.color-theme-2 *[style^="color:"] *[style*=";color:"], .book.color-theme-2 *[style^="color:"] *[style^="color:"] {
   filter: revert; }
 
 /* Fix <dt> margin (a GitBook bug?) */
@@ -238,6 +207,7 @@ h1.title {
   max-width: 100%;
   min-height: 2.75em;
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 0.85em; }
   .ltx_equation.ltx_eqn_div + .ltx_equation.ltx_eqn_div {
     border-top: none; }
@@ -258,3 +228,8 @@ mjx-container[jax="CHTML"][display="true"] {
   border-top: solid 1px;
   margin-top: 0.85em;
   padding-top: 0.85em; }
+
+/* maintain aspect ratio of images */
+.book .book-body .page-wrapper .page-inner section.normal iframe[src$=".svg"], .book .book-body .page-wrapper .page-inner section.normal svg, .book .book-body .page-wrapper .page-inner section.normal object[type="image/svg+xml"], .book .book-body .page-wrapper .page-inner section.normal img {
+  max-width: 100%;
+  height: auto; }

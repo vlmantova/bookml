@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2021/11/21 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2022/02/06 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 
@@ -45,7 +45,7 @@
 
 % Image generation via LaTeX
 \ifbml@images
-\RequirePackage[noconfig,delayed,active]{preview}
+\RequirePackage[noconfig,delayed,active,tightpage]{preview}
 \let\bmlImageEnvironment\PreviewEnvironment
 \else
 \let\bmlImageEnvironment\@gobble

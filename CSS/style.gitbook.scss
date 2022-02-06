@@ -110,8 +110,8 @@ h1.title {
 }
 
 /* Adjust colours in sepia and night modes */
-object[type="image/svg+xml"], iframe[src$=".svg"], img, svg,
-*[style*=";color:"], *[style^="color:"] {
+object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
+*[style*=";color:" i], *[style^="color:" i] {
   .book.color-theme-1 & {
     filter: sepia(40%);
   }
@@ -125,9 +125,9 @@ object[type="image/svg+xml"], iframe[src$=".svg"], img, svg,
 
 /* do not apply filters twice */
 .book.color-theme-1, .book.color-theme-2 {
-  *[style*=";color:"], *[style^="color:"] {
-    object[type="image/svg+xml"], iframe[src$=".svg"], img, svg,
-    *[style*=";color:"], *[style^="color:"] {
+  *[style*=";color:" i], *[style^="color:" i] {
+    object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
+    *[style*=";color:" i], *[style^="color:" i] {
       filter: revert;
     }
   }
@@ -255,7 +255,7 @@ mjx-container[jax="CHTML"][display="true"] {
 
 /* maintain aspect ratio of images */
 .book .book-body .page-wrapper .page-inner section.normal {
-  iframe[src$=".svg"], svg, object[type="image/svg+xml"], img {
+  iframe[src$=".svg" i], svg, object[type="image/svg+xml" i], img {
     max-width: 100%;
     height: auto;
   }

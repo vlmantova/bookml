@@ -60,7 +60,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{21 November 2021}
+\date{6 February 2022}
 
 \begin{document}
 
@@ -221,9 +221,9 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
 \begin{animateinline}[
   alttext=none,loop,controls,nomouse,poster=20,autopause,
   begin={\begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (4,3);},
+    \useasboundingbox (0,0) rectangle (5,3);},
     end={\end{tikzpicture}}]{30}
-  \multiframe{160}{dShift=40mm+-0.5mm}
+  \multiframe{160}{dShift=50mm+-0.5mm}
     {\duck[tophat,xshift=\dShift]}
 \end{animateinline}
 \bmlDescription{A stylised rubber duck, yellow
@@ -237,9 +237,9 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
       alttext=none,loop,controls,nomouse,poster=20,autopause,
       poster=20,autopause,
       begin={\begin{tikzpicture}%
-        \useasboundingbox (0,0) rectangle (4,3);},
+        \useasboundingbox (0,0) rectangle (5,3);},
         end={\end{tikzpicture}}]{30}
-      \multiframe{160}{dShift=40mm+-0.5mm}
+      \multiframe{160}{dShift=50mm+-0.5mm}
         {\duck[tophat,xshift=\dShift]}
     \end{animateinline}
   \end{center}
@@ -255,19 +255,19 @@ Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be co
 If you only need this mechanism in a pinch, you can simply wrap the desired content between \ltxinline|\begin{bmlimage}| and \ltxinline|\end{bmlimage}| as exemplified in Figure~\ref{fig:xymatrix}.
 \begin{figure}
   \begin{lstlisting}[style=bookml]
-\begin{bmlimage}
-  \[ \xymatrix{
+\[ \begin{bmlimage}
+  \xymatrix{
+    U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
+    & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
+    & Y \ar[r]^g & Z}
+  \end{bmlimage} \]
+  \end{lstlisting}
+  \[ \begin{bmlimage}
+    \xymatrix{
       U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
       & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
-      & Y \ar[r]^g & Z} \]
-\end{bmlimage}
-  \end{lstlisting}
-  \begin{bmlimage}
-    \[ \xymatrix{
-        U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
-        & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
-        & Y \ar[r]^g & Z} \]
-  \end{bmlimage}
+      & Y \ar[r]^g & Z}
+    \end{bmlimage} \]
   \bmlDescription{Universal property of the pullback as defined in [omitted].}
   \caption{Example of \iflatexml\ltxinline|\xymatrix|\else\ltxinline|\\xymatrix|\fi{} from the \ltxinline|xypic| documentation.}
   \label{fig:xymatrix}

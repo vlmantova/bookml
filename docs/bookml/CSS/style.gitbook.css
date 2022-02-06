@@ -95,20 +95,20 @@ h1.title {
   overflow-x: revert; }
 
 /* Adjust colours in sepia and night modes */
-.book.color-theme-1 object[type="image/svg+xml"], .book.color-theme-1 iframe[src$=".svg"], .book.color-theme-1 img, .book.color-theme-1 svg, .book.color-theme-1 *[style*=";color:"], .book.color-theme-1 *[style^="color:"] {
+.book.color-theme-1 object[type="image/svg+xml" i], .book.color-theme-1 iframe[src$=".svg" i], .book.color-theme-1 img, .book.color-theme-1 svg, .book.color-theme-1 *[style*=";color:" i], .book.color-theme-1 *[style^="color:" i] {
   filter: sepia(40%); }
 
-.book.color-theme-2 object[type="image/svg+xml"], .book.color-theme-2 iframe[src$=".svg"], .book.color-theme-2 img, .book.color-theme-2 svg, .book.color-theme-2 *[style*=";color:"], .book.color-theme-2 *[style^="color:"] {
+.book.color-theme-2 object[type="image/svg+xml" i], .book.color-theme-2 iframe[src$=".svg" i], .book.color-theme-2 img, .book.color-theme-2 svg, .book.color-theme-2 *[style*=";color:" i], .book.color-theme-2 *[style^="color:" i] {
   filter: invert(100%) saturate(70%); }
-  .book.color-theme-2 object[type="image/svg+xml"].bml_no_invert, .book.color-theme-2 iframe[src$=".svg"].bml_no_invert, .book.color-theme-2 img.bml_no_invert, .book.color-theme-2 svg.bml_no_invert, .book.color-theme-2 *[style*=";color:"].bml_no_invert, .book.color-theme-2 *[style^="color:"].bml_no_invert {
+  .book.color-theme-2 object[type="image/svg+xml" i].bml_no_invert, .book.color-theme-2 iframe[src$=".svg" i].bml_no_invert, .book.color-theme-2 img.bml_no_invert, .book.color-theme-2 svg.bml_no_invert, .book.color-theme-2 *[style*=";color:" i].bml_no_invert, .book.color-theme-2 *[style^="color:" i].bml_no_invert {
     filter: saturate(70%); }
 
 /* do not apply filters twice */
-.book.color-theme-1 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-1 *[style*=";color:"] img, .book.color-theme-1 *[style*=";color:"] svg,
-.book.color-theme-1 *[style*=";color:"] *[style*=";color:"], .book.color-theme-1 *[style*=";color:"] *[style^="color:"], .book.color-theme-1 *[style^="color:"] object[type="image/svg+xml"], .book.color-theme-1 *[style^="color:"] iframe[src$=".svg"], .book.color-theme-1 *[style^="color:"] img, .book.color-theme-1 *[style^="color:"] svg,
-.book.color-theme-1 *[style^="color:"] *[style*=";color:"], .book.color-theme-1 *[style^="color:"] *[style^="color:"], .book.color-theme-2 *[style*=";color:"] object[type="image/svg+xml"], .book.color-theme-2 *[style*=";color:"] iframe[src$=".svg"], .book.color-theme-2 *[style*=";color:"] img, .book.color-theme-2 *[style*=";color:"] svg,
-.book.color-theme-2 *[style*=";color:"] *[style*=";color:"], .book.color-theme-2 *[style*=";color:"] *[style^="color:"], .book.color-theme-2 *[style^="color:"] object[type="image/svg+xml"], .book.color-theme-2 *[style^="color:"] iframe[src$=".svg"], .book.color-theme-2 *[style^="color:"] img, .book.color-theme-2 *[style^="color:"] svg,
-.book.color-theme-2 *[style^="color:"] *[style*=";color:"], .book.color-theme-2 *[style^="color:"] *[style^="color:"] {
+.book.color-theme-1 *[style*=";color:" i] object[type="image/svg+xml" i], .book.color-theme-1 *[style*=";color:" i] iframe[src$=".svg" i], .book.color-theme-1 *[style*=";color:" i] img, .book.color-theme-1 *[style*=";color:" i] svg,
+.book.color-theme-1 *[style*=";color:" i] *[style*=";color:" i], .book.color-theme-1 *[style*=";color:" i] *[style^="color:" i], .book.color-theme-1 *[style^="color:" i] object[type="image/svg+xml" i], .book.color-theme-1 *[style^="color:" i] iframe[src$=".svg" i], .book.color-theme-1 *[style^="color:" i] img, .book.color-theme-1 *[style^="color:" i] svg,
+.book.color-theme-1 *[style^="color:" i] *[style*=";color:" i], .book.color-theme-1 *[style^="color:" i] *[style^="color:" i], .book.color-theme-2 *[style*=";color:" i] object[type="image/svg+xml" i], .book.color-theme-2 *[style*=";color:" i] iframe[src$=".svg" i], .book.color-theme-2 *[style*=";color:" i] img, .book.color-theme-2 *[style*=";color:" i] svg,
+.book.color-theme-2 *[style*=";color:" i] *[style*=";color:" i], .book.color-theme-2 *[style*=";color:" i] *[style^="color:" i], .book.color-theme-2 *[style^="color:" i] object[type="image/svg+xml" i], .book.color-theme-2 *[style^="color:" i] iframe[src$=".svg" i], .book.color-theme-2 *[style^="color:" i] img, .book.color-theme-2 *[style^="color:" i] svg,
+.book.color-theme-2 *[style^="color:" i] *[style*=";color:" i], .book.color-theme-2 *[style^="color:" i] *[style^="color:" i] {
   filter: revert; }
 
 /* Fix <dt> margin (a GitBook bug?) */
@@ -230,6 +230,6 @@ mjx-container[jax="CHTML"][display="true"] {
   padding-top: 0.85em; }
 
 /* maintain aspect ratio of images */
-.book .book-body .page-wrapper .page-inner section.normal iframe[src$=".svg"], .book .book-body .page-wrapper .page-inner section.normal svg, .book .book-body .page-wrapper .page-inner section.normal object[type="image/svg+xml"], .book .book-body .page-wrapper .page-inner section.normal img {
+.book .book-body .page-wrapper .page-inner section.normal iframe[src$=".svg" i], .book .book-body .page-wrapper .page-inner section.normal svg, .book .book-body .page-wrapper .page-inner section.normal object[type="image/svg+xml" i], .book .book-body .page-wrapper .page-inner section.normal img {
   max-width: 100%;
   height: auto; }

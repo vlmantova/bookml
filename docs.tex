@@ -64,7 +64,7 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{6 February 2022}
+\date{26 March 2022}
 
 \begin{document}
 
@@ -207,18 +207,19 @@ LaTeXML supports the \ltxinline|picture| environment as well as \emph{some} \tik
 
 BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing LaTeXML entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
 \begin{lstlisting}[style=bookml]
-\bmlImageEnvironment{tikzpicture}
+\bmlImageEnvironment{tikzpicture,tikzcd}
 \bmlImageEnvironment{animateinline}
 
 % optional, but strongly recommended:
 % do not load tikz when running in LaTeXML
 \iflatexml\else
 \usepackage{tikz}
+\usetikzlibrary{cd}
 \usepackage{animate}
 \fi
 \end{lstlisting}
 
-Now every \ltxinline|tikzpicture| and \ltxinline|animate| environment will be compiled with \LaTeX{} (using \lstinline[frame=none]|latexmk|) and converted to SVG images (using \lstinline[frame=none]|dvisvgm|). Figure~\ref{fig:duck} demonstrates this approach.
+All environments passed to \ltxinline|\bmlImageEnvironment|, in this case \ltxinline|tikzpicture|, \ltxinline|tikzcd|, \ltxinline|animate|, will be compiled with \LaTeX{} using \lstinline[frame=none]|latexmk| and converted to SVG images via \lstinline[frame=none]|dvisvgm|. Note that in this example \LaTeXML{} will not load \tikzname{} at all. Figure~\ref{fig:duck} demonstrates this approach.
 
 \begin{figure}
   \begin{lstlisting}[style=bookml]
@@ -334,7 +335,7 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
 
 \subsection{Interspersing \LaTeX{} and \HTML{} (beta)}
 
-The command \ltxinline|\bmlHTMLEnvironment{tag}| defines an environment \ltxinline|\begin{h:tag} ... \end{h:tag}| which wraps the content between \lstinline[language=html,frame=none]|<tag> ... </tag>|. One can also add attributes as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|.
+The command \ltxinline|\bmlHTMLEnvironment{tag}| defines an environment \ltxinline|\begin{h:tag} ... \end{h:tag}| which wraps the content between \lstinline[language=html,frame=none]|<tag> ... </tag>|. One can also add attributes as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|. You can specify multiple tags by separating them with commas, as in \ltxinline|\bmlHTMLEnvironment{tag1,tag2}|.
 
 Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `phrasing' content, for instance they should not contain \htmlinline|<p>| paragraphs.
 

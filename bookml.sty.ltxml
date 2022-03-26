@@ -176,6 +176,18 @@ AtBeginDocument(sub {
 # HTML-in-LaTeX mechanism
 AtBeginDocument(sub { RelaxNGSchema('bookml/schema'); });
 
+# switch to T1 encoding for proper parsing of <, >
+sub BMLStartHTMLFontEncoding {
+  my ($stomach) = @_;
+  $stomach->bgroup;
+  if (LoadFontMap('T1')) {
+    MergeFont(encoding => 'T1'); }
+  else {
+    Warning('bookml', 'html', $stomach, 'Can\'t load T1 encoding, raw HTML likely to be garbled'); } }
+
+sub BMLEndHTMLFontEncoding {
+  $_[0]->egroup; }
+
 sub BMLHTMLEnvironment {
   my ($name, %opts) = @_;
 
@@ -191,25 +203,32 @@ sub BMLHTMLEnvironment {
       $document->absorb($body);    # emit content of the environment
 
       $document->closeElement('ltx:xmlelem');
-  });
+    },
+    beforeDigest     => \&BMLStartHTMLFontEncoding,
+    afterDigestBegin => \&BMLEndHTMLFontEncoding
+  );
 
   return;
 }
 
 DefPrimitive('\bmlHTMLEnvironment{}', sub {
-    my ($gullet, $name) = @_;
-    BMLHTMLEnvironment(ToString(Expand($name)));
+    my ($gullet, $names) = @_;
+    my @names = split(/,/, ToString(Expand($names)));
+    for my $name (@names) {
+      BMLHTMLEnvironment($name); }
+    return;
 });
 
 DefPrimitive('\bmlHTMLInlineEnvironment{}', sub {
-    my ($gullet, $name) = @_;
-    BMLHTMLEnvironment(ToString(Expand($name)), innercontext => 'inline');
+    my ($gullet, $names) = @_;
+    my @names = split(/,/, ToString(Expand($names)));
+    for my $name (@names) {
+      BMLHTMLEnvironment($name, innercontext => 'inline'); }
+    return;
 });
 
 # Raw HTML mechanism
 
-# import fontenc after \documentclass to allow for --preload=bookml
-AtBeginDocument(sub { RequirePackage('fontenc', options => ['T1']); });
 my $parser = XML::LibXML->new();
 
 DefConstructor('\bmlRawHTML Digested', sub {
@@ -222,7 +241,9 @@ DefConstructor('\bmlRawHTML Digested', sub {
     my $node = $document->openElement('ltx:rawhtml');
     map { $document->appendClone($node, $_) } @elems;
     $document->closeElement('ltx:rawhtml');
-  }
+  },
+  beforeDigest => \&BMLStartHTMLFontEncoding,
+  afterDigest  => \&BMLEndHTMLFontEncoding
 );
 
 # Image generation via LaTeX
@@ -351,19 +372,21 @@ sub BMLGenerateImages {
 }
 
 sub BMLImageEnvironment {
-  my ($gullet, $name) = @_;
-  $name = ToString($name);
-  AtBeginDocument(sub {
-      RequirePackage('graphicx');
-      DefMacroI(T_CS("\\begin{$name}"), undef, sub {
-          my ($ingullet) = @_;
-          while ($ingullet->readUntil(T_CS('\end'))) {
-            my $arg = $ingullet->readArg;
-            last if (ToString($arg) eq $name);
-          }
-          return T_CS('\bml@includeimage');
-      });
-  });
+  my ($gullet, $names) = @_;
+  my @names = split(/,/, ToString($names));
+  for my $name (@names) {
+    AtBeginDocument(sub {
+        RequirePackage('graphicx');
+        DefMacroI(T_CS("\\begin{$name}"), undef, sub {
+            my ($ingullet) = @_;
+            while ($ingullet->readUntil(T_CS('\end'))) {
+              my $arg = $ingullet->readArg;
+              last if (ToString($arg) eq $name);
+            }
+            return T_CS('\bml@includeimage');
+        });
+    });
+  }
   return;    # or perltidy complains
 }
 

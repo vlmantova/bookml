@@ -40,8 +40,7 @@
 \def\bmlHTMLInlineEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
 
 % Raw HTML
-\RequirePackage[T1]{fontenc} % required for proper parsing of <, >
-\def\bmlRawHTML#1{}
+\long\def\bmlRawHTML#1{}
 
 % Image generation via LaTeX
 \ifbml@images

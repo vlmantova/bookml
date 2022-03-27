@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2022/02/06 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2022/03/27 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 
@@ -36,8 +36,8 @@
 }
 
 % HTML
-\def\bmlHTMLEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
-\def\bmlHTMLInlineEnvironment#1{\newenvironment{h:#1}[1][]{}{}}
+\def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
+\def\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
 
 % Raw HTML
 \long\def\bmlRawHTML#1{}
@@ -45,7 +45,7 @@
 % Image generation via LaTeX
 \ifbml@images
 \RequirePackage[noconfig,delayed,active,tightpage]{preview}
-\let\bmlImageEnvironment\PreviewEnvironment
+\def\bmlImageEnvironment#1{\@for\name:=#1\do{\PreviewEnvironment{\name}}}
 \else
 \let\bmlImageEnvironment\@gobble
 \fi

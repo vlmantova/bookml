@@ -33,6 +33,10 @@
   <!-- include the BookML (X)HTML5 fixes -->
   <xsl:import href="xhtml5.xsl"/>
 
+  <!-- EPUB3 output does not include MathJax -->
+  <xsl:variable name="MATHJAX2" select="false()"/>
+  <xsl:variable name="MATHJAX3" select="false()" />
+
   <!-- add BookML resources at the end of the body, excluding MathJax -->
   <xsl:template match="/" mode="body-end">
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=body')]" mode="bml-resource"/>

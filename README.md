@@ -1,6 +1,10 @@
 # BookML
 bookdown flavoured GitBook port for LaTeXML.
 
+![](https://img.shields.io/github/v/release/vlmantova/bookml?logo=github&display_name=release)
+![](https://img.shields.io/github/downloads/vlmantova/bookml/total?logo=github)
+![](https://img.shields.io/github/license/vlmantova/bookml?logo=github)
+
 BookML is a small add-on for [LaTeXML](https://dlmf.nist.gov/LaTeXML/) with a few accessibility features and quality of life improvements. Its purpose is to simplify the conversion of LaTeX documents into HTML files that conform to the [Web Content Accessibility Guidelines 2.1](https://www.w3.org/TR/WCAG21/) level AA.
 
 The key features:

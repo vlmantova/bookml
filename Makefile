@@ -65,10 +65,10 @@ $(GITBOOK_OUT): bookml/gitbook | bookml/bookml.sty
 %.plain.xml: %.tex $(XML_DEPS) $(TEX_DEPS) $(PLAIN_DEPS) | %.pdf
 	$(LML_PREFIX)latexml --preload=[style=plain]bookml/bookml --dest="$@" "$<"
 
-%.epub: %.tex $(XML_DEPS) $(EPUB_DEPS) $(PLAIN_DEPS)
+%.epub: %.tex $(XML_DEPS) $(EPUB_DEPS) $(PLAIN_DEPS) LaTeXML-epub3.xsl
 	$(LML_PREFIX)latexmlc --preload=[style=plain]bookml/bookml --dest="$@" --splitat=section "$<"
 
-%/index.html: %.xml $(POST_DEPS) $(GITBOOK_DEPS) #%.pdf %.epub
+%/index.html: %.xml $(POST_DEPS) $(GITBOOK_DEPS) LaTeXML-html5.xsl #%.pdf %.epub
 	$(LML_PREFIX)latexmlpost --navigationtoc=context --dest="$@" --timestamp=0 $(SPLIT) "$<"
 
 %/index.plain.html: %.plain.xml $(POST_DEPS) $(PLAIN_DEPS) %.pdf

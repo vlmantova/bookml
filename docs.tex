@@ -1,16 +1,16 @@
-\RequirePackage{bookml/bookml}
 \documentclass[a4paper,british]{article}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
+\usepackage[british]{babel}
+\usepackage{bookml/bookml}
 \usepackage{latexml}
+
 % Google Search Console verification file
 \iflatexml
 \lxRequireResource[type=application/octet-stream]{googlee1709314ff1666e6.html}
 \fi
-
-\usepackage{babel}
 
 \usepackage[pdfusetitle,colorlinks]{hyperref}
 \usepackage{ifpdf}
@@ -64,7 +64,20 @@
 \title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{26 March 2022}
+\date{18 May 2022}
+
+% Google Analytics tag
+\bmlRawHTML{
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-CYGVWQVMS4"></script>
+  <script>
+      window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-CYGVWQVMS4');
+  </script>
+}
 
 \begin{document}
 
@@ -85,6 +98,15 @@
 \end{abstract}
 
 \begin{center}
+
+  Sources available on \href{https://github.com/vlmantova/bookml/}{GitHub}.
+  \lxWithClass{noepub}{\bmlRawHTML{
+    <br/>
+    <img src="https://img.shields.io/github/v/release/vlmantova/bookml?logo=github\&amp;display\_name=release"/>
+    <img src="https://img.shields.io/github/downloads/vlmantova/bookml/total?logo=github" class="noepub"/>
+    <img src="https://img.shields.io/github/stars/vlmantova/bookml?logo=github"/>
+  }}
+
   Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://vlmantova.github.io/bookml/docs.epub}{EPUB}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
 \end{center}
 

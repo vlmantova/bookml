@@ -48,11 +48,16 @@
   <xsl:template match="/" mode="body">
     <xsl:choose>
       <xsl:when test="$GITBOOK">
+        <xsl:variable name="nonavtoc">
+          <xsl:if test="not(//ltx:navigation/ltx:TOC/*)">
+            <xsl:text> bml-no-navtoc</xsl:text>
+          </xsl:if>
+        </xsl:variable>
         <xsl:text>&#x0A;</xsl:text>
         <body>
           <xsl:apply-templates select="." mode="body-begin"/>
           <xsl:text>&#x0A;</xsl:text>
-          <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+          <div class="book without-animation with-summary font-size-2 font-family-1{$nonavtoc}" data-basepath=".">
             <xsl:text>&#x0A;</xsl:text>
             <div class="book-summary">
               <xsl:apply-templates select="." mode="navbar"/>

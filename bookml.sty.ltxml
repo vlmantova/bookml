@@ -32,11 +32,12 @@ use LaTeXML::Util::Pathname;
 
 use File::Find;
 use File::Spec;
+use File::Which;
 use IPC::Open3;
 use XML::LibXML;
 use DB_File;
 
-my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog);
+my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog, $bml_NoteSTDERR);
 
 if (!defined &ProgressSpinup) {
   # pre-0.8.6 reporting
@@ -45,12 +46,14 @@ if (!defined &ProgressSpinup) {
   $bml_ProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
   $bml_Note             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
   $bml_NoteLog = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
+  $bml_NoteSTDERR = sub { };
 } else {
   $bml_ProgressSpinup   = \&ProgressSpinup;
   $bml_ProgressSpindown = \&ProgressSpindown;
   $bml_ProgressStep     = \&ProgressStep;
   $bml_Note             = \&Note;
   $bml_NoteLog          = \&NoteLog;
+  $bml_NoteSTDERR       = \&NoteSTDERR;
 }
 
 # Helper function to add resources at the *end* of head or body
@@ -196,9 +199,12 @@ sub BMLHTMLEnvironment {
       my $body = $properties{body};
       $kv = $kv && $kv->getKeyVals;
 
-      my $node = $document->openElement('ltx:xmlelem', ns => 'http://www.w3.org/1999/xhtml', name => $name, innercontext => $opts{innercontext});
+      my $node = $document->openElement('ltx:xmlelem',
+        ns   => 'http://www.w3.org/1999/xhtml',
+        name => $name, innercontext => $opts{innercontext});
       for my $attr (keys %$kv) {
-        $document->insertElement('ltx:xmlattr', undef, name => $attr, value => ToString($$kv{$attr})); }
+        $document->insertElement('ltx:xmlattr', undef, name => $attr,
+          value => ToString($$kv{$attr})); }
 
       $document->absorb($body);    # emit content of the environment
 
@@ -235,7 +241,8 @@ DefConstructor('\bmlRawHTML Digested', sub {
     my ($document, $arg) = @_;
 
     # wrap in <span> to set the XHTML namespace
-    my $html = $parser->parse_balanced_chunk('<span xmlns="http://www.w3.org/1999/xhtml">' . ToString($arg) . '</span>');
+    my $html = $parser->parse_balanced_chunk('<span xmlns="http://www.w3.org/1999/xhtml">'
+        . ToString($arg) . '</span>');
     my @elems = $html->firstChild->findnodes('*');
 
     my $node = $document->openElement('ltx:rawhtml');
@@ -251,15 +258,18 @@ NewCounter('bml@imagecounter');
 DefMacro('\bml@includeimage', '\stepcounter{bml@imagecounter}\includegraphics{bmlimages/\jobname-\thebml@imagecounter.svg}\bml@add@depth{\thebml@imagecounter}');
 DefConstructor('\bml@add@depth{}', \&BMLAddDepth);
 
-my %bml_depth;
+my $bml_depth;
 
 sub BMLAddDepth {
   my ($document, $counter) = @_;
   $counter = ToString($counter);
   BMLGenerateImages($document);
   my $node = $document->getLastChildElement($document->getElement);
-  return Error('bookml', 'dpth', $document, 'Could not find depth for image') if (!defined $bml_depth{$counter});
-  $document->setAttribute($node, 'imagedepth', int(0.5 + $bml_depth{$counter} * $bml_imagescale * 96 / 72));
+  return Error('expected', 'dpth', $document,
+    'could not find depth for BookML image ' . $node->getAttribute('graphic')
+      . "; see $bml_jobname.latexml.log for more details, and try deleting bmlimages/out/$bml_jobname.dpth")
+    unless defined $bml_depth && exists $$bml_depth{$counter};
+  $document->setAttribute($node, 'imagedepth', int(0.5 + $$bml_depth{$counter} * $bml_imagescale * 96 / 72));
   return;
 }
 
@@ -267,9 +277,20 @@ sub BMLGenerateImages {
   my ($gullet) = @_;
 
   # skip if we have already generated the images
-  return if %bml_depth;
+  return if defined $bml_depth;
+  $bml_depth = {};
 
-  &$bml_ProgressSpinup('BookML generating bmlimages');
+  return Error('expected', 'latexmk', undef, 'No latexmk command found; BookML images will be missing.',
+    'Please install latexmk to let BookML generate images from LaTeX')
+    unless which 'latexmk';
+  return Error('expected', 'dvisvgm', undef, 'No dvisvgm command found; BookML images will be missing.',
+    'Please install dvisvgm to let BookML generate images from LaTeX')
+    unless which 'dvisvgm';
+  return Error('expected', 'preview.sty', undef, 'Package preview.sty not found; BookML images will be missing.',
+    'Please install preview.sty to let BookML generate images from LaTeX')
+    unless pathname_kpsewhich('preview.sty');
+
+  &$bml_ProgressSpinup('BookML images');
 
   # code to activate bmlimages and add dvisvgm,hypertex as global options
   # hypertex ensures hyperref does not emit PDF specials which confuse dvisvgm
@@ -295,7 +316,7 @@ sub BMLGenerateImages {
 
   # compile $source to DVI with latexmk
   my @lmk_invocation = ('latexmk', '-output-format=dvi',
-    '-interaction=nonstopmode',     '-quiet', '-halt-on-error',
+    '-interaction=nonstopmode',     '-halt-on-error',
     '-output-directory=' . $outdir, '-usepretex=' . $preclass,
     '-jobname=' . $jobname,         $source);
   if ($^O =~ /^(MSWin|cygwin)/) {
@@ -306,34 +327,100 @@ sub BMLGenerateImages {
   my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
     @lmk_invocation);
 
-  my $rebuilt = 0;
+  my $rebuild    = 1;
+  my $print_next = 0;
 
   # report progress and remember if latexmk did anything
   while (<$lmk_stdout>) {
-    $rebuilt = 1;
+    if (!$rebuild || m/^Latexmk: Nothing to do for/) {
+      $rebuild = 0; }
     if (m/^Latexmk: Run number (.*)/) {
       &$bml_ProgressStep("latexmk: run number $1"); }
-    else { &$bml_ProgressStep(); }
-    chomp $_;
-    &$bml_NoteLog($_);
+    else {
+      chomp;
+      $_ = ' ' . $_;
+      # copied from texfot.pl v1.47 by Karl Berry (public domain)
+      if ($print_next) {
+        &$bml_NoteSTDERR($_);
+        $print_next = 0; }
+      # lines that can be ignored
+      elsif (/^\ (
+        LaTeX\ Warning:\ You\ have\ requested\ package
+        |LaTeX\ Font\ Warning:\ Some\ font\ shapes
+        |LaTeX\ Font\ Warning:\ Size\ substitutions
+        |Package\ auxhook\ Warning:\ Cannot\ patch
+        |Package\ biditools\ Warning:\ Patching
+        |Package\ caption\ Warning:\ Un(supported|known)\ document\ class
+        |Package\ fixltx2e\ Warning:\ fixltx2e\ is\ not\ required
+        |Package\ frenchb?\.ldf\ Warning:\ (Figures|The\ definition)
+        |Package\ layouts\ Warning:\ Layout\ scale
+        |\*\*\*\ Reloading\ Xunicode\ for\ encoding  # spurious ***
+        |This\ is\ `?(epsf\.tex|.*\.sty|TAP) # so what
+        |pdfTeX\ warning:.*inclusion:\ fou   #nd PDF version ...
+        |pdfTeX\ warning:.*inclusion:\ mul   #tiple pdfs with page group
+        |libpng\ warning:\ iCCP:\ Not\ recognizing
+        |!\ $
+        )/x) {
+        &$bml_ProgressStep(); }
+      # error messages followed by an additional line
+      elsif (/^\ (
+        .*?:[0-9]+:         # usual file:lineno: form
+        |!                  # usual ! form
+        |>\ [^<]            # from \show..., but not "> <img.whatever"
+        |.*pdfTeX\ warning  # pdftex complaints often cross lines
+        |LaTeX\ Font\ Warning:\ Font\ shape
+        |Package\ hyperref\ Warning:\ Token\ not\ allowed
+        |removed\ on\ input\ line  # hyperref
+        |Runaway\ argument
+        )/x) {
+        $print_next = 1;
+        &$bml_NoteSTDERR($_); }
+      # remaining errors and diagnostic messages
+      elsif (/^\ (
+        This\ is
+        |Output\ written
+        |No\ pages\ of\ output
+        |\(.*end\ occurred\ inside\ a\ group
+        # |(Und|Ov)erfull                           # bookml does not care about und|overfulls
+        |(LaTeX|Package|Class).*(Error) # |Warning) # bookml can ignore warnings
+        |.*Citation.*undefined                      # bookml can ignore warnings
+        |.*\ Error           # as in \Url Error ->...
+        |Missing\ character: # good to show (need \tracinglostchars=1)
+        |\\endL.*problem     # XeTeX?
+        |\*\*\*\s            # *** from some packages or subprograms
+        |l\.[0-9]+\          # line number marking
+        |all\ text\ was\ ignored\ after\ line
+        |.*Fatal\ error
+        |.*for\ symbol.*on\ input\ line
+        |\#\#
+        )/x) {
+        &$bml_NoteSTDERR($_); }
+      &$bml_ProgressStep();
+      &$bml_NoteLog($_); }
   }
 
   close($lmk_stdout);
   waitpid($lmk_pid, 0);
   if ($! || $?) {
-    return Error('bookml', 'latexmk', undef, "Problem while running latexmk",
+    &$bml_ProgressSpindown('BookML images');
+    return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see bmlimages/out/$jobname.log for more details",
       $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
       'Invocation:', @lmk_invocation); }
 
-  # open or create depth cache
-  tie %bml_depth, 'DB_File', $dpth, O_RDWR | O_CREAT
-    or return Fatal('bookml', 'dpth', undef,
-    "Couldn't create depth cache for " . $jobname,
-    "Message was: " . $!,
-    (-f $dpth ? "\n(possibly incompatible or corrupted db format?)" : ''));
+  if (!$rebuild) {
+    # open the depth cache
+    if (tie my %bml_depth_db, 'DB_File', $dpth, O_RDONLY) {
+      # restore the saved depth
+      while (my ($k, $v) = each(%bml_depth_db)) {
+        $$bml_depth{$k} = $v; }
+      untie %bml_depth_db; }
+    else {
+      # delete the depth cache
+      Info('I/O', 'dpth', undef, "Couldn't open the depth cache ($dpth) for $jobname.tex, message was '$!'; SVGs and depth cache will be recreated");
+      $rebuild = 1; } }
 
-  # if latexmk rebuilt the DVI, rebuild the images as well
-  if ($rebuilt) {
+  # if the DVI has changed, or the depth cache is invalid, rebuild the images
+  if ($rebuild) {
     # convert DVI to images
     my @dsvg_invocation = ('dvisvgm', '--page=1-', '--bbox=preview',
       '--no-fonts',          '--exact', '--optimize', '--zoom=' . $bml_imagescale,
@@ -348,12 +435,11 @@ sub BMLGenerateImages {
     # report progress
     my $counter;
     while (<$dsvg_stdout>) {
-      $rebuilt = 1;
       if (m/^processing page (\d+)/) {
         $counter = $1;
         &$bml_ProgressStep("dvisvgm: processing image $counter"); }
       elsif (m/, depth=(\d*(?:\.\d+)?)pt/) {
-        $bml_depth{$counter} = $1; }
+        $$bml_depth{$counter} = $1; }
       else { &$bml_ProgressStep(); }
       chomp $_;
       &$bml_NoteLog($_);
@@ -362,11 +448,24 @@ sub BMLGenerateImages {
     close($dsvg_stdout);
     waitpid($dsvg_pid, 0);
     if ($! || $?) {
-      return Error('bookml', 'dvisvgm', undef, "Problem while running dvisvgm",
+      &$bml_ProgressSpindown('BookML images');
+      return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; see $jobname.latexml.log for more details",
         $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
-        'Invocation:', @dsvg_invocation); } }
+        'Invocation:', @dsvg_invocation); }
 
-  &$bml_ProgressSpindown('BookML generating bmlimages');
+    # create the depth cache
+    unlink $dpth if -f $dpth;
+    if (tie my %bml_depth_db, 'DB_File', $dpth, O_RDWR | O_CREAT) {
+      # save the depth
+      while (my ($k, $v) = each(%$bml_depth)) {
+        $bml_depth_db{$k} = $v; }
+      untie %bml_depth_db; }
+    else {
+      # delete the depth cache
+      Error('I/O', 'dpth', undef, "Couldn't create the depth cache ($dpth) for $jobname.tex, message was '$!'; deleting $dpth");
+      unlink $dpth if -f $dpth; } }
+
+  &$bml_ProgressSpindown('BookML images');
 
   return;
 }

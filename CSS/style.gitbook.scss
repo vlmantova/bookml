@@ -69,6 +69,19 @@ h1.title {
 
 /* BookML tweaks */
 
+/* Disable sidebar if there is no table of contents */
+.book.bml-no-navtoc {
+  .book-body, .book-header.fixed {
+    left: 0;
+  }
+}
+
+.book.bml-no-navtoc {
+  .book-summary, .book-header>a:first-of-type {
+    display: none;
+  }
+}
+
 /* Disable bottom border on titles below level 1 */
 .level1 {
   .level2, h2, h3, h4, h5, h6 {

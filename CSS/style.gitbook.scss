@@ -91,6 +91,12 @@ h1.title {
   }
 }
 
+/* Remove bottom margin from chapter/appendix tags */
+.ltx_title_appendix .ltx_tag,
+.ltx_title_chapter .ltx_tag {
+  margin-bottom: 0;
+}
+
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
 .book-body .page-wrapper .page-inner section.normal h6 {
   .book &, .book.color-theme-1 & {

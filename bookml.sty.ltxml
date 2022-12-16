@@ -259,6 +259,12 @@ DefMacro('\bml@includeimage', '\stepcounter{bml@imagecounter}\includegraphics{bm
 DefConstructor('\bml@add@depth{}', \&BMLAddDepth);
 
 my $bml_depth;
+my $jobname = ToString(Expand(T_CS('\jobname')));
+my $source  = LookupValue('SOURCEFILE');
+my $outdir  = pathname_concat('bmlimages', $bml_jobname);
+my $dvifile = pathname_concat($outdir,     $jobname . '.dvi');
+my $svgfmt  = pathname_concat('bmlimages', '%f-%0p.svg');
+my $dpth    = pathname_concat($outdir,     $jobname . '.dpth');
 
 sub BMLAddDepth {
   my ($document, $counter) = @_;
@@ -267,7 +273,7 @@ sub BMLAddDepth {
   my $node = $document->getLastChildElement($document->getElement);
   return Error('expected', 'dpth', $document,
     'could not find depth for BookML image ' . $node->getAttribute('graphic')
-      . "; see $bml_jobname.latexml.log for more details, and try deleting bmlimages/out/$bml_jobname.dpth")
+      . "; see $bml_jobname.latexml.log for more details, and try deleting $dpth")
     unless defined $bml_depth && exists $$bml_depth{$counter};
   $document->setAttribute($node, 'imagedepth', int(0.5 + $$bml_depth{$counter} * $bml_imagescale * 96 / 72));
   return;
@@ -306,13 +312,6 @@ sub BMLGenerateImages {
   $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm,hypertex,#1]}';    # prepend dvisvgm,hypertex
   $preclass .= '\fi\bml@dcl@ss@}';                                         # close definition
   $preclass .= '\makeatother';
-
-  my $jobname = ToString(Expand(T_CS('\jobname')));
-  my $source  = LookupValue('SOURCEFILE');
-  my $outdir  = pathname_concat('bmlimages', 'out');
-  my $dvifile = pathname_concat($outdir,     $jobname . '.dvi');
-  my $svgfmt  = pathname_concat('bmlimages', '%f-%0p.svg');
-  my $dpth    = pathname_concat($outdir,     $jobname . '.dpth');
 
   # compile $source to DVI with latexmk
   my @lmk_invocation = ('latexmk', '-output-format=dvi',
@@ -403,7 +402,7 @@ sub BMLGenerateImages {
   waitpid($lmk_pid, 0);
   if ($! || $?) {
     &$bml_ProgressSpindown('BookML images');
-    return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see bmlimages/out/$jobname.log for more details",
+    return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see $outdir/$jobname.log for more details",
       $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
       'Invocation:', @lmk_invocation); }
 

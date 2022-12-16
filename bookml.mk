@@ -55,17 +55,15 @@ ifeq ($(OS),Windows_NT)
   RMDIR       =  rd /s /q
   RM          =  del /f /s /q
   MKDIR       =  mkdir
-  ZIP         ?= 7z a
-  ZIP_EXCLUDE ?= -x!
   sep         := $(strip \)
 else
-  RMDIR       = rm -fr --
-  RM          = rm -f --
-  MKDIR       = mkdir -p --
-  ZIP         ?= zip
-  ZIP_EXCLUDE ?= -x
+  RMDIR       =  rm -fr --
+  RM          =  rm -f --
+  MKDIR       =  mkdir -p --
   sep         =  /
 endif
+ZIP           ?= zip
+ZIP_EXCLUDE   ?= -x
 
 ### INTERNAL VARIABLES
 LATEXMK_INTFLAGS = -norc -interaction=nonstopmode -halt-on-error -recorder -deps -deps-out="$(DEPS_DIR)/$@.d" -aux-directory="$(AUX_DIR)" -emulate-aux-dir
@@ -74,18 +72,49 @@ BOOKML_DEPS_XML  = $(wildcard bookml/*.ltxml bookml/*.rng)
 
 # Do not delete intermediate files
 .SECONDARY:
+
 # Enable second expansion for $$(...) dependencies
 .SECONDEXPANSION:
+
 # Delete files on error
 .DELETE_ON_ERROR:
 
-.PHONY: all clean
+.PHONY: all clean clean-aux clean-html clean-pdf clean-xml clean-zip debug debug-targets debug-latexml debug-dvisvgm debug-latexmk debug-preview debug-zip
 
 all: $(TARGETS)
 
-clean:
-	-$(RM) $(TARGETS) $(foreach ext,.pdf .log .latexml.log .latexmlpost.log .fls .xml $(sep)index.html $(sep)LaTeXML.cache,$(TARGETS:.zip=$(ext)))
-	-$(RMDIR) bmlimages $(subst /,$(sep),$(DEPS_DIR) $(AUX_DIR))
+clean: clean-aux clean-html clean-pdf clean-xml clean-zip
+
+clean-aux:
+	-$(RM) $(foreach ext,.log .latexml.log .latexmlpost.log .fls $(sep)LaTeXML.cache,$(TARGETS:.zip=$(ext)))
+	-$(RMDIR) $(subst /,$(sep),$(DEPS_DIR) $(AUX_DIR))
+clean-html:
+	-$(RMDIR) $(TARGETS:.zip=)
+clean-pdf:
+	-$(RM) $(TARGETS:.zip=.pdf)
+clean-xml:
+	-$(RM) $(TARGETS:.zip=.xml)
+	-$(RMDIR) $(patsubst %.zip,bmlimages/%,$(TARGETS)) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS))
+clean-zip:
+	-$(RM) $(TARGETS)
+
+debug: debug-targets debug-latexml debug-dvisvgm debug-latexmk debug-preview debug-zip
+	@echo "=================================="
+	@echo "BookML: everything seems to be ok."
+debug-targets:
+	@echo "Main TeX files: $(if $(TARGETS),$(TARGETS:.zip=.tex),no .tex files with \documentclass found in this directory)."
+debug-latexml:
+	@echo "LaTeXML version: $(shell $(LATEXML) --VERSION 2>&1)."
+debug-dvisvgm:
+	@echo "dvisvgm version: $(shell dvisvgm --version)."
+debug-latexmk:
+	@echo "latexmk version: $(shell $(LATEXMK) --version)."
+debug-preview:
+	@echo "preview.sty location: $(if $(shell kpsewhich preview.sty),$(shell kpsewhich preview.sty),$(error preview.sty: No such file or directory))."
+debug-zip:
+	@echo "Executing ZIP:"
+	@zip -v
+
 
 -include $(wildcard $(DEPS_DIR)/*.d)
 

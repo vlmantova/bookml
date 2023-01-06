@@ -135,7 +135,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
     filter: sepia(40%);
   }
   .book.color-theme-2 & {
-    filter: invert(100%) saturate(70%);
+    filter: invert(100%) saturate(70%) hue-rotate(180deg);
     &.bml_no_invert {
       filter: saturate(70%);
     }

@@ -37,12 +37,10 @@ SOURCES ?= $(foreach f,$(wildcard *.tex),$(if $(call grep,\documentclass,$(f)),$
 # (7) files to be built: by default, a .zip file for each .tex file in $(SOURCES)
 TARGETS ?= $(SOURCES:.tex=.zip)
 # (8) texfot (optional, disable with TEXFOT=)
-TEXFOT      ?= texfot
+TEXFOT      ?= $(if $(call which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
 # (9) various terminal commands: by default, use typical Windows or Unix version
-ifndef ZIP   # detect zip or miktex-zip on Windows
-  ZIP        = $(if $(is.win),$(if $(shell where zip 2>NUL),zip,miktex-zip),zip)
-endif
+ZIP         ?= $(if $(is.win),$(if $(shell where zip 2>NUL),zip,miktex-zip),zip)
 ZIP_EXCLUDE ?= -x
 is.win      := $(if $(subst xWindows_NT,,x$(OS)),,true)
 CP          := $(if $(is.win),copy,cp)
@@ -61,6 +59,8 @@ BOOKML_DEPS_HTML = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl \
 BOOKML_DEPS_XML  = $(wildcard bookml/*.ltxml bookml/*.rng)
 
 ### UTILS
+# find if a command is available
+which = $(if $(is.win),$(shell where "$1" 2>NUL),$(shell command -v "$1"))
 # recursive wildcard (https://stackoverflow.com/a/18258352)
 rwildcard = $(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 # backward compatible file/grep function
@@ -112,8 +112,10 @@ ifeq ($(is.win),true)
   SHELL    := cmd.exe
   __ignore := $(shell chcp 65001)
   echo      = echo $1$(reset) >&2
+  ospath    = $(subst /,$(pathsep),$1)
 else
   echo      = echo "$1$(reset)" >&2
+  ospath    = $1
 endif
 ; := $(if $(is.win),&,;)
 
@@ -142,13 +144,11 @@ ver.recver = $(strip $(if $3, \
     $(yellow) $3; recommended $2 or later), \
     $(red) $3; required at least $1$(if $2,; recommended $2 or later)), \
     $(red) NOT FOUND))
-testver    = @$(call echo,$(cyan)$1:$(call ver.recver,$2,$3,$4))
+testver    = @$(call echo,$(cyan)$1:$(call ver.recver,$2,$3,$4)$(reset)$5)
 
 openp   = (
 closedp = )
 
-# translate file paths if necessary
-ospath = $(subst /,$(pathsep),$1)
 
 # Do not delete intermediate files
 .SECONDARY:
@@ -173,17 +173,17 @@ announce-targets:
 clean: clean-aux clean-html clean-pdf clean-xml clean-zip
 
 clean-aux:
-	-$(RM) $(foreach ext,.log .latexml.log .latexmlpost.log .fls $(pathsep)LaTeXML.cache,$(TARGETS:.zip=$(ext)))
-	-$(RMDIR) $(subst /,$(pathsep),$(DEPS_DIR) $(AUX_DIR))
+	-$(RM) $(call ospath,$(foreach ext,.log .latexml.log .latexmlpost.log .fls $(pathsep)LaTeXML.cache,$(TARGETS:.zip=$(ext))))
+	-$(RMDIR) $(call ospath,$(DEPS_DIR) $(AUX_DIR))
 clean-html:
-	-$(RMDIR) $(TARGETS:.zip=)
+	-$(RMDIR) $(call ospath,$(TARGETS:.zip=))
 clean-pdf:
-	-$(RM) $(TARGETS:.zip=.pdf)
+	-$(RM) $(call ospath,$(TARGETS:.zip=.pdf))
 clean-xml:
-	-$(RM) $(TARGETS:.zip=.xml)
-	-$(RMDIR) $(patsubst %.zip,bmlimages/%,$(TARGETS)) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS))
+	-$(RM) $(call ospath,$(TARGETS:.zip=.xml))
+	-$(RMDIR) $(call ospath,$(patsubst %.zip,bmlimages/%,$(TARGETS)) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS)))
 clean-zip:
-	-$(RM) $(TARGETS)
+	-$(RM) $(call ospath,$(TARGETS))
 
 debug: detect # for backward compatibility
 detect: detect-targets detect-make detect-tex detect-perl detect-latexml \
@@ -202,7 +202,7 @@ detect-make:
 detect-perl:
 	$(eval perl_ver := $(subst $(closedp),,$(subst $(openp),,$(firstword \
 	  $(filter $(openp)%,$(shell perl --version $(null)))))))
-	$(call testver,         perl,,,$(perl_ver))
+	$(call testver,         perl,5.8.1,,$(perl_ver), (optional))
 detect-latexml:
 	$(eval latexml_ver := $(subst $(closedp),,$(filter %$(closedp), \
 	  $(shell $(LATEXML) --VERSION 2>&1))))
@@ -210,20 +210,22 @@ detect-latexml:
 detect-imagemagick:
 	$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
 	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(null)))))
-	$(call testver,Image::Magick,,,$(magick_ver))
+	$(call testver,Image::Magick,,,$(magick_ver), (required for any image handling))
 detect-ghostscript:
 	$(foreach a, \
 	  $(if $(is.win),gswin64c gswin64 gswin32c gswin32,gs), \
 	  $(if $(gs_ver),,$(eval gs_ver:=$(shell $a -v $(null)))))
-	$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)))
+	$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF images))
 detect-dvisvgm:
-	$(call testver,      dvisvgm,1.6,,$(lastword $(shell dvisvgm --version $(null))))
+	$(call testver,      dvisvgm,1.6,,$(lastword $(shell dvisvgm --version $(null))), (required for SVG images, bmlImageEnvironment))
 detect-latexmk:
 	$(call testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(null))))
 detect-texfot:
-	$(call testver,       texfot,,,$(wordlist 3,3,$(shell $(TEXFOT) --version $(null))))
+	$(call testver,       texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(null)))), (optional))
 detect-preview:
-	$(call testver,  preview.sty,,,$(shell kpsewhich preview.sty $(null)))
+	$(eval preview_loc := $(shell kpsewhich preview.sty $(null)))$(eval preview_ver := $(if $(preview_loc),$(subst _,., \
+	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst $$Name: release_,RELEASE_,$(call bfile,$(preview_loc))))))))
+	$(call testver,  preview.sty,11.81,,$(preview_ver), (required for bmlImageEnvironment))
 detect-zip:
 	$(eval zip_ver := $(firstword $(subst Zip_,,\
 	  $(filter Zip_%,$(subst Zip$(space),Zip_,$(shell $(ZIP) -v $(null)))))))
@@ -232,12 +234,12 @@ detect-zip:
 -include $(wildcard $(DEPS_DIR)/*.d)
 
 $(DEPS_DIR):
-	$(call cmd,$(MKDIR) "$(subst /,$(pathsep),$@)")
+	$(call cmd,$(MKDIR) "$(call ospath,$@)")
 
 # use relative paths is possible (with extra work if there are spaces)
 $(subst $(space),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/%.pdf
-	$(call cmd,$(CP) "$(subst /,$(pathsep),$<)" "$(subst /,$(pathsep),$@)")
-	-$(call cmd,$(CP) "$(subst /,$(pathsep),$(AUX_DIR)/$*.synctex.gz)" "$(subst /,$(pathsep),$*.synctex.gz)")
+	$(call cmd,$(CP) "$(call ospath,$<)" "$(call ospath,$@)")
+	-$(call cmd,$(CP) "$(call ospath,$(AUX_DIR)/$*.synctex.gz)" "$(call ospath,$*.synctex.gz)")
 
 $(AUX_DIR)/%.pdf: will.pdf:=x
 $(AUX_DIR)/%.pdf: %.tex | $(DEPS_DIR)
@@ -247,7 +249,7 @@ $(AUX_DIR)/%.pdf: %.tex | $(DEPS_DIR)
 %.xml: will.xml:=x
 %.xml: %.tex $(BOOKML_DEPS_XML) %.pdf
 	$(call progress,latexml: $< → $@)
-	$(call cmd,$(LATEXML) $(if $(call grep,{bookml/bookml},$<),,--preamble=literal:\\RequirePackage{bookml/bookml} \
+	$(call cmd,$(LATEXML) $(if $(call grep,{bookml/bookml},$<),,--preamble=literal:$(if $(is.win),\,\\)RequirePackage{bookml/bookml} \
 	) $(LATEXMLFLAGS) --destination="$@" "$<")
 
 %/index.html: will.html:=x
@@ -259,5 +261,5 @@ $(AUX_DIR)/%.pdf: %.tex | $(DEPS_DIR)
 %.zip: will.zip:=x
 %.zip: %/index.html $$(call rwildcard,$$*,*)
 	$(call progress,zip: $(<D) → $@)
-	-$(call cmd,$(RM) "$(subst /,$(pathsep),$@)")
+	-$(call cmd,$(RM) "$(call ospath,$@)")
 	$(call cmd,$(ZIP) -r "$@" "$*" "$(ZIP_EXCLUDE)$*$(pathsep)LaTeXML.cache")

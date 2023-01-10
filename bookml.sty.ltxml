@@ -186,10 +186,12 @@ sub BMLStartHTMLFontEncoding {
   if (LoadFontMap('T1')) {
     MergeFont(encoding => 'T1'); }
   else {
-    Warning('bookml', 'html', $stomach, 'Can\'t load T1 encoding, raw HTML likely to be garbled'); } }
+    Warning('bookml', 'html', $stomach, 'Can\'t load T1 encoding, raw HTML likely to be garbled'); }
+  return; }
 
 sub BMLEndHTMLFontEncoding {
-  $_[0]->egroup; }
+  $_[0]->egroup;
+  return; }
 
 sub BMLHTMLEnvironment {
   my ($name, %opts) = @_;
@@ -422,7 +424,8 @@ sub BMLGenerateImages {
   if ($rebuild) {
     # convert DVI to images
     my @dsvg_invocation = ('dvisvgm', '--page=1-', '--bbox=preview',
-      '--no-fonts',          '--exact', '--optimize', '--zoom=' . $bml_imagescale,
+      '--no-fonts', '--exact', '--zoom=' . $bml_imagescale,
+      ('--optimize') x (version->parse(split(' ', `dvisvgm --version`)) >= v1.6),
       '--output=' . $svgfmt, $dvifile);
     if ($^O =~ /^(MSWin|cygwin)/) {
       require Win32::ShellQuote;

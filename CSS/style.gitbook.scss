@@ -265,6 +265,13 @@ mjx-container[jax="CHTML"][display="true"] {
   margin: 0 !important;
 }
 
+/* prevent invisible assistive MathML from enlarging the container */
+mjx-assistive-mml {
+  right: 0 !important;
+  bottom: 0 !important;
+  clip-path: polygon(0 0, 0 1px, 1px 0);
+}
+
 /* lxFooter */
 .bml_footer {
   border-top: solid 1px;

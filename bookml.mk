@@ -30,16 +30,18 @@ LATEXMLPOSTFLAGS ?= --urlstyle=file --pmml --mathtex --navigationtoc=context
 # (4) for *adding* options without changing the default ones
 LATEXMLEXTRAFLAGS     ?=
 LATEXMLPOSTEXTRAFLAGS ?=
-# (5) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
+# (5) perl command
+PERL ?= perl
+# (6) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
 SPLITAT ?= section
-# (6) source files: by default, all .tex files containing a \documentclass
+# (7) source files: by default, all .tex files containing a \documentclass
 SOURCES ?= $(foreach f,$(wildcard *.tex),$(if $(call grep,\documentclass,$(f)),$(f)))
-# (7) files to be built: by default, a .zip file for each .tex file in $(SOURCES)
+# (8) files to be built: by default, a .zip file for each .tex file in $(SOURCES)
 TARGETS ?= $(SOURCES:.tex=.zip)
-# (8) texfot (optional, disable with TEXFOT=)
+# (9) texfot (optional, disable with TEXFOT=)
 TEXFOT      ?= $(if $(call which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
-# (9) various terminal commands: by default, use typical Windows or Unix version
+# (10) various terminal commands: by default, use typical Windows or Unix version
 ZIP         ?= $(if $(is.win),$(if $(shell where zip 2>NUL),zip,miktex-zip),zip)
 ZIP_EXCLUDE ?= -x
 is.win      := $(if $(subst xWindows_NT,,x$(OS)),,true)
@@ -51,8 +53,6 @@ pathsep     := $(if $(is.win),$(strip \),/)
 null        := $(if $(is.win),2>NUL,2>/dev/null)
 
 ### INTERNAL VARIABLES
-LATEXMK_INTFLAGS = -norc -interaction=nonstopmode -halt-on-error -recorder \
-  -deps -deps-out="$(DEPS_DIR)/$*.d" -output-directory="$(AUX_DIR)"
 BOOKML_DEPS_HTML = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl \
   bookml/*.rng bookml/CSS/*.css bookml/gitbook/css/fontawesome/*.ttf \
   bookml/gitbook/css/*.css bookml/js/*.js bmluser/*.css)
@@ -93,20 +93,23 @@ boxspc = $(space)$(bluebg)▌$(subst ­, ,$(call                                
 boxmid = $(space)$(bluebg)▌ $(strip $(subst $(space)$(esc)[,$(esc)[,$1))$(reset)$(bluebg) ▐
 boxbot =          $(space)▀$(call                                             boxgen,▀,$1)▀
 
-cmd      = @$(call echo,$(yellow)$1) $;$1
+cmd      = @$(call echo,$(yellow)$(if $(is.win),$1,$(subst ",\",$1))) $;$1
 box      = @$(call echo,$(call boxtop,$1)) $; $(call echo,$(call boxspc,$1)) $; \
   $(call echo,$(call boxmid,$1)) $; $(call echo,$(call boxspc,$1)) $; $(call echo,$(call boxbot,$1))
 progress = @$(call box,[$(words $(will.zip) $(will.pdf) $(will.html) $(will.xml))] $1)
 
-esc      := 
-cyan     := $(esc)[96m
-magenta  := $(esc)[95m
-yellow   := $(esc)[93m
-green    := $(esc)[92m
-red      := $(esc)[91m
-blue     := $(esc)[34m
-bluebg   := $(esc)[44m
-reset    := $(esc)[0m
+# colors
+ifeq ($(if $(is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)),true)
+  esc      := 
+  cyan     := $(esc)[96m
+  magenta  := $(esc)[95m
+  yellow   := $(esc)[93m
+  green    := $(esc)[92m
+  red      := $(esc)[91m
+  blue     := $(esc)[34m
+  bluebg   := $(esc)[44m
+  reset    := $(esc)[0m
+endif
 
 ifeq ($(is.win),true)
   SHELL    := cmd.exe
@@ -178,10 +181,10 @@ clean-aux:
 clean-html:
 	-$(RMDIR) $(call ospath,$(TARGETS:.zip=))
 clean-pdf:
-	-$(RM) $(call ospath,$(TARGETS:.zip=.pdf))
+	-$(RM) $(call ospath,$(TARGETS:.zip=.pdf) $(TARGETS:.zip=.synctex.gz))
 clean-xml:
-	-$(RM) $(call ospath,$(TARGETS:.zip=.xml))
-	-$(RMDIR) $(call ospath,$(patsubst %.zip,bmlimages/%,$(TARGETS)) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS)))
+	-$(RM) $(call ospath,$(TARGETS:.zip=.xml) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS)))
+	-$(RMDIR) $(call ospath,$(patsubst %.zip,bmlimages/%,$(TARGETS)))
 clean-zip:
 	-$(RM) $(call ospath,$(TARGETS))
 
@@ -215,9 +218,9 @@ detect-ghostscript:
 	$(foreach a, \
 	  $(if $(is.win),gswin64c gswin64 gswin32c gswin32,gs), \
 	  $(if $(gs_ver),,$(eval gs_ver:=$(shell $a -v $(null)))))
-	$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF images))
+	$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF, BookML images))
 detect-dvisvgm:
-	$(call testver,      dvisvgm,1.6,,$(lastword $(shell dvisvgm --version $(null))), (required for SVG images, bmlImageEnvironment))
+	$(call testver,      dvisvgm,1.6,2.7,$(lastword $(shell dvisvgm --version $(null))), (required for SVG, BookML images))
 detect-latexmk:
 	$(call testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(null))))
 detect-texfot:
@@ -225,7 +228,7 @@ detect-texfot:
 detect-preview:
 	$(eval preview_loc := $(shell kpsewhich preview.sty $(null)))$(eval preview_ver := $(if $(preview_loc),$(subst _,., \
 	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst $$Name: release_,RELEASE_,$(call bfile,$(preview_loc))))))))
-	$(call testver,  preview.sty,11.81,,$(preview_ver), (required for bmlImageEnvironment))
+	$(call testver,  preview.sty,11.81,,$(preview_ver), (required for BookML images))
 detect-zip:
 	$(eval zip_ver := $(firstword $(subst Zip_,,\
 	  $(filter Zip_%,$(subst Zip$(space),Zip_,$(shell $(ZIP) -v $(null)))))))
@@ -244,19 +247,22 @@ $(subst $(space),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/%.pdf
 $(AUX_DIR)/%.pdf: will.pdf:=x
 $(AUX_DIR)/%.pdf: %.tex | $(DEPS_DIR)
 	$(call progress,pdflatex: $< → $*.pdf)
-	$(call cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(LATEXMK_INTFLAGS) -g -pdf -dvi- -ps- "$<")
+	$(call cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) -norc -interaction=nonstopmode -halt-on-error -recorder \
+	  -deps -deps-out="$(DEPS_DIR)/$*.d" -output-directory="$(AUX_DIR)" -g -pdf -dvi- -ps- "$<")
+#	escape spaces in the filenames reeported by latexmk
+	$(call cmd,$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d")
 
 %.xml: will.xml:=x
-%.xml: %.tex $(BOOKML_DEPS_XML) %.pdf
+%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf
 	$(call progress,latexml: $< → $@)
 	$(call cmd,$(LATEXML) $(if $(call grep,{bookml/bookml},$<),,--preamble=literal:$(if $(is.win),\,\\)RequirePackage{bookml/bookml} \
-	) $(LATEXMLFLAGS) --destination="$@" "$<")
+	) $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --destination="$@" "$<")
 
 %/index.html: will.html:=x
 %/index.html: %.xml %.pdf $(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$**.svg)
 	$(call progress,latexmlpost: $< → $@)
 	$(call cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl \
-	) $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) --destination="$@" "$<")
+	) $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --destination="$@" "$<")
 
 %.zip: will.zip:=x
 %.zip: %/index.html $$(call rwildcard,$$*,*)

@@ -15,15 +15,19 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2023/01/11 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2023/01/24 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
+\newif\ifbml@htmlsyntax
+\bml@htmlsyntaxtrue
 
 \DeclareOption{style=plain}{}
 \DeclareOption{style=gitbook}{}
 \DeclareOption{mathjax=2}{}
 \DeclareOption{nomathjax}{}
 \DeclareOption{_bmlimages}{\bml@imagestrue}
+\DeclareOption{htmlsyntax}{\bml@htmlsyntaxtrue}
+\DeclareOption{nohtmlsyntax}{\bml@htmlsyntaxfalse}
 \DeclareOption*{}
 
 \ProcessOptions
@@ -35,9 +39,14 @@
   \RequirePackage{bookml/latexml}
 }
 
-% HTML
+% HTML environments
 \def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
 \def\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
+
+% HTML syntax
+\ifbml@htmlsyntax
+\def\<#1>{}
+\fi
 
 % Raw HTML
 \long\def\bmlRawHTML#1{}

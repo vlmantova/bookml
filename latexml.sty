@@ -24,6 +24,8 @@
 \DeclareOption{nomathparserspeculate}{}
 \DeclareOption{guesstabularheaders}{}
 \DeclareOption{noguesstabularheaders}{}
+% Just ignore unknown options, so that binding can evolve more easily.
+\DeclareOption*{\PackageWarning{latexml}{option  \CurrentOption\space ignored}}
 \ProcessOptions
 %======================================================================
 % NOTE: Figure out where this should go.
@@ -66,6 +68,10 @@
         T\kern-.1667em\lower.4ex\hbox{E}\kern-0.05em\relax
         {\scshape xml}}%
 
+\providecommand{\LaTeXMLversion}{}
+\providecommand{\LaTeXMLrevision}{}
+\providecommand{\LaTeXMLfullversion}{\LaTeXML}
+
 %======================================================================
 % id related features
 \providecommand{\lxDocumentID}[1]{}%
@@ -77,22 +83,26 @@
 % Add a class to the constructed xml (ignored in latex)
 \providecommand{\lxAddClass}[1]{}%
 \providecommand{\lxWithClass}[2]{#2}%
+\providecommand{\lxAddAnnotation}[1]{}%
+\providecommand{\lxWithAnnotation}[2]{#2}%
 
 %======================================================================
 % links
 \def\lxRef#1#2{#2}
 %======================================================================
 % Resources
+\providecommand{\lxRequireResource}[2][]{}
 
 %======================================================================
 % Page customization
+\def\lxKeywords#1{}
+
 \RequirePackage{comment}
 \def\lxContextTOC{}%
 \excludecomment{lxNavbar}
 \excludecomment{lxHeader}
 \excludecomment{lxFooter}
 
-\def\lxKeywords#1{}
 %======================================================================
 % Table beautification.
 % Low-level support to mark column and row headers.
@@ -160,9 +170,7 @@
 % that `use' it.
 
 % In document scoping, the definition would only be available within
-% the current sectional unit.  I'm not sure the best way to achieve this 
+% the current sectional unit.  I'm not sure the best way to achieve this
 % within latex, itself, but have ideas about latexml...
 % But, perhaps it is only the declarative aspects that are important to
 % latexml...
-
-

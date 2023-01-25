@@ -218,12 +218,18 @@ sub BMLHTMLEnvironment {
         $document->insertElement('ltx:xmlattr', undef, name => lc($attr),
           value => ToString($$kv{$attr})); }
 
-      $document->absorb($body);    # emit content of the environment
+      if (($opts{innercontext} // '') eq 'inline') {
+        $document->absorb($body);      # emit content of the environment
+      } else {
+        insertBlock($document, $body); # emit content wrapped in ltx:p if necessary
+        my $child = $node->firstChild;
+        if ($document->getModel->getNodeQName($child) eq 'ltx:block') {
+          $document->unwrapNodes($child);
+        }
+      }
 
       $document->closeElement('ltx:xmlelem');
     },
-    beforeDigest     => \&BMLStartHTMLFontEncoding,
-    afterDigestBegin => \&BMLEndHTMLFontEncoding,
     scope => 'global'
   );
 
@@ -247,6 +253,16 @@ DefPrimitive('\bmlHTMLInlineEnvironment{}', sub {
       if ('inline' ne $bml_html_innerctx{$name}) {
         $bml_html_innerctx{$name} = 'inline';
         BMLHTMLEnvironment($name, innercontext => 'inline'); } }
+    return;
+});
+
+DefPrimitive('\bmlHTMLBlockEnvironment{}', sub {
+    my ($gullet, $names) = @_;
+    my @names = split(/,/, ToString(Expand($names)));
+    for my $name (@names) {
+      if (!defined $bml_html_innerctx{$name} || 'block' ne $bml_html_innerctx{$name}) {
+        $bml_html_innerctx{$name} = 'block';
+        BMLHTMLEnvironment($name); } }
     return;
 });
 

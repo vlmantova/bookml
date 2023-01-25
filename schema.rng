@@ -20,6 +20,7 @@
       <zeroOrMore>
         <choice>
           <ref name="Flow.model"/>
+          <ref name="Block.model"/>
           <ref name="Para.model"/>
         </choice>
       </zeroOrMore>
@@ -41,7 +42,7 @@
       </zeroOrMore>
     </element>
   </define>
-  <define name="Misc.class" combine="choice">
+  <define name="Block.class" combine="choice">
     <zeroOrMore>
       <ref name="xmlelem"/>
     </zeroOrMore>

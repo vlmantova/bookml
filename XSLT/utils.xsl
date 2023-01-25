@@ -168,7 +168,7 @@
     <xsl:param name="context"/>
     <xsl:variable name="innercontext">
       <xsl:choose>
-        <xsl:when test="@innercontext">
+        <xsl:when test="@innercontext='inline'">
           <xsl:value-of select="@innercontext"/>
         </xsl:when>
         <xsl:otherwise><xsl:value-of select="$context"/></xsl:otherwise>

@@ -10,7 +10,7 @@ BookML is a small add-on for [LaTeXML](https://dlmf.nist.gov/LaTeXML/) with a fe
 The key features:
 - a port of the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org), tweaked for better WCAG conformance; this is enabled by default, but can be disabled;
 - styling fixes for LaTeXML (many backported from 0.8.6), such as mobile friendly responsive output;
-- transparent generation of SVG pictures via LaTeX for packages not well supported by LaTeXML, such as Ti*k*z pictures, animations, Xy-matrices;
+- transparent generation of SVG pictures via LaTeX for packages not well supported by LaTeXML, such as Ti*k*Z pictures, animations, Xy-matrices;
 - a simple method to add alternative text for images;
 - partial support for arbitrary HTML content;
 - direct embedding of MathJax, with the option of choosing between versions 2 and 3 or disabling it.

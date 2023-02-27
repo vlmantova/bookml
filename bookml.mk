@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-23 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ SPLITAT ?= section
 # (7) source files: by default, all .tex files containing a \documentclass
 SOURCES ?= $(foreach f,$(wildcard *.tex),$(if $(call grep,\documentclass,$(f)),$(f)))
 # (8) files to be built: by default, a .zip file for each .tex file in $(SOURCES)
-TARGETS ?= $(SOURCES:.tex=.zip)
+TARGETS ?= $(SOURCES:.tex=.zip) $(patsubst %,SCORM.%,$(SOURCES:.tex=.zip))
 # (9) texfot (optional, disable with TEXFOT=)
 TEXFOT      ?= $(if $(call which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
@@ -93,10 +93,10 @@ boxspc = $(space)$(bluebg)▌$(subst ­, ,$(call                                
 boxmid = $(space)$(bluebg)▌ $(strip $(subst $(space)$(esc)[,$(esc)[,$1))$(reset)$(bluebg) ▐
 boxbot =          $(space)▀$(call                                             boxgen,▀,$1)▀
 
-cmd      = @$(call echo,$(yellow)$(if $(is.win),$1,$(subst ",\",$1))) $;$1
-box      = @$(call echo,$(call boxtop,$1)) $; $(call echo,$(call boxspc,$1)) $; \
+cmd      = $(call echo,$(yellow)$(if $(is.win),$1,$(subst ",\",$1))) $;$1
+box      = $(call echo,$(call boxtop,$1)) $; $(call echo,$(call boxspc,$1)) $; \
   $(call echo,$(call boxmid,$1)) $; $(call echo,$(call boxspc,$1)) $; $(call echo,$(call boxbot,$1))
-progress = @$(call box,[$(words $(will.zip) $(will.pdf) $(will.html) $(will.xml))] $1)
+progress = $(call box,[$(words $(will.zip) $(will.pdf) $(will.html) $(will.xml) $(will.scormmanifest) $(will.scorm))] $1)
 
 # colors
 ifeq ($(if $(is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)),true)
@@ -147,7 +147,7 @@ ver.recver = $(strip $(if $3, \
     $(yellow) $3; recommended $2 or later), \
     $(red) $3; required at least $1$(if $2,; recommended $2 or later)), \
     $(red) NOT FOUND))
-testver    = @$(call echo,$(cyan)$1:$(call ver.recver,$2,$3,$4)$(reset)$5)
+testver    = $(call echo,$(cyan)$1:$(call ver.recver,$2,$3,$4)$(reset)$5)
 
 openp   = (
 closedp = )
@@ -163,7 +163,7 @@ closedp = )
 .DELETE_ON_ERROR:
 
 .PHONY: all announce-targets clean clean-aux clean-html clean-pdf clean-xml clean-zip \
-  debug detect detect-targets detect-make detect-tex detect-perl detect-latexml detect-imagemagick \
+  debug detect detect-sources detect-make detect-tex detect-perl detect-latexml detect-imagemagick \
   detect-ghostscript detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip
 
 all:
@@ -171,101 +171,114 @@ all: announce-targets $(TARGETS)
 	@$(if $(TARGETS),,$(call progress,Warning: $(red) no .tex files with \documentclass found in this directory))
 
 announce-targets:
-	$(call box,Going to build $(yellow) $(TARGETS))
+	@$(call box,Going to build $(yellow) $(TARGETS))
 
-clean: clean-aux clean-html clean-pdf clean-xml clean-zip
+clean: clean-aux clean-html clean-pdf clean-scorm clean-xml clean-zip
 
 clean-aux:
-	-$(RM) $(call ospath,$(foreach ext,.log .latexml.log .latexmlpost.log .fls $(pathsep)LaTeXML.cache,$(TARGETS:.zip=$(ext))))
-	-$(RMDIR) $(call ospath,$(DEPS_DIR) $(AUX_DIR))
+	-@$(RM) $(call ospath,$(foreach ext,.log .latexml.log .latexmlpost.log .fls $(pathsep)LaTeXML.cache,$(TARGETS:.zip=$(ext))))
+	-@$(RMDIR) $(call ospath,$(DEPS_DIR) $(AUX_DIR))
 clean-html:
-	-$(RMDIR) $(call ospath,$(TARGETS:.zip=))
+	-@$(RMDIR) $(call ospath,$(TARGETS:.zip=))
 clean-pdf:
-	-$(RM) $(call ospath,$(TARGETS:.zip=.pdf) $(TARGETS:.zip=.synctex.gz))
+	-@$(RM) $(call ospath,$(TARGETS:.zip=.pdf) $(TARGETS:.zip=.synctex.gz))
+clean-scorm:
+	-@$(RM) $(call ospath,$(TARGETS:.zip=/imsmanifest.xml))
 clean-xml:
-	-$(RM) $(call ospath,$(TARGETS:.zip=.xml) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS)))
-	-$(RMDIR) $(call ospath,$(patsubst %.zip,bmlimages/%,$(TARGETS)))
+	-@$(RM) $(call ospath,$(TARGETS:.zip=.xml) $(patsubst %.zip,bmlimages/%-*.svg,$(TARGETS)))
+	-@$(RMDIR) $(call ospath,$(patsubst %.zip,bmlimages/%,$(TARGETS)))
 clean-zip:
-	-$(RM) $(call ospath,$(TARGETS))
+	-@$(RM) $(call ospath,$(TARGETS))
 
 debug: detect # for backward compatibility
-detect: detect-targets detect-make detect-tex detect-perl detect-latexml \
+detect: detect-sources detect-make detect-tex detect-perl detect-latexml \
   detect-imagemagick detect-ghostscript detect-dvisvgm detect-latexmk \
   detect-texfot detect-preview detect-zip
-detect-targets:
-	@$(call echo,$(cyan)   Main files:$(if $(TARGETS) \
-	  ,$(green) $(TARGETS:.zip=.tex),$(red) no .tex files with \documentclass found in this directory))
+detect-sources:
+	@$(call echo,$(cyan)   Main files:$(if $(SOURCES) \
+	  ,$(green) $(SOURCES:.zip=.tex),$(red) no .tex files with \documentclass found in this directory))
 detect-tex:
-	$(eval __pre := T)$(eval __post :=)
-	$(eval tex_ver := $(subst  , ,$(patsubst $(openp)%,%,$(filter $(openp)%,$(subst $(closedp), , \
+	@$(eval __pre := T)$(eval __post :=)
+	@$(eval tex_ver := $(subst  , ,$(patsubst $(openp)%,%,$(filter $(openp)%,$(subst $(closedp), , \
 	  $(subst $(openp), $(openp),$(subst $(space), ,$(shell tex -version $(null)))))))))
-	$(call testver,          TeX,,,$(tex_ver))
+	@$(call testver,          TeX,,,$(tex_ver))
 detect-make:
-	$(call testver,     GNU Make,3.81,,$(MAKE_VERSION))
+	@$(call testver,     GNU Make,3.81,,$(MAKE_VERSION))
 detect-perl:
-	$(eval perl_ver := $(subst $(closedp),,$(subst $(openp),,$(firstword \
+	@$(eval perl_ver := $(subst $(closedp),,$(subst $(openp),,$(firstword \
 	  $(filter $(openp)%,$(shell perl --version $(null)))))))
-	$(call testver,         perl,5.8.1,,$(perl_ver), (optional))
+	@$(call testver,         perl,5.8.1,,$(perl_ver), (optional))
 detect-latexml:
-	$(eval latexml_ver := $(subst $(closedp),,$(filter %$(closedp), \
+	@$(eval latexml_ver := $(subst $(closedp),,$(filter %$(closedp), \
 	  $(shell $(LATEXML) --VERSION 2>&1))))
-	$(call testver,      LaTeXML,0.8.5,0.8.6,$(latexml_ver))
+	@$(call testver,      LaTeXML,0.8.5,0.8.6,$(latexml_ver))
 detect-imagemagick:
-	$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
+	@$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
 	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(null)))))
-	$(call testver,Image::Magick,,,$(magick_ver), (required for any image handling))
+	@$(call testver,Image::Magick,,,$(magick_ver), (required for any image handling))
 detect-ghostscript:
-	$(foreach a, \
+	@$(foreach a, \
 	  $(if $(is.win),gswin64c gswin64 gswin32c gswin32,gs), \
 	  $(if $(gs_ver),,$(eval gs_ver:=$(shell $a -v $(null)))))
-	$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF, BookML images))
+	@$(call testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF, BookML images))
 detect-dvisvgm:
-	$(call testver,      dvisvgm,1.6,2.7,$(lastword $(shell dvisvgm --version $(null))), (required for SVG, BookML images))
+	@$(call testver,      dvisvgm,1.6,2.7,$(lastword $(shell dvisvgm --version $(null))), (required for SVG, BookML images))
 detect-latexmk:
-	$(call testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(null))))
+	@$(call testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(null))))
 detect-texfot:
-	$(call testver,       texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(null)))), (optional))
+	@$(call testver,       texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(null)))), (optional))
 detect-preview:
-	$(eval preview_loc := $(shell kpsewhich preview.sty $(null)))$(eval preview_ver := $(if $(preview_loc),$(subst _,., \
+	@$(eval preview_loc := $(shell kpsewhich preview.sty $(null)))$(eval preview_ver := $(if $(preview_loc),$(subst _,., \
 	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst $$Name: release_,RELEASE_,$(call bfile,$(preview_loc))))))))
-	$(call testver,  preview.sty,11.81,,$(preview_ver), (required for BookML images))
+	@$(call testver,  preview.sty,11.81,,$(preview_ver), (required for BookML images))
 detect-zip:
-	$(eval zip_ver := $(firstword $(subst Zip_,,\
+	@$(eval zip_ver := $(firstword $(subst Zip_,,\
 	  $(filter Zip_%,$(subst Zip$(space),Zip_,$(shell $(ZIP) -v $(null)))))))
-	$(call testver,          zip,,,$(zip_ver))
+	@$(call testver,          zip,,,$(zip_ver))
 
 -include $(wildcard $(DEPS_DIR)/*.d)
 
 $(DEPS_DIR):
-	$(call cmd,$(MKDIR) "$(call ospath,$@)")
+	@$(call cmd,$(MKDIR) "$(call ospath,$@)")
 
 # use relative paths is possible (with extra work if there are spaces)
 $(subst $(space),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/%.pdf
-	$(call cmd,$(CP) "$(call ospath,$<)" "$(call ospath,$@)")
-	-$(call cmd,$(CP) "$(call ospath,$(AUX_DIR)/$*.synctex.gz)" "$(call ospath,$*.synctex.gz)")
+	@$(call cmd,$(CP) "$(call ospath,$<)" "$(call ospath,$@)")
+	-@$(call cmd,$(CP) "$(call ospath,$(AUX_DIR)/$*.synctex.gz)" "$(call ospath,$*.synctex.gz)")
 
 $(AUX_DIR)/%.pdf: will.pdf:=x
 $(AUX_DIR)/%.pdf: %.tex | $(DEPS_DIR)
-	$(call progress,pdflatex: $< → $*.pdf)
-	$(call cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) -norc -interaction=nonstopmode -halt-on-error -recorder \
+	@$(call progress,pdflatex: $< → $*.pdf)
+	@$(call cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) -norc -interaction=nonstopmode -halt-on-error -recorder \
 	  -deps -deps-out="$(DEPS_DIR)/$*.d" -output-directory="$(AUX_DIR)" -g -pdf -dvi- -ps- "$<")
 #	escape spaces in the filenames reeported by latexmk
-	$(call cmd,$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d")
+	@$(call cmd,$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d")
 
 %.xml: will.xml:=x
 %.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf
-	$(call progress,latexml: $< → $@)
-	$(call cmd,$(LATEXML) $(if $(call grep,{bookml/bookml},$<),,--preamble=literal:$(if $(is.win),\,\\)RequirePackage{bookml/bookml} \
-	) $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --destination="$@" "$<")
+	@$(call progress,latexml: $< → $@)
+	@$(call cmd,$(LATEXML) $(if $(call grep,{bookml/bookml},$<),,--preamble=literal:$(if $(is.win),\,\\)RequirePackage{bookml/bookml} \
+	  ) $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --destination="$@" "$<")
 
 %/index.html: will.html:=x
 %/index.html: %.xml %.pdf $(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$**.svg)
-	$(call progress,latexmlpost: $< → $@)
-	$(call cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl \
-	) $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --destination="$@" "$<")
+	@$(call progress,latexmlpost: $< → $@)
+	@$(call cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl \
+	  ) $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --destination="$@" "$<")
 
 %.zip: will.zip:=x
-%.zip: %/index.html $$(call rwildcard,$$*,*)
-	$(call progress,zip: $(<D) → $@)
-	-$(call cmd,$(RM) "$(call ospath,$@)")
-	$(call cmd,$(ZIP) -r "$@" "$*" "$(ZIP_EXCLUDE)$*$(pathsep)LaTeXML.cache")
+%.zip: %/index.html $$(filter-out %/imsmanifest.xml,$$(call rwildcard,$$*,*))
+	@$(call progress,zip: $(<D) → $@)
+	-@$(call cmd,$(RM) "$(call ospath,$@)")
+	@$(call cmd,$(ZIP) -r "$@" "$*" "$(ZIP_EXCLUDE)$*$(pathsep)LaTeXML.cache" "$(ZIP_EXCLUDE)$*$(pathsep)imsmanifest.xml")
+
+%/imsmanifest.xml: will.scormmanifest:=x
+%/imsmanifest.xml: %.xml bookml/XSLT/LaTeXML-imsmanifest.xsl
+	@$(call progress,SCORM manifest: $< → $@)
+	@$(call cmd,$(LATEXMLPOST) --stylesheet=bookml/XSLT/LaTeXML-imsmanifest.xsl --destination="$@" "$<")
+
+SCORM.%.zip: will.scorm:=x
+SCORM.%.zip: %/imsmanifest.xml %/index.html $$(call rwildcard,$$*,*)
+	@$(call progress,SCORM zip: $(<D) → $@)
+	-@$(call cmd,$(RM) "$(call ospath,$@)")
+	@$(call cmd,cd "$(<D)") $; $(call cmd,$(ZIP) -r "..$(pathsep)$@" . "$(ZIP_EXCLUDE)LaTeXML.cache")

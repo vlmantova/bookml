@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-23  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-VERSION  := $(shell git describe --dirty)
-RELEASE  := bookml-$(VERSION).zip
-EXAMPLE  := example-$(VERSION).zip
+RELEASE  := bookml.zip
+EXAMPLE  := example.zip
 
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
 GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)

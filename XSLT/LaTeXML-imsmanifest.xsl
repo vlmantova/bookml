@@ -20,16 +20,26 @@
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ltx="http://dlmf.nist.gov/LaTeXML"
-  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
-  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+  xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3"
+  xmlns:lom="http://ltsc.ieee.org/xsd/LOM"
+  xmlns:exsl="http://exslt.org/common"
+  exclude-result-prefixes="ltx"
+  extension-element-prefixes="exsl">
+  <!-- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" -->
 
   <xsl:output
     method="xml"
     encoding="utf-8"
-    cdata-section-elements="entity" />
+    cdata-section-elements="lom:entity" />
+
+  <xsl:param name="BML_MANIFEST" select="''" />
 
   <xsl:template match="/ltx:document">
     <manifest identifier="com.github.io.vlmantova.bookml.SCORM">
+      <!-- xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd
+                          http://ltsc.ieee.org/xsd/LOM lom.xsd
+                          http://www.adlnet.org/xsd/adlcp_v1p3 adlcp_v1p3.xsd" -->
       <xsl:copy-of select="@xml:lang" />
       <xsl:if test="ltx:date[@role='creation']">
         <xsl:attribute name="version">
@@ -39,16 +49,16 @@
       <metadata>
         <schema>ADL SCORM</schema>
         <schemaversion>2004 3rd Edition</schemaversion>
-        <lom>
-          <general>
-            <xsl:apply-templates select="ltx:title" />
+        <lom:lom>
+          <lom:general>
+            <xsl:apply-templates select="ltx:title" mode="lom" />
             <xsl:apply-templates select="ltx:abstract" />
-          </general>
-          <lifeCycle>
+          </lom:general>
+          <lom:lifeCycle>
             <xsl:apply-templates select="ltx:creator[ltx:personname]" />
             <xsl:apply-templates select="ltx:date[@role='creation']" />
-          </lifeCycle>
-        </lom>
+          </lom:lifeCycle>
+        </lom:lom>
       </metadata>
       <organizations>
         <organization identifier="org1">
@@ -59,8 +69,16 @@
         </organization>
       </organizations>
       <resources>
-        <resource identifier="resource1" type="webcontent" href="index.html" adlcp:scormtype="sco">
-          <file href="index.html" />
+        <resource identifier="resource1" type="webcontent" adlcp:scormType="asset">
+          <xsl:variable name="files">
+            <xsl:for-each select="document($BML_MANIFEST,.)/manifest/file">
+              <file href="{text()}" />
+            </xsl:for-each>
+          </xsl:variable>
+          <xsl:attribute name="href">
+            <xsl:value-of select="exsl:node-set($files)/*[1]/@href" />
+          </xsl:attribute>
+          <xsl:copy-of select="$files" />
         </resource>
       </resources>
     </manifest>
@@ -72,33 +90,45 @@
     </title>
   </xsl:template>
 
-  <xsl:template match="ltx:abstract">
-    <description>
-      <langString>
+  <xsl:template match="ltx:title" mode="lom">
+    <lom:title>
+      <lom:string>
         <xsl:apply-templates />
-      </langString>
-    </description>
+      </lom:string>
+    </lom:title>
+  </xsl:template>
+
+  <xsl:template match="ltx:abstract">
+    <lom:description>
+      <lom:string>
+        <xsl:apply-templates />
+      </lom:string>
+    </lom:description>
   </xsl:template>
 
   <xsl:template match="ltx:creator">
-    <contribute>
-      <role>
-        <xsl:value-of select="@role" />
-      </role>
-      <entity>
+    <lom:contribute>
+      <lom:role>
+        <lom:value>
+          <xsl:value-of select="@role" />
+        </lom:value>
+      </lom:role>
+      <lom:entity>
         <xsl:text>BEGIN:VCARD VERSION:2.1&#x0A;FN:</xsl:text>
         <xsl:apply-templates select="ltx:personname" />
         <xsl:text>&#x0A;END:VCARD</xsl:text>
-      </entity>
-    </contribute>
+      </lom:entity>
+    </lom:contribute>
   </xsl:template>
 
   <xsl:template match="ltx:date">
-    <version>
-      <langString>
+    <lom:version>
+      <lom:string>
         <xsl:apply-templates />
-      </langString>
-    </version>
+      </lom:string>
+    </lom:version>
   </xsl:template>
+
+  <xsl:template match="ltx:tags/ltx:tag[position() > 1]" />
 
 </xsl:stylesheet>

@@ -77,10 +77,10 @@
                 },
                 "download": </xsl:text>
             <xsl:choose>
-              <xsl:when test="//ltx:resource[contains(@type,';bmllocation=download')]">
+              <xsl:when test="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
                 <xsl:text>[ </xsl:text>
-                <xsl:for-each select="//ltx:resource[contains(@type,';bmllocation=download')]">
-                  <xsl:value-of select="concat('&quot;',f:url(@src),'&quot;, ')"/>
+                <xsl:for-each select="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
+                  <xsl:value-of select="concat('[ &quot;',f:url(@src),'&quot;, &quot;',substring-after(@type,';bmlname='),'&quot; ], ')" />
                 </xsl:for-each>
                 <xsl:text>]</xsl:text>
               </xsl:when>

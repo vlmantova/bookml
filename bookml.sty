@@ -15,7 +15,7 @@
 % along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bookml/bookml}[2023/02/27 BookML: bookdown flavoured GitBook port for LaTeXML]
+\ProvidesPackage{bookml/bookml}[2023/03/21 BookML: bookdown flavoured GitBook port for LaTeXML]
 
 \newif\ifbml@images
 \newif\ifbml@htmlsyntax
@@ -38,6 +38,9 @@
 }{
   \RequirePackage{bookml/latexml}
 }
+
+% Include alternative format
+\providecommand{\bmlAltFormat}[2]{}
 
 % HTML environments
 \def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}

@@ -279,3 +279,46 @@ mjx-container[jax="CHTML"][display="true"] {
     height: auto;
   }
 }
+
+/* adjust listings */
+.book .book-body .page-wrapper .page-inner section.normal div.ltx_listing {
+
+  /* set anchor for download button */
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+
+  /* restore initial LaTeXML style */
+  &.ltx_framed_rectangle {
+    border-style: solid;
+    border-width: 1px;
+  }
+
+  /* disable spaces */
+  &>pre {
+    white-space: normal;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* unset bookdown font size, restore spaces */
+  &>pre>code {
+    font-size: inherit;
+    white-space: pre;
+  }
+
+  /* adjust position of download button */
+  &>.ltx_listing_data {
+    margin-left: -100%;
+  }
+}
+
+.book .book-body .page-wrapper .page-inner section.normal {
+  & code.ltx_lstlisting {
+    font-size: inherit;
+    white-space: pre;
+    &::after, &::before {
+      content: none;
+    }
+  }
+}

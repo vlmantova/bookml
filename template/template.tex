@@ -1,0 +1,75 @@
+\documentclass[oneside,11pt]{amsart}
+
+%%% recommended for PDF quality: better handling of accented characters and ligatures
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+%%% REQUIRED for accessibility: set the language for the output (here 'en-GB')
+\usepackage[british]{babel}
+
+%%% REQUIRED for correct formatting and tagging of BookML output: title and author
+\title{A short BookML example}
+\author{Vincenzo Mantova}
+\date{21th March 2023}
+
+%%% RECOMMENDED for PDF quality: enable clickable links and metadata in PDFs
+% the option pdfusetitle adds \author and \title to the PDF metadata
+\usepackage[pdfusetitle]{hyperref}
+
+%%% RECOMMENDED for PDF quality: higher quality equivalent of Computer Modern
+\usepackage{lmodern}
+
+%%% OPTIONAL: additional BookML and LaTeXML functionality
+\usepackage{bookml/bookml}
+
+%%% REQUIRED for TikZ: use bmlImageEnvironment for TikZ and other images, since
+%%%                    LaTeXML is slow and often produces garbled TikZ output
+%%%                    (this requires \usepackage{bookml/bookml})
+% tell BookML to compile tikzpicture and tikzcd environments into images via LaTeX
+\bmlImageEnvironment{tikzpicture,tikzcd}
+% hide all TikZ-related commands from LaTeXML, but leave them when generating the PDF
+\iflatexml            % are we compiling through LaTeXML?
+\else
+\usepackage{tikz}     % if not, load TikZ as usual
+\usetikzlibrary{cd}
+\usepackage[all]{xy}
+% other TikZ-related command MUST be here, before \fi
+\fi
+
+%%% OPTIONAL for accessibility: additional versions of the document (e.g. large print)
+% the additional formats will be recompiled automatically whenever there are changes
+% you may use "\jobname" instead of "template" to pick up the name from this very file
+\bmlAltFormat{template.pdf}{PDF (serif)} % always included; here \bmlAltFormat simply changes its label
+\bmlAltFormat{template-sans.pdf}{PDF (sans serif)}
+\bmlAltFormat{template-sans-large.pdf}{PDF (sans, large)}
+
+% template-sans.tex, template-sans-large.tex \input this file after running some commands
+% to change font and print size
+% e.g. template-sans-large.tex defines '\bmlCrop' and selects the options for the crop
+% package using '\PassOptionsToPackage'
+\ifcsname bmlCrop\endcsname % is \bmlCrop defined?
+\usepackage{crop}           % if so, load the package crop
+\fi
+
+% used here to customise the 'description' environment
+\usepackage{enumitem}
+
+\begin{document}
+
+%%% RECOMMENDED for SCORM: the abstract becomes the description of the SCORM package
+\begin{abstract}
+  A minimal document to show and test how BookML works, including additional large print PDFs.
+\end{abstract}
+
+\maketitle
+
+%%% OPTIONAL: footer for HTML output, here for a copyright notice
+% note that the footer does not appear in the PDF
+% the PDF footer can be done in any of the usual ways (e.g. fancyhdr)
+\begin{lxFooter}
+  Copyright \copyright{} 2022-23 Vincenzo Mantova.
+\end{lxFooter}
+
+\input{section1}
+
+\end{document}

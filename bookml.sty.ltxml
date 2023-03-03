@@ -59,7 +59,7 @@ if (!defined &ProgressSpinup) {
 # Helper function to add resources at the *end* of head or body
 # Partly copied from RequireResource
 my $bml_resource_options = {
-  type => 1, location => 1, content => 1 };
+  type => 1, location => 1, content => 1, name => 1 };
 my $bml_resource_types = {
   css  => 'text/css',
   js   => 'text/javascript',
@@ -86,8 +86,11 @@ sub BMLRequireResource {
     Warn('expected', 'type', undef, 'Resource must have a mime-type; skipping');
     return; }
   $options{type} .= ';bmllocation=' . $options{location};
+  if ($options{name}) {
+    $options{type} .= ';bmlname=' . $options{name}; }
 
   delete $options{location};
+  delete $options{name};
   return RequireResource($resource, %options);
 }
 
@@ -156,9 +159,6 @@ if ($bml_style eq 'gitbook') {
 
   # additional files to be copied over
   RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.ttf', type => 'font/ttf');
-  for my $file (@bml_download) {
-    BMLRequireResource($file, location => 'download');
-  }
 }
 
 # CSS files
@@ -176,6 +176,22 @@ AtBeginDocument(sub {
         }
       },
       'bookml/CSS', (-d 'bmluser') ? 'bmluser' : ());
+    return;
+});
+
+# Include alternative format
+DefPrimitive('\bmlAltFormat {} {}', sub {
+    my ($stomach, $path, $name) = @_;
+    $path = ToString(Expand($path));
+    $name = ToString(Expand($name));
+    BMLRequireResource($path, location => 'download', name => $name) if $name;
+    @bml_download = grep { ! $_ eq $path } @bml_download;
+    return;
+});
+
+AtBeginDocument(sub {
+    for my $file (@bml_download) {
+      BMLRequireResource($file, location => 'download', name => uc(pathname_type($file))); }
     return;
 });
 
@@ -250,7 +266,7 @@ DefPrimitive('\bmlHTMLInlineEnvironment{}', sub {
     my ($gullet, $names) = @_;
     my @names = split(/,/, ToString(Expand($names)));
     for my $name (@names) {
-      if ('inline' ne $bml_html_innerctx{$name}) {
+      if (!defined $bml_html_innerctx{$name} || 'inline' ne $bml_html_innerctx{$name}) {
         $bml_html_innerctx{$name} = 'inline';
         BMLHTMLEnvironment($name, innercontext => 'inline'); } }
     return;

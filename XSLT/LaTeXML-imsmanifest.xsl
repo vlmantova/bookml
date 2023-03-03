@@ -35,6 +35,10 @@
 
   <xsl:param name="BML_MANIFEST" select="''" />
 
+  <xsl:template match="/">
+    <xsl:apply-templates select="ltx:document" />
+  </xsl:template>
+
   <xsl:template match="/ltx:document">
     <manifest identifier="com.github.io.vlmantova.bookml.SCORM">
       <!-- xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd

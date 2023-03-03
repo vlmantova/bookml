@@ -1,0 +1,39 @@
+\section{How to use this template}
+
+\begin{description}[leftmargin=1em,itemsep=1em] % change spacing
+  \item[How to compile this document] Run \texttt{make} in this folder (or \texttt{gmake} if you are on Windows). BookML will generate \texttt{\jobname/index.html} and various other files.
+  \item[The outputs] BookML will generate a zip file ready for `zip package' upload on Minerva, and a SCORM package also suitable for upload on Minerva. SCORM packages support `conditional availability'.
+  \item[Alternative formats] The preamble demonstrates `\texttt{\textbackslash{}bmlAltFormat\{\}\{\}}' to include alternative versions of the same file, and a strategy to generate a sans serif and a large print version of the same document. All the alternative formats are automatically compiled and included in the HTML output (see the download button).
+
+  \textbf{Warning:} the alternative versions invoked via `\texttt{\textbackslash{}bmlAltFormat}' will be packaged in the same zip and SCORM files, so do not use them for distributing homework solutions -- you typically want those to end up in a separate package.
+  \item[Multiple packages] Every \texttt{.tex} file in this folder that contains the text \texttt{\textbackslash{}documentclass} is automatically compiled to a different zip or SCORM package.
+  \item[Recompilation] Successive runs of \texttt{make} recompile only the files whose sources have been modified. For example, if you modify \texttt{section1.tex} and run \texttt{make} you will get a new \texttt{template.zip} but \texttt{exercises.zip} will remain intact.
+  \item[Splitting by chapter] By default, each section becomes a separate HTML page. Try running \texttt{make SPLITAT=} to have the entire document in a single file, or \texttt{make SPLITAT=chapter} to split by chapter (you may need to run \texttt{make clean} first, or manually delete the folder \texttt{\jobname} and \texttt{\jobname.zip}, to ensure a recompile). Modify \texttt{Makefile} to make the options permanent, or use different options for different documents.
+  \item[Requirements] See BookML guide.
+  \item[Ti\emph{k}Z] In the preamble, see how \texttt{\textbackslash{}bmlImageEnvironment} is used to flag the \texttt{tikzpicture} environments as images to be converted to SVG via \LaTeX{}. See also how the \texttt{bmlimage} environment can flag an arbitrary portion of text to be converted to SVG (useful for \texttt{\textbackslash{}xymatrix}).
+  \item[Images and alt text] See use of \texttt{\textbackslash{}bmlDescription} below: it must be placed right after the image.
+\end{description}
+
+\begin{figure}[b]
+\[ \begin{bmlimage}
+  \xymatrix{
+    U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
+    & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
+    & Y \ar[r]^g & Z}
+  \end{bmlimage}\bmlDescription{Diagram representing the pull-back of two functions.} \]
+  \caption{Example of \texttt{xymatrix} from the \texttt{xypic} documentation.}
+\end{figure}
+
+\begin{figure}[b]
+  \begin{center}
+    \begin{tikzcd}
+      A \arrow[rd] \arrow[r, "\phi"] & B \\
+                                     & C
+    \end{tikzcd}
+    \bmlDescription{A, B, C drawn in a triangle with C under B, an arrow labelled phi from A to B and an arrow from A to C}
+  \end{center}
+  \caption{Example of \texttt{tikzcd} diagram.}
+\end{figure}
+
+\subsection{Splitting}
+By default, each section becomes a separate HTML page in the same zip or SCORM package. Try specifying \texttt{SPLITAT=subsection} to see the difference.

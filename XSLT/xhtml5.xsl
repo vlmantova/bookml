@@ -425,4 +425,68 @@
     </xsl:choose>
   </xsl:template>
 
+  <!-- modify listings to use <pre>, <code> tags -->
+  <xsl:template match="ltx:text[b:has-class('ltx_lstlisting')]">
+    <xsl:param name="context" />
+    <code>
+      <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes" />
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+    </code>
+  </xsl:template>
+
+  <xsl:template match="ltx:listing">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes" />
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:element name="{f:blockelement($context,'pre')}" namespace="{$html_ns}">
+        <xsl:apply-templates>
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:element>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:listingline">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <code>
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes" />
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+    </code>
+  </xsl:template>
+
+  <!-- replace code space with actual space, to facilitate copy & paste -->
+  <xsl:template match="ltx:text[b:has-class('ltx_lst_space')]/text()[.='&#xA0;']">
+    <xsl:text> </xsl:text>
+  </xsl:template>
+
 </xsl:stylesheet>

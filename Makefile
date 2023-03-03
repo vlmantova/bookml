@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 RELEASE  := bookml.zip
-EXAMPLE  := example.zip
+TEMPLATE := template.zip
 
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
 GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
@@ -34,21 +34,26 @@ BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOO
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
 
-.PHONY: all release clean
+.PHONY: all release clean test
 .PRECIOUS:
 .SECONDARY:
 
 all: $(GITBOOK_OUT) $(CSS)
 
-release: $(RELEASE) $(EXAMPLE)
+release: $(RELEASE) $(TEMPLATE)
+
+test: $(TEMPLATE)
+	-rm -fr test
+	unzip -o -d test "$<"
+	$(MAKE) -C test
 
 $(RELEASE): $(RELEASE_OUT)
 	-rm -f "$@"
 	TZ=UTC+00 zip -r "$@" $^
 
-$(EXAMPLE): $(RELEASE) example/main.tex example/secondfile.tex example/chapter1.tex example/Makefile
+$(TEMPLATE): $(RELEASE) $(wildcard template/*.tex) template/Makefile
 	-rm -f "$@"
-	cd example ; TZ=UTC+00 zip -r "../$<" main.tex secondfile.tex chapter1.tex Makefile --output-file "../$@"
+	cd template ; TZ=UTC+00 zip -r "../$<" $(patsubst template/%,%,$(wildcard template/*.tex)) Makefile --output-file "../$@"
 
 clean:
 	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip

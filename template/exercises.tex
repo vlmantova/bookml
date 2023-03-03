@@ -1,0 +1,92 @@
+\documentclass[oneside,11pt]{amsart}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[british]{babel}
+\usepackage[pdfusetitle]{hyperref}
+\usepackage{lmodern}
+
+\usepackage{bookml/bookml}
+
+% alternative formats
+% we use \jobname to distinguish 'exercises' from 'exercises+solutions' automatically
+\usepackage{geometry}
+\bmlAltFormat{\jobname.pdf}{PDF (serif)}
+\bmlAltFormat{\jobname-sans.pdf}{PDF (sans serif)}
+\bmlAltFormat{\jobname-sans-large.pdf}{PDF (sans, large)}
+
+% same trick as template.tex
+\ifcsname bmlCrop\endcsname
+\usepackage{crop}
+\fi
+
+% the package comment offers an easy way to conditionally hide paragraphs
+\usepackage{comment}
+\ifcsname printSolutions\endcsname
+\includecomment{solution}
+\else
+\excludecomment{solution}
+\fi
+
+% solution of third exercise
+\ifcsname printSolutions\endcsname
+  \newenvironment*{sol}
+    {\<DETAILS>\<SUMMARY>\noindent\textbf{Solution.}\</SUMMARY>}
+    {\</DETAILS>}
+\else
+  \excludecomment{sol}
+\fi
+
+% to pretty print the code of one of the exercises
+\usepackage{listings}
+\usepackage[dvipsnames]{xcolor}
+\colorlet{WCAGGreen}{OliveGreen!80!black} % a bit darker to get sufficient contrast
+\lstset{basicstyle={\small\ttfamily},language=[LaTeX]TeX,%
+  texcsstyle=*{\color{blue}\bfseries},%
+  moretexcs={ifcsname,excludecomment},%
+  stringstyle={\color{red}},%
+  frame=none,%
+  xleftmargin=1em,xrightmargin=1em}
+
+\title{BookML example exercises}
+\author{Vincenzo Mantova}
+\date{21th March 2023}
+
+\begin{document}
+
+\maketitle
+
+\begin{itemize}
+  \item Run \texttt{make} in this folder, then modify \texttt{section1.tex}. Which files will be regenerated the next time you run \texttt{make}? In which order?
+
+\begin{solution}
+  \noindent\textbf{Solution.} \texttt{template.pdf}, \texttt{template.xml}, \texttt{template-sans.pdf}, \texttt{template-sans-large.pdf}, \texttt{template/index.html}, \texttt{template.zip}, \texttt{SCORM.template.zip}.
+\end{solution}
+  \item Modify \texttt{Makefile} so that \texttt{template.zip} (and related SCORM package) uses a single page, rather than being split by section.
+
+\begin{solution}
+  \noindent\textbf{Solution.} Add the line \texttt{SCORM.template.zip template.zip: SPLITAT=} at the bottom of \texttt{Makefile}.
+\end{solution}
+
+  \item Create an environment \texttt{sol} that creates a foldable `Solutions' block in the HTML output, while it is also omitted unless \texttt{\textbackslash{}printSolutions} is defined. Namely, something like:
+
+\<DETAILS>\<SUMMARY>\noindent\textbf{Sample solution.}\</SUMMARY>
+  Solution text goes here.
+\</DETAILS>
+
+\begin{sol}
+  Use the following code in the preamble
+  \begin{lstlisting}
+\ifcsname printSolutions\endcsname
+  \newenvironment*{sol}
+    {\<DETAILS>\<SUMMARY>\noindent\textbf{Solution.}\</SUMMARY>}
+    {\</DETAILS>}
+\else
+  \excludecomment{sol}
+\fi
+  \end{lstlisting}
+  The environment \texttt{sol} can now be used for solutions.
+\end{sol}
+\end{itemize}
+
+\end{document}

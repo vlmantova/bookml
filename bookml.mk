@@ -299,7 +299,7 @@ $(AUX_DIR)/%.pdf: %.tex | $(AUX_DIR) $(DEPS_DIR)
 $(AUX_DIR)/%.manifest-xml: %/index.html $$(filter-out %/LaTeXML.cache,$$(call bml.rwildcard,$$*,*)) | $(AUX_DIR)
 # call make recursively so that $(foreach) is evaluated *after* the HTML has been built
 ifeq ($(BML.MANIFEST.REEVAL),)
-	@$(MAKE) -f $(lastword $(MAKEFILE_LIST)) BML.MANIFEST.REEVAL=1 $@
+	@$(MAKE) -f $(firstword $(MAKEFILE_LIST)) BML.MANIFEST.REEVAL=1 $@
 else
 	@echo $(bml.lt)manifest$(bml.gt) > $@
 	$(foreach f,index.html $(filter-out index.html LaTeXML.cache,$(patsubst $*/%,%,$(call bml.rwildcard.file,$*,*))), \

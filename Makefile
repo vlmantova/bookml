@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-RELEASE  := bookml.zip
-TEMPLATE := template.zip
-
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
 GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
 GITBOOK_JS     := $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js plugin-fontsettings.js plugin-bookdown.js)
@@ -37,25 +34,29 @@ RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
 .PHONY: all release clean test
 .PRECIOUS:
 .SECONDARY:
+.SECONDEXPANSION:
 
 all: $(GITBOOK_OUT) $(CSS)
 
-release: $(RELEASE) $(TEMPLATE)
+release: release.zip example.zip template.zip
 
-test: $(TEMPLATE)
-	-rm -fr test
-	unzip -o -d test "$<"
-	$(MAKE) -C test
+test: example.zip template.zip
+	-rm -fr test-example test-template
+	unzip -o -d test-example example.zip
+	unzip -o -d test-template template.zip
+	$(MAKE) -C test-template
+	$(MAKE) -C test-example
 
-$(RELEASE): $(RELEASE_OUT)
+release.zip: $(RELEASE_OUT)
 	-rm -f "$@"
 	TZ=UTC+00 zip -r "$@" $^
 
-$(TEMPLATE): $(RELEASE) $(wildcard template/*.tex) template/Makefile
+example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/Makefile
 	-rm -f "$@"
-	cd template ; TZ=UTC+00 zip -r "../$<" $(patsubst template/%,%,$(wildcard template/*.tex)) Makefile --output-file "../$@"
+	cd $* ; TZ=UTC+00 zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) Makefile --output-file "../$@"
 
 clean:
+	-rm -fr test-example test-template
 	-rm -f -d $(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip
 
 $(GITBOOK_SOURCE):
@@ -71,6 +72,12 @@ gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
 
 bookml/%: % | $(BOOKML_DIRS)
 	cp "$<" "$@"
+
+bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
+
+$(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
+	sed -e "s!@DATE@!$$(git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d')!g" \
+	    -e "s!@VERSION@!$$(git log HEAD^..HEAD --format='%(describe)')!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)

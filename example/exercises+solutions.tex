@@ -22,19 +22,19 @@
 
 % the package comment offers an easy way to conditionally hide paragraphs
 \usepackage{comment}
-\ifcsname printSolutions\endcsname
-\includecomment{solution}
-\else
+\ifcsname omitSolutions\endcsname
 \excludecomment{solution}
+\else
+\includecomment{solution}
 \fi
 
 % solution of third exercise
-\ifcsname printSolutions\endcsname
+\ifcsname omitSolutions\endcsname
+  \excludecomment{sol}
+\else
   \newenvironment*{sol}
     {\<DETAILS>\<SUMMARY>\noindent\textbf{Solution.}\</SUMMARY>}
     {\</DETAILS>}
-\else
-  \excludecomment{sol}
 \fi
 
 % to pretty print the code of one of the exercises
@@ -48,9 +48,9 @@
   frame=none,%
   xleftmargin=1em,xrightmargin=1em}
 
-\title{BookML example exercises}
+\title{BookML example exercises\ifcsname omitSolutions\endcsname\else\space(with solutions)\fi}
 \author{Vincenzo Mantova}
-\date{21th March 2023}
+\date{6th April 2023}
 
 \begin{document}
 
@@ -68,21 +68,21 @@
   \noindent\textbf{Solution.} Add the line \texttt{SCORM.template.zip template.zip: SPLITAT=} at the bottom of \texttt{Makefile}.
 \end{solution}
 
-  \item Create an environment \texttt{sol} that creates a foldable `Solutions' block in the HTML output, while it is also omitted unless \texttt{\textbackslash{}printSolutions} is defined. Namely, something like:
+  \item Create an environment \texttt{sol} that creates a foldable `Solutions' block in the HTML output, while it is also omitted when \texttt{\textbackslash{}omitSolutions} is defined. Namely, something like:
 
-\<DETAILS>\<SUMMARY>\noindent\textbf{Sample solution.}\</SUMMARY>
-  Solution text goes here.
+\<DETAILS>\<SUMMARY>\noindent\textbf{Foldable example.}\</SUMMARY>
+  Please reproduce a foldable environment like this one.
 \</DETAILS>
 
 \begin{sol}
   Use the following code in the preamble
   \begin{lstlisting}
-\ifcsname printSolutions\endcsname
+\ifcsname omitSolutions\endcsname
+  \excludecomment{sol}
+\else
   \newenvironment*{sol}
     {\<DETAILS>\<SUMMARY>\noindent\textbf{Solution.}\</SUMMARY>}
     {\</DETAILS>}
-\else
-  \excludecomment{sol}
 \fi
   \end{lstlisting}
   The environment \texttt{sol} can now be used for solutions.

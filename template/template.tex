@@ -1,3 +1,4 @@
+%%% common LaTeX classes will work fine
 \documentclass[oneside,11pt]{amsart}
 
 %%% recommended for PDF quality: better handling of accented characters and ligatures
@@ -8,9 +9,9 @@
 \usepackage[british]{babel}
 
 %%% REQUIRED for correct formatting and tagging of BookML output: title and author
-\title{A short BookML example}
-\author{Vincenzo Mantova}
-\date{21th March 2023}
+\title{Title}
+\author{Author}
+\date{Date}
 
 %%% RECOMMENDED for PDF quality: enable clickable links and metadata in PDFs
 % the option pdfusetitle adds \author and \title to the PDF metadata
@@ -43,33 +44,40 @@
 \bmlAltFormat{template-sans.pdf}{PDF (sans serif)}
 \bmlAltFormat{template-sans-large.pdf}{PDF (sans, large)}
 
-% template-sans.tex, template-sans-large.tex \input this file after running some commands
-% to change font and print size
-% e.g. template-sans-large.tex defines '\bmlCrop' and selects the options for the crop
-% package using '\PassOptionsToPackage'
+% very cheap way of generating a 'large print' PDF (~19% bigger)
 \ifcsname bmlCrop\endcsname % is \bmlCrop defined?
 \usepackage{crop}           % if so, load the package crop
 \fi
+%%% What is \bmlCrop?
+% template-sans-large.tex uses \input{template.tex} to read this file.
+% Before that, it defines \bmlCrop, so that the above code imports crop.
+% It also uses \PassOptionsToPackage to tweak the options of crop.
+% The result has identical pagination as the normal PDF so you do not need
+% to review both versions.
+%
+% However, the magnification is very limited. If you need larger magnification,
+% you may have to use a larger font, in which case the large print PDF will
+% will look different and must be reviewed regularly.
 
-% used here to customise the 'description' environment
-\usepackage{enumitem}
+% rest of preamble
 
 \begin{document}
 
 %%% RECOMMENDED for SCORM: the abstract becomes the description of the SCORM package
 \begin{abstract}
-  A minimal document to show and test how BookML works, including additional large print PDFs.
+  Abstract (will appear as description on your LMS).
 \end{abstract}
 
 \maketitle
 
-%%% OPTIONAL: footer for HTML output, here for a copyright notice
+%%% OPTIONAL: footer for HTML output, for instance a copyright notice
 % note that the footer does not appear in the PDF
 % the PDF footer can be done in any of the usual ways (e.g. fancyhdr)
 \begin{lxFooter}
-  Copyright \copyright{} 2022-23 Vincenzo Mantova.
+  Footer: copyright \copyright{} 2022-23 Author.
 \end{lxFooter}
 
-\input{section1}
+Content (you may also \texttt{\textbackslash{}input} or
+\texttt{\textbackslash{}include} other files, including bibliographies).
 
 \end{document}

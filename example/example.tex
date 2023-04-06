@@ -1,0 +1,50 @@
+\documentclass[oneside,11pt]{amsart}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage[british]{babel}
+
+\title{A short BookML example}
+\author{Vincenzo Mantova}
+\date{6th April 2023}
+
+\usepackage[pdfusetitle]{hyperref}
+
+\usepackage{lmodern}
+
+\usepackage{bookml/bookml}
+
+
+\bmlImageEnvironment{tikzpicture,tikzcd}
+\iflatexml
+\else
+\usepackage{tikz}
+\usetikzlibrary{cd}
+\usepackage[all]{xy}
+\fi
+
+\bmlAltFormat{example.pdf}{PDF (serif)}
+\bmlAltFormat{example-sans.pdf}{PDF (sans serif)}
+\bmlAltFormat{example-sans-large.pdf}{PDF (sans, large)}
+\ifcsname bmlCrop\endcsname
+\usepackage{crop}
+\fi
+
+\usepackage{enumitem}
+
+\begin{document}
+
+\begin{abstract}
+  A minimal document to show and test how BookML works, including additional large print PDFs, and some tricks to create files that generate multiple outputs (e.g.\ with and without solutions).
+\end{abstract}
+
+\maketitle
+
+\begin{lxFooter}
+  Copyright \copyright{} 2022-23 Vincenzo Mantova.
+\end{lxFooter}
+
+\input{section1}
+
+\end{document}

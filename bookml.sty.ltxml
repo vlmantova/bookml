@@ -37,6 +37,8 @@ use IPC::Open3;
 use XML::LibXML;
 use DB_File;
 
+my $bmlVersion = '@VERSION@';
+
 my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog, $bml_NoteSTDERR);
 
 if (!defined &ProgressSpinup) {

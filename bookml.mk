@@ -326,7 +326,7 @@ $(foreach x,$(wildcard *.xml),$(eval _x:=$(call bml.altformats,$x))$(if $(_x),$(
 	@$(bml.backup)
 # try to build alternative formats (requires recursion because they become known only after building $*.xml)
 	@$(call bml.echo,$(bml.magenta)Building alternative formats)
-	@$(call bml.cmd,$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) SYNCTEX= $(call bml.altformats,$<))
+	@$(eval _x:=$(call bml.altformats,$<))$(if $(_x),$(call bml.cmd,$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) SYNCTEX= $(_x)),)
 	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
 	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$@" "$<")

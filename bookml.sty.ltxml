@@ -506,9 +506,11 @@ sub BMLGenerateImages {
   # if the DVI has changed, or the depth cache is invalid, rebuild the images
   if ($rebuild) {
     # convert DVI to images
+    my $dsvg_version = version->parse(split(' ', `dvisvgm --version`));
+    return Error('bookml', 'dvisvgm', undef, "version $dsvg_version is too old, please upgrade to v1.6 or above") if $dsvg_version < v1.6;
     my @dsvg_invocation = ('dvisvgm', '--page=1-', '--bbox=preview',
       '--no-fonts', '--exact', '--zoom=' . $bml_imagescale,
-      ('--optimize') x (version->parse(split(' ', `dvisvgm --version`)) >= v1.6),
+      ('--optimize') x ($dsvg_version >= v2.7),
       '--output=' . $svgfmt, $dvifile);
     if ($^O =~ /^(MSWin|cygwin)/) {
       require Win32::ShellQuote;

@@ -29,7 +29,7 @@ BOOKML_MK    := bookml/bookml.mk
 BOOKML_DIRS  := $(patsubst %,bookml/%,$(GITBOOK_DIRS)) bookml/CSS bookml/XSLT bookml
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
-RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT)
+RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 
 .PHONY: all release clean test
 .PRECIOUS:
@@ -51,9 +51,9 @@ release.zip: $(RELEASE_OUT)
 	-rm -f "$@"
 	TZ=UTC+00 zip -r "$@" $^
 
-example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/Makefile
+example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	-rm -f "$@"
-	cd $* ; TZ=UTC+00 zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) Makefile --output-file "../$@"
+	cd $* ; TZ=UTC+00 zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) GNUmakefile --output-file "../$@"
 
 clean:
 	-rm -fr test-example test-template
@@ -71,6 +71,9 @@ gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
 	cp "$<" "$@"
 
 bookml/%: % | $(BOOKML_DIRS)
+	cp "$<" "$@"
+
+bookml/GNUmakefile: template/GNUmakefile | $(BOOKML_DIRS)
 	cp "$<" "$@"
 
 bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)

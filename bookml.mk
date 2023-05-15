@@ -299,7 +299,7 @@ $(AUX_DIR)/%.pdf: will.pdf:=x
 $(AUX_DIR)/%.pdf: %.tex | $(AUX_DIR) $(DEPS_DIR)
 	@$(call bml.prog,pdflatex: $< → $*.pdf)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -norc -interaction=nonstopmode -halt-on-error -recorder \
-	  -deps -deps-out="$(DEPS_DIR)/$*.d" -MP -output-directory="$(AUX_DIR)" -g -pdf -dvi- -ps- "$<")
+	  -deps -deps-out="$(DEPS_DIR)/$*.d" -MP -output-directory="$(AUX_DIR)" -pdf -dvi- -ps- "$<")
 #	escape spaces in the filenames reported by latexmk
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d"
 

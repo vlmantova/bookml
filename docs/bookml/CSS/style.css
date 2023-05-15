@@ -1,7 +1,7 @@
 /*
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-23 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,3 +20,9 @@
 /* Reduce margin continuously on small screens (backported from 0.8.6) */
 .ltx_page_main {
   padding: min(1em, 1.5%) min(3em, 4.5%) min(1em, 1.5%) min(2em, 3%); }
+
+/* prevent invisible assistive MathML from enlarging the container */
+mjx-assistive-mml {
+  right: 0 !important;
+  bottom: 0 !important;
+  clip-path: polygon(0 0, 0 1px, 1px 0); }

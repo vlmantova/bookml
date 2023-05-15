@@ -1,7 +1,7 @@
 /*
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-23 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -66,9 +66,21 @@ h1.title {
   font-weight: 600; }
 
 /* BookML tweaks */
+/* Disable sidebar if there is no table of contents */
+.book.bml-no-navtoc .book-body, .book.bml-no-navtoc .book-header.fixed {
+  left: 0; }
+
+.book.bml-no-navtoc .book-summary, .book.bml-no-navtoc .book-header > a:first-of-type {
+  display: none; }
+
 /* Disable bottom border on titles below level 1 */
 .level1 .level2 .header-section-number, .level1 h2 .header-section-number, .level1 h3 .header-section-number, .level1 h4 .header-section-number, .level1 h5 .header-section-number, .level1 h6 .header-section-number {
   border-bottom: revert; }
+
+/* Remove bottom margin from chapter/appendix tags */
+.ltx_title_appendix .ltx_tag,
+.ltx_title_chapter .ltx_tag {
+  margin-bottom: 0; }
 
 /* <h6> is used for theorems, avoid the default faint gitbook colour */
 .book .book-body .page-wrapper .page-inner section.normal h6, .book.color-theme-1 .book-body .page-wrapper .page-inner section.normal h6 {
@@ -99,7 +111,7 @@ h1.title {
   filter: sepia(40%); }
 
 .book.color-theme-2 object[type="image/svg+xml" i], .book.color-theme-2 iframe[src$=".svg" i], .book.color-theme-2 img, .book.color-theme-2 svg, .book.color-theme-2 *[style*=";color:" i], .book.color-theme-2 *[style^="color:" i] {
-  filter: invert(100%) saturate(70%); }
+  filter: invert(100%) saturate(70%) hue-rotate(180deg); }
   .book.color-theme-2 object[type="image/svg+xml" i].bml_no_invert, .book.color-theme-2 iframe[src$=".svg" i].bml_no_invert, .book.color-theme-2 img.bml_no_invert, .book.color-theme-2 svg.bml_no_invert, .book.color-theme-2 *[style*=";color:" i].bml_no_invert, .book.color-theme-2 *[style^="color:" i].bml_no_invert {
     filter: saturate(70%); }
 
@@ -233,3 +245,32 @@ mjx-container[jax="CHTML"][display="true"] {
 .book .book-body .page-wrapper .page-inner section.normal iframe[src$=".svg" i], .book .book-body .page-wrapper .page-inner section.normal svg, .book .book-body .page-wrapper .page-inner section.normal object[type="image/svg+xml" i], .book .book-body .page-wrapper .page-inner section.normal img {
   max-width: 100%;
   height: auto; }
+
+/* adjust listings */
+.book .book-body .page-wrapper .page-inner section.normal div.ltx_listing {
+  /* set anchor for download button */
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  /* restore initial LaTeXML style */
+  /* disable spaces */
+  /* unset bookdown font size, restore spaces */
+  /* adjust position of download button */ }
+  .book .book-body .page-wrapper .page-inner section.normal div.ltx_listing.ltx_framed_rectangle {
+    border-style: solid;
+    border-width: 1px; }
+  .book .book-body .page-wrapper .page-inner section.normal div.ltx_listing > pre {
+    white-space: normal;
+    margin: 0;
+    padding: 0; }
+  .book .book-body .page-wrapper .page-inner section.normal div.ltx_listing > pre > code {
+    font-size: inherit;
+    white-space: pre; }
+  .book .book-body .page-wrapper .page-inner section.normal div.ltx_listing > .ltx_listing_data {
+    margin-left: -100%; }
+
+.book .book-body .page-wrapper .page-inner section.normal code.ltx_lstlisting {
+  font-size: inherit;
+  white-space: pre; }
+  .book .book-body .page-wrapper .page-inner section.normal code.ltx_lstlisting::after, .book .book-body .page-wrapper .page-inner section.normal code.ltx_lstlisting::before {
+    content: none; }

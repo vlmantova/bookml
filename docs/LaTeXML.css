@@ -30,7 +30,7 @@
     content:"."; display:block; height:0; clear:both; visibility:hidden; }
 
 .ltx_page_logo     { font-size:80%; margin-top: 5px; clear:both; float:right; }
-.ltx_page_logo a   { font-variant: small-caps; }
+a.ltx_LaTeXML_logo { text-decoration: none; }
 .ltx_page_logo img { vertical-align:-3px; }
 
 /* if shown */
@@ -88,10 +88,74 @@
 /*======================================================================
   Para level */
 .ltx_float {
-    margin: 1ex 3em 1ex 3em; }
-td.ltx_subfigure,
-td.ltx_subtable,
-td.ltx_subfloat { width:50%; }
+    margin: 1ex clamp(1em, 4.5%, 3em) 1ex clamp(1em, 4.5%, 3em); }
+
+/* Multiple subfigures via flexbox */
+.ltx_flex_figure {
+  display: flex;
+  flex-flow: row wrap;
+  width: auto;
+  max-width: 60rem;
+  position: relative;
+  justify-content: center;
+  align-items: baseline;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.ltx_flex_size_1,
+.ltx_flex_size_1 .ltx_tabular,
+.ltx_flex_size_1 .ltx_graphics {
+  max-width:60rem;
+}
+.ltx_flex_size_2,
+.ltx_flex_size_2 .ltx_tabular,
+.ltx_flex_size_2 .ltx_graphics {
+  max-width: calc(0.44*60rem);
+}
+.ltx_flex_size_3,
+.ltx_flex_size_3 .ltx_tabular,
+.ltx_flex_size_3 .ltx_graphics {
+  max-width: calc(0.30*60rem);
+}
+.ltx_flex_size_4,
+.ltx_flex_size_4 .ltx_tabular,
+.ltx_flex_size_4 .ltx_graphics {
+  max-width: calc(0.24*60rem);
+}
+/*Default: More than 4 items, tricky.
+  quite often intended to auto-reflow... */
+.ltx_flex_size_many,
+.ltx_flex_size_many .ltx_tabular,
+.ltx_flex_size_many .ltx_graphics {
+  max-width: calc(0.24*60rem);
+}
+
+/* flex row breaks */
+.ltx_flex_figure .ltx_flex_break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+/* layout preference */
+.ltx_flex_figure .ltx_subgraphics,
+.ltx_flex_figure .ltx_subfigure,
+.ltx_flex_figure .ltx_subfloat,
+.ltx_flex_figure .ltx_subtable {
+  flex: 1 1 0px;
+  margin: 0.1rem;
+}
+.ltx_subgraphics, .ltx_subfigure, .ltx_subtable, .ltx_subfloat {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.ltx_subgraphics > .ltx_figure,
+.ltx_subfigure > .ltx_figure,
+.ltx_subtable > .ltx_figure,
+.ltx_subfloat > .ltx_figure {
+  margin:0em;
+}
+
 /* theorems, figure, tables, floats captions.. */
 /*======================================================================
  Blocks, Lists, Floats */
@@ -124,6 +188,10 @@ td.ltx_subfloat { width:50%; }
 
 .ltx_tabular .ltx_tabular { width:100%; }
 .ltx_inline-block { display:inline-block; }
+
+/* tabbing is always a standalone paragraph-level construct */
+.ltx_tabular.ltx_tabbing { 
+  display: table; }
 
 /* avoid padding when aligning adjacent columns, e.g. for split decimals */
 .ltx_norightpad { padding-right:0!important; }
@@ -183,7 +251,7 @@ dl.ltx_description dl.ltx_description dd { margin-left:3em; }
 
 /* Bibliographies */
 .ltx_bibliography dt { margin-right:0.5em; float:left; }
-.ltx_bibliography dd { margin-left:3em; }
+.ltx_bibliography dd { margin-left: clamp(1em, 4.5%, 3em); }
 /*.ltx_biblist { list-style-type:none; }*/
 .ltx_bibitem { list-style-type:none; }
 .ltx_bibitem .ltx_tag { font-weight:bold; margin-left:-2em; width:3em; }
@@ -220,7 +288,9 @@ dl.ltx_description dl.ltx_description dd { margin-left:3em; }
     position:absolute; left:0em;
     max-width:0em; text-align:right; }
 */
-.ltx_parbox {text-indent:0em; }
+.ltx_parbox {
+    text-indent:0em;
+    display: inline-block; }
 
 /* NOTE that it is CRITICAL to put position:relative outside & absolute inside!!
    I wish I understood why!
@@ -233,7 +303,9 @@ dl.ltx_description dl.ltx_description dd { margin-left:3em; }
     display:block;
     position:absolute;bottom:0pt;left:0pt; }
 .ltx_transformed_inner > .ltx_p {text-indent:0em; margin:0; padding:0; }
+
 /* If simulating a table (html5), try to get rowspan to work...sorta? */
+span.ltx_tabular { position:relative; }
 span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 
 /* by default, p doesn't indent */
@@ -331,6 +403,7 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 .ltx_rdf          { display:none; }
 .ltx_missing      { color:red;}
 .ltx_nounicode    { color:red; }
+.ltx_nodisplay    { display:none; }
 /*======================================================================
  SVG (pgf/tikz ?) basics */
 
@@ -379,3 +452,11 @@ cite                 { font-style: normal; }
     transform: scaleY(-1); }
 
 /* .ltx_phantom handled in xslt */
+
+.ltx_minipage {
+  align-self: normal;
+  display: inline-block;
+}
+.ltx_minipage > .ltx_graphics {
+  max-width:100%;
+}

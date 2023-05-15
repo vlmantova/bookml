@@ -12,13 +12,24 @@
 \lxRequireResource[type=application/octet-stream]{googlee1709314ff1666e6.html}
 \fi
 
+% better fonts
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\bmlAltFormat{docs.pdf}{PDF (serif)}
+\bmlAltFormat{docs-sans.pdf}{PDF (sans serif)}
+\bmlAltFormat{docs-sans-large.pdf}{PDF (sans, large)}
+\ifcsname bmlCrop\endcsname
+\usepackage{crop}
+\fi
+
 \usepackage[pdfusetitle,colorlinks]{hyperref}
 \usepackage{ifpdf}
 \ifpdf % make build reproducible
 \pdfinfoomitdate=1
 \pdftrailerid{}
 \pdfsuppressptexinfo=-1
-\hypersetup{pdfinfo={ Creator={}, Producer={} }}
+\hypersetup{pdfinfo={Creator={},Producer={}}}
 \fi
 
 \usepackage[dvipsnames]{xcolor}
@@ -53,7 +64,7 @@
   texcsstyle=*{\color{blue}\bfseries},%
   texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
   moretexcs={xymatrix,ltxinline,href,RequirePackage},%
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment}%
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat}%
   }
 
 \def\ltxinline{\lstinline[style=bookml]}
@@ -61,90 +72,66 @@
 
 \usepackage{amsmath}
 
-\title{BookML: a bookdown flavoured GitBook port for \texorpdfstring{\LaTeXML{}}{LaTeXML}}
+\title{BookML\@: automated LaTeX to \href{https://bookdown.org/yihui/bookdown/html.html\#gitbook-style}{bookdown}-style HTML and SCORM, powered by \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{18 May 2022}
+\date{15\textsuperscript{th} May 2023}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-  BookML is a small add-on for \LaTeXML{} with a few accessibility features and quality of life improvements. Its purpose is to simplify the conversion of \LaTeX{} documents into \HTML{} files that conform to the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA.
-
-  The key features:
-  \begin{itemize}
-    \item a port of the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown}, tweaked for better WCAG conformance; this is enabled by default, but can be disabled;
-    \item styling fixes for \LaTeXML{} (many backported from 0.8.6), such as mobile friendly responsive output;
-    \item transparent generation of SVG pictures via \LaTeX{} for packages not well supported by \LaTeXML{}, such as \tikzname{} pictures, animations, \Xy-matrices;
-    \item a simple method to add alternative text for images;
-    \item partial support for arbitrary \HTML{} content;
-    \item direct embedding of MathJax, with the option of choosing between versions 2 and 3 or disabling it.
-  \end{itemize}
+  BookML is a small wrapper around \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} for the production of accessible HTML content straight from LaTeX files, and for packaging it as SCORM\@. Created by and maintained for maths lecturers at the University of Leeds.
 \end{abstract}
 
 \begin{center}
-
   Sources available on \href{https://github.com/vlmantova/bookml/}{GitHub}.
-  \lxWithClass{noepub}{\bmlRawHTML{
+  \bmlRawHTML{
     <br/>
     <a href="https://github.com/vlmantova/bookml/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/vlmantova/bookml?logo=github\&amp;display\_name=release"/></a>
     <img alt="Download stats" src="https://img.shields.io/github/downloads/vlmantova/bookml/total?logo=github" class="noepub"/>
     <a href="https://github.com/vlmantova/bookml/stargazers"><img alt="Stargazers on GitHub" src="https://img.shields.io/github/stars/vlmantova/bookml?logo=github"/></a>
-  }}
+  }
 
-  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Computer Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://vlmantova.github.io/bookml/docs.epub}{EPUB}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
+  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} with Latin Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
+
+  For a more beginner friendly guide see the \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide}.
 \end{center}
 
 \tableofcontents
 
 \section{Getting started}
 
+\subsection{Prerequisites}\label{prerequisites}
+\begin{itemize}
+\item \href{https://dlmf.nist.gov/LaTeXML/get.html}{LaTeXML} (minimum 0.8.5, recommended 0.8.6 or later)
+\item for any image handling: the Perl module \href{https://metacpan.org/pod/Image::Magick}{\texttt{Image::Magick}}
+\item for handling EPS, PDF images: \href{https://www.ghostscript.com/}{Ghostscript}
+\item for BookML images (for \tikzname{} and similar packages): \href{https://www.ghostscript.com/}{Ghostscript}, \href{https://ctan.org/pkg/latexmk}{latexmk}, \href{https://ctan.org/pkg/preview}{\texttt{preview.sty}}, \href{https://ctan.org/pkg/dvisvgm}{dvisvgm} (minimum 1.6, recommended 2.7 or later)
+\item for automatic PDF, HTML, zip, SCORM packaging: \href{https://www.gnu.org/software/make/}{GNU make}, \href{https://ctan.org/pkg/latexmk}{latexmk}, \href{https://sourceforge.net/projects/infozip/}{zip}, optionally \href{https://ctan.org/pkg/texfot}{texfot}
+\end{itemize}
+
+\subsection{Installing BookML}
 \begin{enumerate}
-  \item Install the prerequisites:
-  \begin{itemize}
-    \item \textbf{Required:} a working \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} installation, at least version 0.8.5.
-    \item \textbf{Optional} (necessary for generating the images via \LaTeX): a working \TeX{} install containing \lstinline|dvisvgm|, \lstinline|latexmk|, \lstinline|preview.sty|.
-  \end{itemize}
-  \item {}[Install/upgrade] Unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} and put the \lstinline|bookml| folder next to your \lstinline|.tex| files.
-  \item {}[First install only] Copy the files \lstinline|bookml/XSLT/LaTeXML-*.xsl| next to your \lstinline|.tex| files.
-  \item \label{edit-tex-file} Anywhere between \ltxinline|\documentclass| and \ltxinline|\begin{document}|, add \ltxinline|\usepackage{bookml/bookml}|. Alternatively, you can also add \ltxinline|\RequirePackage{bookml/bookml}| before \ltxinline|\documentclass| (for instance, if you want to use a different class when compiling with \LaTeXML{}).
-  \item Compile your file to HTML:
-    \begin{lstlisting}
-latexmlc --navigationtoc=context \
-  --dest=my_latex_file/index.html \
-  my_latex_file.tex
-    \end{lstlisting}
-    Add \ltxinline|--splitat=section| (or chapter, part...) to split the content on multiple pages. See the \LaTeXML{} \href{https://dlmf.nist.gov/LaTeXML/manual/usage/}{manual} for all the options.
-  \item Compile your file to EPUB3 (experimental, requires patched \LaTeXML{} 0.8.6):
-    \begin{lstlisting}
-latexmlc --preload='[style=plain]bookml/bookml' \
-  --dest=my_latex_file.epub \
-  --splitat=section \
-  my_latex_file.tex
-    \end{lstlisting}
+  \item Install the \hyperref[prerequisites]{prerequisites}.
+  \item \textbf{Install/upgrade:} unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} and put the \texttt{bookml} folder next to your \texttt{.tex} files.
+  \item \textbf{First install only:} copy \texttt{bookml/GNUmakefile} next to your \texttt{.tex} files.
 \end{enumerate}
 
-If you do not want to modify your \lstinline|.tex| in step~\ref{edit-tex-file}, add the option \lstinline|--preload=bookml/bookml| when calling \lstinline|latexml| or \lstinline|latexmlc|.
+Or you can unpack the \href{https://github.com/vlmantova/bookml/releases/latest/download/template.zip}{template} to start with a working minimal example.
 
-You can also use bookml directly from source:
-\begin{lstlisting}
-git clone https://github.com/vlmantova/bookml.git
-cd bookml && make
-\end{lstlisting}
-then copy the files \lstinline|bookml/XSLT/LaTeXML-*.xsl| next to your \lstinline|.tex| files.
+The \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide} has further examples and tips for lecturers and detailed installation instructions (some specific to the University of Leeds), including for instance how to compile exercises with and without solutions, or how to produce various alternative PDFs from the same file.
+
+\subsection{Compilation}
+
+Run \ltxinline|make| in the folder containing \texttt{GNUmakefile} and the \texttt{.tex} files. Each \texttt{.tex} file containing the string \ltxinline|\documentclass| will be compiled to PDF, \HTML{}, then a zip package and a SCORM package.
+
+If compilation does not succeed, you may have to run \ltxinline|make| a second time. If it still fails, run \ltxinline|make clean-aux| or delete the \texttt{auxdir} folder to reset the state.
 
 \section{Options}
 
-The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[style=plain,nomathjax]{bookml/bookml}| to disable the GitBook style and to avoid including MathJax). The options have no effect on the PDF output.
-
-You can also pass these options at compilation time using the \ltxinline|--preload| option of \ltxinline|latexml| and \ltxinline|latexmlc|:
-\begin{lstlisting}
-  latexmlc --preload=[style=plain,nomathjax]bookml/bookml \
-    --dest=my_latex_file/index.html \
-    my_latex_file.xml
-\end{lstlisting}
+The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[nomathjax]{bookml/bookml}| to avoid including MathJax). The options have no effect on the PDF output.
 
 \begin{description}
   \item[\texttt{style=gitbook}] Use the GitBook style (the default behaviour). When using the GitBook style, you must call \ltxinline|latexmlc| (or \ltxinline|latexmlpost|) with the option \ltxinline|--navigationtoc=context|. Any PDF or EPUB file with the same name as the source will be detected and added to the download menu.
@@ -153,20 +140,29 @@ You can also pass these options at compilation time using the \ltxinline|--prelo
   \item[\texttt{nomathjax}] Do not include MathJax in the output.
   \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
   \item[\texttt{imagescale=X.XXX}] Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
+  \item[\texttt{nohtmlsyntax}] Disable the \HTML{} syntax that makes \ltxinline|\<| into the BookML command for introducing \HTML{} tags. Required if you already define \ltxinline|\<| for something else.
 \end{description}
 
 \section{Customisation}
 
 \subsection{\CSS{} and fonts}
-Just create a \lstinline|bmluser| folder and add any \lstinline|.css| file to it. The files will be included at the end of the \htmlinline|<head>| tag and override the previous styles.
+The \CSS{} files in the folder \lstinline|bmluser|, if one exists, are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles.
 
-If the file name ends with \lstinline|.style1,style2.css|, then that file will be used only when \lstinline|style=style1| or \lstinline|style=2| is passed. You can use \lstinline|._all.css| to ensure that the file is included in every style.
+If the file name ends with \lstinline|.style1,style2.css|, then that file will be used only when \lstinline|style=style1| or \lstinline|style=style2| is passed. You can use \lstinline|._all.css| to ensure that the file is included in every style.
 
-The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this document has been compiled with an additional \href{https://vlmantova.github.io/bookml/bmluser/computer-modern.plain.css}{\texttt{computer-modern.plain.css}} that sets the font to Computer Modern.
+The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this manual has been compiled with \href{https://vlmantova.github.io/bookml/bmluser/latin-modern.plain.css}{\texttt{latin-modern.plain.css}} that sets the font to Latin Modern.
 
 \subsection{\HTML{} output}
 
-You can modify \lstinline|LaTeXML-html5.xsl| to change the \HTML{} output. Just be careful not to overwrite the file during updates.
+You can copy the file \texttt{bookml/LaTeXML-html5.xsl} one level up and modify it to customise the \HTML{} output. Knowledge of XSLT is required!
+
+\subsection{Splitting}
+
+By default, files are split into separate pages for each section. You can change this by running \lstinline|make SPLITAT=chapter| or \lstinline|make SPLITAT=|.
+
+To make the change permanent, add the line \lstinline|SPLITAT=chapter| to \texttt{GNUmakefile}. You can also specify different values per file, for instance \lstinline|docs/index.html: SPLITAT=|.
+
+The \lstinline|latexml| command line can be further customize by setting the variables \lstinline|LATEXMLEXTRAFLAGS| and \lstinline|LATEXMLPOSTEXTRAFLAGS|. See the file \texttt{bookml/bookml.mk} for further options.
 
 \section{Commands}
 
@@ -185,6 +181,8 @@ Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed onl
 
 \subsection{Alternative text for images}
 Call \ltxinline|\bmlDescription{textual description}| \emph{right after} an image to populate its \htmlinline|alt| attribute (or \ltxinline|aria-label| if appropriate). Inspect the \HTML{} source of Figure~\ref{fig:duck} or use a screen reader to check its text description.
+
+\LaTeXML{} version 0.8.7 and later support the new \LaTeX{} syntax which (eventually) will also embed the alternative text in the PDF output: \ltxinline|\includegraphics[alt={textual description}]|.
 
 \subsection{Disable MathJax for some equations}
 Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from processing the equation. Useful if you want to use MathJax, but you have equations that are better handled by the browser. When used inside an environment creating multiple equations, it applies only to the ones containing the command. See Figure~\ref{fig:disable-mathjax}.
@@ -212,9 +210,9 @@ Note that the package \ltxinline|latexml| also offers \ltxinline|\lxAddClass| an
 \subsection{Generate pictures with \LaTeX{}}
 \label{sec:external-image}
 
-LaTeXML supports the \ltxinline|picture| environment as well as \emph{some} \tikzname{} pictures, but not all which will come out mangled, and some common packages are not supported altogether (for instance \ltxinline|xypic|, \ltxinline|tikzcd|, \ltxinline|animate|).
+\LaTeXML{} supports the \ltxinline|picture| environment as well as \emph{some} \tikzname{} pictures and some \Xy-matrices. For various reasons, the output is usually mangled, and compilation times blow up. Some common packages are not supported altogether (for instance \ltxinline|tikzcd|, \ltxinline|animate|).
 
-BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing LaTeXML entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
+BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing \LaTeXML{} entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
 \begin{lstlisting}[style=bookml]
 \bmlImageEnvironment{tikzpicture,tikzcd}
 \bmlImageEnvironment{animateinline}
@@ -287,6 +285,13 @@ If you only need this mechanism in a pinch, you can simply wrap the desired cont
   \label{fig:xymatrix}
 \end{figure}
 
+\subsection{Alternative formats}
+\ltxinline|\bmlAltFormat{docs.large.pdf}{PDF (large print)}| instructs BookML to compile \texttt{docs.large.tex} to PDF and include the result in the \HTML{} output. The file will appear in the `Downloads' menu of the GitBook style.
+
+Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltxinline|\documentclass| or it will be compiled by itself into \HTML{}, zip, and SCORM.
+
+See \texttt{template.tex}, \texttt{template-sans.tex}, \texttt{template-sans-large.tex} for an example.
+
 \subsection{Direct \HTML{} input}
 
 You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
@@ -344,9 +349,34 @@ You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
 
 \subsection{Interspersing \LaTeX{} and \HTML{} (beta)}
 
-The command \ltxinline|\bmlHTMLEnvironment{tag}| defines an environment \ltxinline|\begin{h:tag} ... \end{h:tag}| which wraps the content between \lstinline[language=html,frame=none]|<tag> ... </tag>|. One can also add attributes as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|. You can specify multiple tags by separating them with commas, as in \ltxinline|\bmlHTMLEnvironment{tag1,tag2}|.
+You may write arbitrary \HTML{} using the syntax \ltxinline|\<html-tag>|. Just as for \ltxinline|\bmlRawHTML|, you need to use the \XML{} syntax.
+
+If you need the command sequence \ltxinline|\<| for other purposes, load the BookML package with the option \texttt{nohtmlsyntax}. You may still intersperse the \HTML{} tags by declaring them first with \ltxinline|\bmlHTMLEnvironment{tag}|, and then using \ltxinline|\begin{h:tag} ... \end{h:tag}|. Attributes can be passed as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|. You can specify multiple tags by separating them with commas, as in \ltxinline|\bmlHTMLEnvironment{tag1,tag2}|.
 
 Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `phrasing' content, for instance they should not contain \htmlinline|<p>| paragraphs.
+
+See figures~\ref{fig:details},~\ref{fig:details-nohtmlsyntax} for an example in both styles.
+
+\begin{figure}
+  \<details style="text-align: left; width: 100\%" open="">
+    \<summary>
+      \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
+    \</summary>
+
+    Completing the quine is left as an exercise for the reader.
+    \begin{lstlisting}[style=bookml]
+\<details style="text-align: left; width: 100\%" open="">
+  \<summary>
+    \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
+  \</summary>
+
+  Completing the quine is left as an exercise for the reader.
+\</details>
+      \end{lstlisting}
+  \</details>
+  \caption{Implementation of the \htmlinline|<details>| tag.}
+  \label{fig:details}
+\end{figure}
 
 \begin{figure}
   \bmlHTMLEnvironment{details}
@@ -369,8 +399,8 @@ Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `p
 \end{h:details}
     \end{lstlisting}
   \end{h:details}
-  \caption{Implementation of the \htmlinline|<details>| tag.}
-  \label{fig:details}
+  \caption{Implementation of the \htmlinline|<details>| tag if using \texttt{nohtmlsyntax}.}
+  \label{fig:details-nohtmlsyntax}
 \end{figure}
 
 \subsection{...and everything from \texttt{latexml.sty}}

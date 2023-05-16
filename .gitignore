@@ -1,7 +1,12 @@
-docs/LaTeXML.cache
-bmlimages
+LaTeXML.cache
+/bmlimages
 *.epub
 *.xml
+*.zip
+/auxdir
+/backups
+!/docs/*.pdf
+/.vscode
 
 ### Copied from https://github.com/github/gitignore
 
@@ -22,7 +27,7 @@ bmlimages
 
 ## Intermediate documents:
 *.dvi
-*.pdf
+/*.pdf
 
 ## Bibliography auxiliary files (bibtex/biblatex/biber):
 *.bbl

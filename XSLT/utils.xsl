@@ -168,26 +168,37 @@
 
   <xsl:template match="ltx:xmlelem">
     <xsl:param name="context"/>
-    <xsl:variable name="innercontext">
-      <xsl:choose>
-        <xsl:when test="@innercontext='inline'">
-          <xsl:value-of select="@innercontext"/>
-        </xsl:when>
-        <xsl:otherwise><xsl:value-of select="$context"/></xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
     <xsl:choose>
       <xsl:when test="@ns">
         <xsl:element name="{@name}" namespace="{@ns}">
           <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
+            <xsl:with-param name="context" select="$context"/>
           </xsl:apply-templates>
         </xsl:element>
       </xsl:when>
       <xsl:otherwise>
         <xsl:element name="{@name}">
           <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="ltx:xmlinlineelem">
+    <xsl:choose>
+      <xsl:when test="@ns">
+        <xsl:element name="{@name}" namespace="{@ns}">
+          <xsl:apply-templates>
+            <xsl:with-param name="context" select="'inline'"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:element name="{@name}">
+          <xsl:apply-templates>
+            <xsl:with-param name="context" select="'inline'"/>
           </xsl:apply-templates>
         </xsl:element>
       </xsl:otherwise>

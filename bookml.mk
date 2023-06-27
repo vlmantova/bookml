@@ -113,9 +113,9 @@ endif
 
 # progress output (code inspired by GMSL)
 bml.spc := $(strip) $(strip)
-bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg)­)
+bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg) )
 bml.cmd  = $(call bml.echo,$(bml.cyan)$(if $(bml.is.win),$1,$(subst ",\",$1))) $(bml;)$1
-bml.prog = $(call bml.box,[$(words $(will.zip) $(will.pdf) $(will.html) $(will.xml) $(will.scormmanifest) $(will.scorm))] $1)
+bml.prog = $(call bml.box,$1)
 
 # colors
 ifeq ($(if $(bml.is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)),true)
@@ -223,7 +223,8 @@ clean-pdf:
 clean-scorm:
 	-@$(RM) $(call bml.ospath,$(TARGETS.SCORM))
 clean-xml:
-	-@$(RM) $(call bml.ospath,$(TARGETS.XML) $(patsubst %.xml,bmlimages/%-*.svg,$(TARGETS.XML)))
+	-@$(RM) $(call bml.ospath,$(TARGETS.XML))
+	-@$(RM) $(call bml.ospath,$(patsubst %.xml,bmlimages/%-*.svg,$(TARGETS.XML)))
 	-@$(RMDIR) $(call bml.ospath,$(patsubst %.xml,bmlimages/%,$(TARGETS.XML)))
 clean-zip:
 	-@$(RM) $(call bml.ospath,$(TARGETS.ZIP))
@@ -295,7 +296,6 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/%.pdf
 	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/$*.synctex)" "$(call bml.ospath,$*.synctex)"
 
 # build PDF files (in $(AUX_DIR))
-$(AUX_DIR)/%.pdf: will.pdf:=x
 $(AUX_DIR)/%.pdf: %.tex | $(AUX_DIR) $(DEPS_DIR)
 	@$(call bml.prog,pdflatex: $< → $*.pdf)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -norc -interaction=nonstopmode -halt-on-error -recorder \
@@ -304,35 +304,32 @@ $(AUX_DIR)/%.pdf: %.tex | $(AUX_DIR) $(DEPS_DIR)
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d"
 
 # build XML files
-%.xml: will.xml:=x
 %.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf
 	@$(call bml.prog,latexml: $< → $@)
 	@$(call bml.cmd,$(LATEXML) $(if $(call bml.grep,{bookml/bookml},$<),,--preamble=literal:$(if $(bml.is.win),\,\\)RequirePackage{bookml/bookml} \
 	  ) $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/$*.latexml.log" --destination="$@" "$<")
 
-# find alternative formats from XML outputs
-bml.altformats = $(subst <resource_src=",,$(filter <resource_src="%,$(subst "_type=", ,\
-  $(filter %;bmllocation=download,$(filter-out ;bmlname=%,$(subst ;bmlname=, ;bmlname=,\
-    $(filter <resource_src="%,$(subst " type=","_type=",$(subst <resource src=",<resource_src=",\
-      $(call bml.file,$1))))))))))
-# ensure that make can build /index.html even if it does not know how to build the alternative formats
-$(foreach x,$(wildcard *.xml),$(eval _x:=$(call bml.altformats,$x))$(if $(_x),$(eval $(_x):),))
-
 # build HTML files and alternative formats
-%/index.html: will.html:=x
-%/index.html: %.xml $(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$**.svg) $$(call bml.altformats,$$*.xml) | $(BACKUP_DIR)
+$(AUX_DIR)/%.altformats.d: %.xml bookml/XSLT/proc-altformats.xsl bookml/xsltproc.pl | $(AUX_DIR)
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-altformats.xsl "$<" --output "$@" --stringparam BML_TARGET "$*/index.html")
+
+ifeq ("$(BML.ALTFORMATS.RECURSE)","1")
+-include $(wildcard $(AUX_DIR)/*.altformats.d)
+endif
+%/index.html: %.xml $(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$**.svg) $(AUX_DIR)/%.altformats.d | $(BACKUP_DIR)
+# recurse so that we build *after* $(AUX_DIR)/%.altformats.d has been created
+ifeq ("$(BML.ALTFORMATS.RECURSE)","")
+	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) BML.ALTFORMATS.RECURSE=1 "$@"
+else
 	@$(call bml.prog,latexmlpost: $< → $@)
 # backup the existing folder (we do not want stray files from previous builds end up in the final output)
 	@$(bml.backup)
-# try to build alternative formats (requires recursion because they become known only after building $*.xml)
-	@$(call bml.echo,$(bml.magenta)Building alternative formats)
-	@$(eval _x:=$(call bml.altformats,$<))$(if $(_x),$(call bml.cmd,$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) SYNCTEX= $(_x)),)
 	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
 	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$@" "$<")
+endif
 
 # package HTML output into zip file
-%.zip: will.zip:=x
 %.zip: %/index.html $$(filter-out %/LaTeXML.cache,$$(call bml.reclist,$$*))
 	@$(call bml.prog,zip: $(<D) → $@)
 	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
@@ -351,14 +348,13 @@ else
 endif
 
 # create SCORM manifest
-$(AUX_DIR)/%/imsmanifest.xml: will.scormmanifest:=x
-$(AUX_DIR)/%/imsmanifest.xml: %.xml $(AUX_DIR)/%.manifest-xml bookml/XSLT/LaTeXML-imsmanifest.xsl
+$(AUX_DIR)/%/imsmanifest.xml: %.xml $(AUX_DIR)/%.manifest-xml bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
 	@$(call bml.prog,SCORM manifest: $< → $@)
-	@$(call bml.cmd,$(LATEXMLPOST) --stylesheet=bookml/XSLT/LaTeXML-imsmanifest.xsl --destination="$@" "$<" \
-	   --log="$(AUX_DIR)/$*.imsmanifest.log" --nodefaultresources "--xsltparameter=BML_MANIFEST:$(AUX_DIR)/$*.manifest-xml")
+	@$(MKDIR) "$(call bml.ospath,$(AUX_DIR)/$*)"
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$<" --output "$@" \
+	   --stringparam BML_MANIFEST "$(AUX_DIR)/$*.manifest-xml")
 
 # package HTML output and manifest into SCORM package
-SCORM.%.zip: will.scorm:=x
 SCORM.%.zip: %/index.html $(AUX_DIR)/%/imsmanifest.xml $$(filter-out LaTeXML.cache,$$(call bml.reclist,$$*))
 	@$(call bml.prog,SCORM: $(<D) → $@)
 	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")

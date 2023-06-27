@@ -28,9 +28,8 @@
   </define>
   <define name="xmlinlineelem">
     <a:documentation>Analogue of xsl:element with inline content</a:documentation>
-    <element name="xmlelem">
+    <element name="xmlinlineelem">
       <optional><attribute name="ns"/></optional>
-      <attribute name="innercontext"><value>inline</value></attribute>
       <attribute name="name"/>
       <zeroOrMore>
         <ref name="xmlattr"/>

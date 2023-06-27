@@ -230,26 +230,20 @@ sub BMLHTMLEnvironment {
       my $body = $properties{body};
       $kv = $kv && $kv->getKeyVals;
 
-      my $node = $document->openElement('ltx:xmlelem',
+      my $innercontext = $opts{innercontext} // '';
+      my $elem = "ltx:xml${innercontext}elem";
+
+      my $node = $document->openElement($elem,
         ns   => 'http://www.w3.org/1999/xhtml',
         name => $name, innercontext => $opts{innercontext});
+
       for my $attr (keys %$kv) {
         $document->insertElement('ltx:xmlattr', undef, name => lc($attr),
           value => ToString($$kv{$attr})); }
 
-      if (($opts{innercontext} // '') eq 'inline') {
-        $document->absorb($body);      # emit content of the environment
-      } else {
-        my @children = insertBlock($document, $body); # emit content wrapped in ltx:p if necessary
-        my $child = $node->lastChild;
-        if (@children && ! $child->isSameNode($children[-1]) &&
-            $document->getModel->getNodeQName($child) eq 'ltx:block') {
-          # children have been wrapped in ltx:block, remove wrapper
-          $document->unwrapNodes($child);
-        }
-      }
+      $document->absorb($body);      # emit content of the environment
 
-      $document->closeElement('ltx:xmlelem');
+      $document->closeElement($elem);
     },
     scope => 'global'
   );

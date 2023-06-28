@@ -128,6 +128,13 @@ h1.title {
   overflow-x: revert;
 }
 
+/* Fix odd overlap between toolbar and body */
+@media (max-width: 600px) {
+  .book .book-body.fixed {
+    top: 50px;
+  }
+}
+
 /* Adjust colours in sepia and night modes */
 object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
 *[style*=";color:" i], *[style^="color:" i] {

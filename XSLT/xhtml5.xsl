@@ -399,12 +399,11 @@
     </xsl:if>
   </xsl:template>
 
-  <!-- fix wrong framed padding -->
-  <xsl:template match="@style[b:in-list(../@class,'ltx_framed_rectangle',' ')]" mode="bml-alter">
+  <!-- add default \fboxsep (3pt) padding, if missing -->
+  <xsl:template match="@style[b:in-list(../@class,'ltx_framed_rectangle',' ')][not(contains('padding'))]" mode="bml-alter">
     <xsl:attribute name="style">
-      <xsl:value-of select="substring-before(.,'padding-top:')"/>
-      <xsl:text>padding:</xsl:text>
-      <xsl:value-of select="substring-after(.,'padding-bottom:')"/>
+      <xsl:text>padding:3pt;</xsl:text>
+      <xsl:value-of select="."/>
     </xsl:attribute>
   </xsl:template>
 

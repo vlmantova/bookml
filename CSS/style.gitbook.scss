@@ -91,6 +91,16 @@ h1.title {
   }
 }
 
+/* Fix paragraph size */
+.book .book-body .page-wrapper .page-inner section.normal.ltx_paragraph {
+  .ltx_title_paragraph {
+    font-size: 100%;
+  }
+  .ltx_title + .ltx_para + .ltx_para {
+    margin-top: .85em;
+  }
+}
+
 /* Remove bottom margin from chapter/appendix tags */
 .ltx_title_appendix .ltx_tag,
 .ltx_title_chapter .ltx_tag {
@@ -268,7 +278,8 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
   }
 }
 
-mjx-container[jax="CHTML"][display="true"] {
+mjx-container[jax="CHTML"][display="true"],
+mjx-container[jax="SVG"][display="true"] {
   margin: 0 !important;
 }
 
@@ -284,6 +295,12 @@ mjx-container[jax="CHTML"][display="true"] {
   iframe[src$=".svg" i], svg, object[type="image/svg+xml" i], img {
     max-width: 100%;
     height: auto;
+  }
+  /* ignore images that are meant to have a specific size */
+  mjx-container svg, /* MathJax SVG */
+  img.ltx_Math /* LaTeXML mathimages */
+  {
+    max-width: revert;
   }
 }
 

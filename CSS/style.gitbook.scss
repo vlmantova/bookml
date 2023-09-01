@@ -239,12 +239,15 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
 .book .book-body .page-wrapper .page-inner section.normal table {
   td.ltx_eqn_cell, th.ltx_eqn_cell {
     padding: 0.85em 0;
+    line-height: normal;
   }
   tr>td:first-child.ltx_eqn_eqno {
     padding-left: 0.85em;
+    line-height: normal;
   }
   tr>td:last-child.ltx_eqn_eqno {
     padding-right: 0.85em;
+    line-height: normal;
   }
 }
 

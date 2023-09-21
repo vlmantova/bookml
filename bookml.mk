@@ -352,7 +352,7 @@ $(AUX_DIR)/%/imsmanifest.xml: $(AUX_DIR)/%.xml $(AUX_DIR)/%.manifest-xml bookml/
 	@$(call bml.prog,SCORM manifest: $< → $@)
 	@$(MKDIR) "$(call bml.ospath,$(AUX_DIR)/$*)"
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$<" --output "$@" \
-	   --stringparam BML_MANIFEST "$(AUX_DIR)/$*.manifest-xml")
+	   --stringparam BML_MANIFEST "$*.manifest-xml")
 
 # package HTML output and manifest into SCORM package
 SCORM.%.zip: %/index.html $(AUX_DIR)/%/imsmanifest.xml $$(filter-out LaTeXML.cache,$$(call bml.reclist,$$*))

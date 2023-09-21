@@ -159,9 +159,9 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
   }
 }
 
-/* do not apply filters twice */
+/* do not apply filters twice, nor apply it to MathJax */
 .book.color-theme-1, .book.color-theme-2 {
-  *[style*=";color:" i], *[style^="color:" i] {
+  *[style*=";color:" i], *[style^="color:" i], mjx-container {
     object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
     *[style*=";color:" i], *[style^="color:" i] {
       filter: revert;

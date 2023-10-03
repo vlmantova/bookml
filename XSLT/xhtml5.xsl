@@ -400,7 +400,7 @@
   </xsl:template>
 
   <!-- add default \FrameSep (=3\fboxsep=9pt) padding, if missing -->
-  <xsl:template match="*[b:has-class('ltx_framed_rectangle')]/@style[not(contains(.,'padding'))]"
+  <xsl:template match="*[b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/@style"
     mode="bml-alter">
     <xsl:attribute name="style">
       <xsl:text>padding:9pt;</xsl:text>
@@ -410,7 +410,7 @@
 
   <!-- HACK detect titled-frame and add negative margins to the title (TODO: compute the correct margins based on the parent padding) -->
   <xsl:template
-    match="*[b:has-class('ltx_framed_rectangle') and not(contains(@style,'padding'))]/span[1]/@style[contains(.,'width:100%;')]"
+    match="*[b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/span[position()=1 and contains(./@style,'width:100%;')]/@style"
     mode="bml-alter">
     <xsl:attribute name="style">
       <xsl:text>margin-left:-9pt;margin-right:-9pt;margin-top:-9pt;margin-bottom:9pt;padding-left:9pt;padding-right:9pt;</xsl:text>

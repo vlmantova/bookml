@@ -266,7 +266,11 @@ detect-ghostscript:
 	  $(if $(gs_ver),,$(eval gs_ver:=$(shell $a -v $(bml.null)))))
 	@$(call bml.testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF, BookML images))
 detect-dvisvgm:
-	@$(call bml.testver,      dvisvgm,1.6,2.7,$(lastword $(shell dvisvgm --version $(bml.null))), (required for SVG, BookML images))
+	@$(eval dvisvgm_info:=$(shell dvisvgm -V1 $(bml.null)))
+	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst dvisvgm ,dvisvgm_,$(dvisvgm_info))))))
+	@$(eval gs_ver:=$(wordlist 2,2,$(subst &, ,$(filter Ghostscript:%,$(subst &Ghostscript:, Ghostscript:,$(subst $() ,&,$(dvisvgm_info)))))))
+	@$(call bml.testver,      dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for SVG, BookML images))
+	@$(call bml.testver,dvisvgm/libgs,,,$(gs_ver), (required for SVG, BookML images))
 detect-latexmk:
 	@$(call bml.testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
 detect-texfot:

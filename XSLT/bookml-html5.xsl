@@ -79,11 +79,11 @@
       <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"/>
       <!-- mml-chtml component only (maths is already in MathML) -->
       <xsl:text>&#x0A;</xsl:text>
-      <!-- do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone) -->
       <script>
         MathJax = {
           startup: {
             ready() {
+              // do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone)
               class bmlFindMathML extends MathJax._.input.mathml.FindMathML.FindMathML {
                 processMath(set) {
                   const adaptor = this.adaptor;
@@ -99,6 +99,24 @@
               MathJax._.components.global.combineDefaults(MathJax.config, 'mml', {FindMathML: new bmlFindMathML()});
 
               MathJax.startup.defaultReady();
+
+              // convert the LaTeXML calligraphic (chancery) annotation to a form MathJax understands
+              // since the corresponding Unicode characters render as script (rounded)
+              // TODO: implement the analogous filter for Unicode variation sequences
+              const script2latin = {
+                '𝒜': 'A', 'ℬ': 'B', '𝒞': 'C', '𝒟': 'D', 'ℰ': 'E', 'ℱ': 'F', '𝒢': 'G',
+                'ℋ': 'H', 'ℐ': 'I', '𝒥': 'J', '𝒦': 'K', 'ℒ': 'L', 'ℳ': 'M', '𝒩': 'N',
+                '𝒪': 'O', '𝒫': 'P', '𝒬': 'Q', 'ℛ': 'R', '𝒮': 'S', '𝒯': 'T', '𝒰': 'U',
+                '𝒱': 'V', '𝒲': 'W', '𝒳': 'X', '𝒴': 'Y', '𝒵': 'Z',
+              };
+
+              MathJax.startup.input[0].mmlFilters.add((args) => {
+                for (const n of args.data.getElementsByClassName('ltx_font_mathcaligraphic')) {
+                  n.classList.add('MJX-tex-calligraphic');
+                  const letter = script2latin[n.textContent];
+                  if (letter !== undefined) { n.textContent = letter; }
+                };
+              });
             }
           }
         };

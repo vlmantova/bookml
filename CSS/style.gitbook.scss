@@ -136,6 +136,7 @@ h1.title {
 /* ...except in a few places */
 .ltx_item .ltx_para {
   overflow-x: revert;
+  overflow-y: revert;
 }
 
 /* Fix odd overlap between toolbar and body */

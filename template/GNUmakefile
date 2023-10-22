@@ -10,6 +10,9 @@
 
 #SPLITAT = chapter
 
+# Remove '#' below to stop BookML from generating backups
+#BACKUP_DIR =
+
 ### END CONFIGURATION
 
 include bookml/bookml.mk

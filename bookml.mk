@@ -95,7 +95,9 @@ endif
 bml.grep = $(findstring $1,$(call bml.file,$2))
 
 # backup functions (only Linux has 'mv --backup=numbered', so we do it by hand)
-ifeq ($(bml.is.win),true)
+ifeq ($(BACKUP_DIR),)
+  bml.backup=
+else ifeq ($(bml.is.win),true)
   bml.backup = if exist "$*" \
     (if not exist $(BACKUP_DIR)\$* ($(call bml.cmd,move /Y $* $(BACKUP_DIR)\$*) & exit) \
      else (for /l %%i in (1,1,999) do (echo $(bml.magenta)Backing up '$*' to '$(BACKUP_DIR)\$*'$(bml.reset) >&2 & \

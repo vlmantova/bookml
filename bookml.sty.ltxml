@@ -603,4 +603,7 @@ DefConstructor('\bmlDisableMathJax', sub {
       $document->addClass($eqnode, 'bml_disable_mathjax'); }
 }, reversion => '');
 
+# Unicode variation sequences
+DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID',    meaning => 'empty-set');
+
 1;

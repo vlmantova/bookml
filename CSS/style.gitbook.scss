@@ -204,6 +204,26 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
   color: #0073D1;
 }
 
+/* make focus visible */
+.book .book-summary ul.summary li a {
+  &:hover, &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+/* set left/right buttons to same color as the text, for better visibility */
+.book-body .navigation {
+  .book & {
+    color: #333;
+  }
+  .book.color-theme-1 & {
+    color: #704214;
+  }
+  .book.color-theme-2 & {
+    color: #bdcadb;
+  }
+}
+
 .book .book-body .page-wrapper .page-inner section.normal {
   color: #292929;
 }

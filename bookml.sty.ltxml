@@ -27,6 +27,7 @@ package LaTeXML::Package::Pool;
 use strict;
 use warnings;
 
+use LaTeXML::Common::Color;
 use LaTeXML::Package;
 use LaTeXML::Util::Pathname;
 
@@ -164,7 +165,8 @@ if ($bml_style eq 'gitbook') {
 }
 
 # CSS files
-AtBeginDocument(sub {
+DefConstructorI('\bml@css', undef, sub {
+    my ($document) = @_;
     File::Find::find({
         preprocess => sub { sort @_; },
         no_chdir   => 1,
@@ -178,6 +180,11 @@ AtBeginDocument(sub {
         }
       },
       'bookml/CSS', (-d 'bmluser') ? 'bmluser' : ());
+    # move <ltx:resource> up to the root or they will not work
+    my ($firstnonresource) = $document->findnodes('/*/*[local-name()!="resource"]');
+    for my $node ($document->findnodes('//*/*/ltx:resource')) {
+      $node->unbindNode();
+      $document->documentElement->insertBefore($node, $firstnonresource); }
     return;
 });
 
@@ -195,6 +202,132 @@ AtBeginDocument(sub {
     for my $file (@bml_download) {
       BMLRequireResource($file, location => 'download', name => uc(pathname_type($file))); }
     return;
+});
+
+# Compute colors for sepia and dark mode (mimicking CSS filters)
+# note that xcolor.sty and LaTeXML::Common::Color use the linear RGB space
+AtEndDocument(sub {
+  return unless $bml_style eq 'gitbook';
+  return T_CS('\bml@colors');
+});
+
+AtEndDocument(sub {
+  return unless $bml_style eq 'gitbook';
+  return T_CS('\bml@css');
+});
+
+# CSS filter invert(100%) hue-rotate(180deg)
+sub BMLColorDarkMode {
+  my ($color) = @_;
+
+  # sRGB to linear RGB
+  my ($R, $G, $B) = $color->convert('rgb')->components;
+
+  # invert
+  # https://www.w3.org/TR/filter-effects-1/#invertEquivalent
+  ($R, $G, $B) = map { 1 - $_ } ($R, $G, $B);
+
+  # rotate hue
+  # https://www.w3.org/TR/filter-effects-1/#element-attrdef-fecolormatrix-values
+  ($R, $G, $B) = ((0.213 - 0.787) * $R + (0.715 + 0.715) * $G + (0.072 + 0.072) * $B,
+    (0.213 + 0.213) * $R + (0.715 - 0.285) * $G + (0.072 + 0.072) * $B,
+    (0.213 + 0.213) * $R + (0.715 + 0.715) * $G + (0.072 - 0.928) * $B);
+
+  # clamp
+  ($R, $G, $B) = map { ($_ < 0) ? 0 : (($_ > 1) ? 1 : $_) } ($R, $G, $B);
+  return Color('rgb', $R, $G, $B);
+}
+
+# CSS filter sepia(40%)
+sub BMLColorSepiaMode {
+  my ($color) = @_;
+  my $amount = 0.40;
+
+  # sRGB to linear RGB
+  my ($R, $G, $B) = $color->convert('rgb')->components;
+
+  # sepia
+  # https://www.w3.org/TR/filter-effects-1/#sepiaEquivalent
+  ($R,$G,$B) = ((0.393 + 0.607*(1-$amount)) * $R + (0.769 - 0.769*(1-$amount)) * $G + (0.189 - 0.189*(1-$amount)) * $B,
+    (0.349 - 0.349*(1-$amount)) * $R + (0.686 + 0.314*(1-$amount)) * $G + (0.168 - 0.168*(1-$amount)) * $B,
+    (0.272 - 0.272*(1-$amount)) * $R + (0.534 - 0.534*(1-$amount)) * $G + (0.131 + 0.869*(1-$amount)) * $B);
+
+  # clamp
+  ($R, $G, $B) = map { ($_ < 0) ? 0 : (($_ > 1) ? 1 : $_) } ($R, $G, $B);
+  return Color('rgb', $R, $G, $B);
+}
+
+my ($bml_colors_css,%bml_colors_darkmode,%bml_colors_sepiamode,%bml_colors) = ('',(),(),());
+
+DefConstructorI('\bml@colors', undef, sub {
+  my ($document) = @_;
+
+  &$bml_ProgressSpinup('BookML colors');
+
+  sub genColors {
+    my ($attr, $color) = @_;
+    my $color_hex;
+
+    if (! ref $color) { # hex string
+      $color_hex = $color;
+      my ($red, $green, $blue) = map { hex($_) / 255 } ( $color_hex =~ m/../g );
+      $color = Color('rgb', $red, $green, $blue); }
+    else { # LaTeXML::Common::Color
+      $color_hex = substr($color->toHex,1); }
+
+    my $class = "bml_${attr}_$color_hex";
+
+    if (! $bml_colors{$attr}{$color_hex}) {
+      $bml_colors{$attr}{$color_hex} = 1;
+      $bml_colors_darkmode{$color_hex} //= BMLColorDarkMode($color)->toHex;
+      $bml_colors_sepiamode{$color_hex} //= BMLColorSepiaMode($color)->toHex;
+      my $dark_hex = $bml_colors_darkmode{$color_hex};
+      my $sepia_hex = $bml_colors_sepiamode{$color_hex};
+      $bml_colors_css .= ".$class {$attr:#$color_hex !important} .book.color-theme-1 .$class {$attr:$sepia_hex !important} .book.color-theme-2 .$class {$attr:$dark_hex !important}\n"; }
+
+    return $class;
+  }
+
+  # <ltx:text _font="...">
+  for my $node ($document->findnodes('//*[@_font]')) {
+    my $color = $document->getNodeFont($node)->getColor;
+    next if $color eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
+    my $class = genColors('color', $color);
+    $document->addClass($node, $class); }
+
+  # <ltx:* framecolor="...">
+  for my $node ($document->findnodes('//*[@framecolor]')) {
+    my $color_hex = substr($node->getAttribute('framecolor'), 1);
+    my $class = genColors('border-color',$color_hex);
+    $document->addClass($node, $class); }
+
+  # <ltx:* backgroundcolor="...">
+  for my $node ($document->findnodes('//*[@backgroundcolor]')) {
+    my $color_hex = substr($node->getAttribute('backgroundcolor'), 1);
+    my $class = genColors('background-color',$color_hex);
+    $document->addClass($node, $class); }
+
+  for my $attr ('color', 'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color') {
+    for my $node ($document->findnodes("//*[\@$attr]")) {
+      my $color_hex = substr($node->getAttribute($attr), 1);
+      my $class = genColors($attr,$color_hex);
+      $document->addClass($node, $class); } }
+
+  # <ltx:* cssstyle="... text-decoration-color:...">
+  for my $node ($document->findnodes('//*[contains(@cssstyle,"text-decoration-color:")]')) {
+    my ($color_hex) = $node->getAttribute('cssstyle') =~ m/text-decoration-color: *#([0-9A-Fa-f])*/;
+    my $class = genColors('text-decoration-color',$color_hex);
+    $document->addClass($node, $class); }
+
+  if ($bml_colors_css) {
+    (mkdir("bmluser") or die "cannot create directory bmluser: $!") unless -d "bmluser";
+    my $cssfile = "bmluser/$bml_jobname.colors.gitbook.css";
+    open(my $fh, '>', $cssfile) or die "cannot write to $cssfile: $!";
+    print $fh $bml_colors_css;
+    close($fh); }
+
+  &$bml_ProgressSpindown('BookML colors');
+  return;
 });
 
 # HTML-in-LaTeX mechanism

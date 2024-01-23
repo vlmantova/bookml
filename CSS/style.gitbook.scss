@@ -147,8 +147,7 @@ h1.title {
 }
 
 /* Adjust colours in sepia and night modes */
-object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
-*[style*=";color:" i], *[style^="color:" i] {
+object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   .book.color-theme-1 & {
     filter: sepia(40%);
   }
@@ -162,9 +161,8 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
 
 /* do not apply filters twice, nor apply it to MathJax */
 .book.color-theme-1, .book.color-theme-2 {
-  *[style*=";color:" i], *[style^="color:" i], mjx-container {
-    object[type="image/svg+xml" i], iframe[src$=".svg" i], img, svg,
-    *[style*=";color:" i], *[style^="color:" i] {
+  mjx-container {
+    object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
       filter: revert;
     }
   }

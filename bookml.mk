@@ -322,7 +322,7 @@ $(AUX_DIR)/%.altformats.d: $(AUX_DIR)/%.xml bookml/XSLT/proc-altformats.xsl book
 ifneq ($(BML.ALTFORMATS.RECURSE),)
 -include $(wildcard $(AUX_DIR)/$(BML.ALTFORMATS.RECURSE).altformats.d)
 endif
-%/index.html: $(AUX_DIR)/%.xml $(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$**.svg) $(AUX_DIR)/%.altformats.d | $(BACKUP_DIR)
+%/index.html: $(AUX_DIR)/%.xml $(BOOKML_DEPS_HTML) $(AUX_DIR)/%.altformats.d $$(wildcard bmlimages/$$**.svg) | $(BACKUP_DIR)
 # recurse so that we build *after* $(AUX_DIR)/%.altformats.d has been created
 ifeq ($(BML.ALTFORMATS.RECURSE),)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) BML.ALTFORMATS.RECURSE="$*" "$@"

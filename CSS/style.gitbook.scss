@@ -69,6 +69,48 @@ h1.title {
 
 /* BookML tweaks */
 
+/* skip to content */
+.bml-skip-to-content {
+  display: block;
+  padding: 0.5em;
+  position: absolute;
+  z-index: -999;
+  left:-999px;
+  top:-999px;
+  font-weight: bold;
+
+  &, &:visited, &:active {
+    background-color: #fff;
+    color: #3B78B5;
+  }
+
+  .book.color-theme-1 & {
+    &, &:visited {
+      background-color: #f3eacb;
+      border-color: #7e888b;
+      color: #704214;
+    }
+  }
+
+  .book.color-theme-2 & {
+    &, &:visited {
+      background-color: #2d3143;
+      border-color: #272a3a;
+      color: #c1c6d7;
+    }
+  }
+
+  text-decoration: underline;
+
+  &:focus, &:active {
+    left: 50%;
+    top: 0;
+    z-index: 999;
+    transform: translateX(-50%);
+    outline: auto;
+  }
+}
+
 /* Disable sidebar if there is no table of contents */
 .book.bml-no-navtoc {
   .book-body, .book-header.fixed {

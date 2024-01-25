@@ -59,6 +59,8 @@
           <xsl:text>&#x0A;</xsl:text>
           <div class="book without-animation with-summary font-size-2 font-family-1{$nonavtoc}" data-basepath=".">
             <xsl:text>&#x0A;</xsl:text>
+            <a href="#bml-main-content" tabindex="0" class="bml-skip-to-content">Skip to content.</a>
+            <xsl:text>&#x0A;</xsl:text>
             <div class="book-summary">
               <xsl:apply-templates select="." mode="navbar"/>
             </div>
@@ -143,7 +145,7 @@
         <xsl:text>&#x0A;</xsl:text>
         <div class="page-wrapper" tabindex="-1" role="main">
           <xsl:text>&#x0A;</xsl:text>
-          <div class="ltx_page_content page-inner">
+          <div class="ltx_page_content page-inner" id="bml-main-content">
             <xsl:apply-templates select="." mode="body-content-begin"/>
             <xsl:apply-templates/>
             <xsl:apply-templates select="." mode="body-content-end"/>

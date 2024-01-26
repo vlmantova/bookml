@@ -75,9 +75,11 @@ h1.title {
   padding: 0.5em;
   position: absolute;
   z-index: -999;
-  left:-999px;
-  top:-999px;
+  left: -999px;
+  top: -999px;
   font-weight: bold;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: large;
 
   &, &:visited, &:active {
     background-color: #fff;

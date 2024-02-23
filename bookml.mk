@@ -279,8 +279,8 @@ detect-texfot:
 	@$(call bml.testver,       texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional))
 detect-preview:
 	@$(eval preview_loc:=$(shell kpsewhich preview.sty $(bml.null)))
-	@$(eval preview_ver:=$(if $(preview_loc),$(subst _,., \
-	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst $$Name: release_,RELEASE_,$(call bml.file,$(preview_loc))))))))
+	@$(eval preview_ver:=$(if $(preview_loc),$(subst },,$(subst _,., \
+	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst \def\pr@version{,RELEASE_,$(subst $$Name: release_,RELEASE_,$(call bml.file,$(preview_loc))))))))))
 	@$(call bml.testver,  preview.sty,11.81,,$(preview_ver), (required for BookML images))
 detect-zip:
 	@$(eval zip_ver := $(firstword $(subst Zip_,,\

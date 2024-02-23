@@ -291,7 +291,7 @@ DefConstructorI('\bml@colors', undef, sub {
   # <ltx:text _font="...">
   for my $node ($document->findnodes('//*[@_font]')) {
     my $color = $document->getNodeFont($node)->getColor;
-    next if $color eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
+    $color = '000000' if $color eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
     my $class = genColors('color', $color);
     $document->addClass($node, $class); }
 
@@ -309,7 +309,10 @@ DefConstructorI('\bml@colors', undef, sub {
 
   for my $attr ('color', 'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color') {
     for my $node ($document->findnodes("//*[\@$attr]")) {
-      my $color_hex = substr($node->getAttribute($attr), 1);
+      my $color_hex = $node->getAttribute($attr);
+      next if $color_hex eq 'none';                    # see SVG <paint> values
+      $color_hex = '#000000' if $color_hex eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
+      $color_hex = substr($color_hex,1);
       my $class = genColors($attr,$color_hex);
       $document->addClass($node, $class); } }
 

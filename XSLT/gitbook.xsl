@@ -25,15 +25,54 @@
     xmlns:f   = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:func = "http://exslt.org/functions"
     xmlns:b    = "https://vlmantova.github.io/bookml/functions"
+    xmlns:exsl = "http://exslt.org/common"
     extension-element-prefixes = "func"
-    exclude-result-prefixes = "ltx f func b">
+    exclude-result-prefixes = "ltx f func b exsl">
 
   <!-- gitbook *requires* navigationtoc=context -->
   <xsl:template match="/">
     <xsl:if test="$GITBOOK and not(//ltx:navigation/ltx:TOC[@format='context'])">
       <xsl:message terminate="yes">bookml: you must call latexmlpost/latexmlc with --navigationtoc=context or disable the gitbook style via \usepackage[style=plain]{bookml}</xsl:message>
     </xsl:if>
-    <xsl:apply-imports/>
+    <xsl:choose>
+      <xsl:when test="*/@bml-colors-done">
+        <xsl:apply-imports/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="fragment">
+          <xsl:apply-templates mode="bml-colors"/>
+        </xsl:variable>
+        <xsl:apply-templates select="exsl:node-set($fragment)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- change colours into classes -->
+  <xsl:template match="@*|node()" mode="bml-colors">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|node()" mode="bml-colors"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="/*" mode="bml-colors">
+    <xsl:copy>
+      <xsl:attribute name="bml-colors-done"/>
+      <xsl:apply-templates select="@*|node()" mode="bml-colors"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="*[@color]" mode="bml-colors">
+    <xsl:copy>
+      <xsl:apply-templates select="@*[local-name()!='class']" mode="bml-colors"/>
+      <xsl:attribute name="class">
+        <xsl:value-of select="@class"/>
+        <xsl:if test="@class">
+          <xsl:value-of select="concat(@class,' ')"/>
+        </xsl:if>
+        <xsl:value-of select="concat('bml_color_',substring(@color,2))"/>
+      </xsl:attribute>
+      <xsl:apply-templates select="node()" mode="bml-colors"/>
+    </xsl:copy>
   </xsl:template>
 
   <!-- additional javascript -->

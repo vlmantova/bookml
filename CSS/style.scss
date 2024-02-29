@@ -38,6 +38,11 @@
   }
 }
 
+/* Fix 0.8.8 regression when switching from block to inline-block */
+.ltx_item .ltx_tag + .ltx_para {
+  width: 100%;
+}
+
 /* prevent invisible assistive MathML from enlarging the container */
 mjx-assistive-mml {
   right: 0 !important;

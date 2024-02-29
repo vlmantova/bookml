@@ -191,14 +191,15 @@
   <!-- add descriptive tooltip to download button -->
   <xsl:template match="ltx:listing[@data]" mode="begin">
     <xsl:param name="context"/>
-    <div class="ltx_listing_data">
-      <a download="" title="download code">
+    <xsl:element name="{f:blockelement($context,'div')}">
+      <xsl:attribute name="class">ltx_listing_data</xsl:attribute>
+      <a download="{@dataname}" title="download code">
         <xsl:call-template name="add_data_attribute">
           <xsl:with-param name="name" select="'href'"/>
         </xsl:call-template>
         <xsl:text>&#x2B07;</xsl:text>
       </a>
-    </div>
+    </xsl:element>
   </xsl:template>
 
   <!-- remove unwanted spaces between tag and content in lists -->
@@ -371,9 +372,14 @@
 
   <!-- ugly fix for backslashes in URLs on Windows -->
   <xsl:template match="@href | @src" mode="bml-alter">
-    <xsl:attribute name="{local-name()}">
-      <xsl:value-of select="b:fix-windows-paths(.)"/>
-    </xsl:attribute>
+    <xsl:choose>
+      <xsl:when test="b:max-version('0.8.6')">
+        <xsl:attribute name="{local-name()}">
+          <xsl:value-of select="b:fix-windows-paths(.)"/>
+        </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <!-- remove parentheses around dates -->
@@ -400,7 +406,7 @@
   </xsl:template>
 
   <!-- add default \FrameSep (=3\fboxsep=9pt) padding, if missing -->
-  <xsl:template match="*[b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/@style"
+  <xsl:template match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/@style"
     mode="bml-alter">
     <xsl:attribute name="style">
       <xsl:text>padding:9pt;</xsl:text>
@@ -410,7 +416,7 @@
 
   <!-- HACK detect titled-frame and add negative margins to the title (TODO: compute the correct margins based on the parent padding) -->
   <xsl:template
-    match="*[b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/span[position()=1 and contains(./@style,'width:100%;')]/@style"
+    match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/span[position()=1 and contains(./@style,'width:100%;')]/@style"
     mode="bml-alter">
     <xsl:attribute name="style">
       <xsl:text>margin-left:-9pt;margin-right:-9pt;margin-top:-9pt;margin-bottom:9pt;padding-left:9pt;padding-right:9pt;</xsl:text>
@@ -496,7 +502,7 @@
   </xsl:template>
 
   <!-- replace code space with actual space, to facilitate copy & paste -->
-  <xsl:template match="ltx:text[b:has-class('ltx_lst_space')]/text()[.='&#xA0;']">
+  <xsl:template match="ltx:text[b:max-version('0.8.7') and b:has-class('ltx_lst_space')]/text()[.='&#xA0;']">
     <xsl:text> </xsl:text>
   </xsl:template>
 

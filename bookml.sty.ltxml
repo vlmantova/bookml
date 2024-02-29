@@ -292,8 +292,7 @@ DefConstructorI('\bml@colors', undef, sub {
   for my $node ($document->findnodes('//*[@_font]')) {
     my $color = $document->getNodeFont($node)->getColor;
     $color = '000000' if $color eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
-    my $class = genColors('color', $color);
-    $document->addClass($node, $class); }
+    my $class = genColors('color', $color); }
 
   # <ltx:* framecolor="...">
   for my $node ($document->findnodes('//*[@framecolor]')) {
@@ -538,7 +537,7 @@ sub BMLGenerateImages {
     '-jobname=' . $jobname,         $source);
   if ($^O =~ /^(MSWin|cygwin)/) {
     require Win32::ShellQuote;
-    @lmk_invocation = Win32::ShellQuote::quote_system_list->(@lmk_invocation); }
+    @lmk_invocation = Win32::ShellQuote::quote_system_list(@lmk_invocation); }
   &$bml_NoteLog('Calling ' . join(' ', @lmk_invocation));
   &$bml_NoteLog('Logs in ' . pathname_concat($outdir, $jobname . '.log'));
   my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
@@ -647,7 +646,7 @@ sub BMLGenerateImages {
       '--output=' . $svgfmt, $dvifile);
     if ($^O =~ /^(MSWin|cygwin)/) {
       require Win32::ShellQuote;
-      @dsvg_invocation = Win32::ShellQuote::quote_system_list->(@dsvg_invocation); }
+      @dsvg_invocation = Win32::ShellQuote::quote_system_list(@dsvg_invocation); }
     &$bml_NoteLog('Calling ' . join(' ', @dsvg_invocation));
     my $dsvg_pid = IPC::Open3::open3(undef, my $dsvg_stdout, undef,
       @dsvg_invocation);
@@ -741,5 +740,8 @@ DefConstructor('\bmlDisableMathJax', sub {
 
 # Unicode variation sequences
 DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID',    meaning => 'empty-set');
+
+if ($LaTeXML::VERSION < v0.8.8) {
+  DefMathI('*', undef, "\x{2217}", role => 'MULOP', meaning => 'times'); }
 
 1;

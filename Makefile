@@ -29,7 +29,7 @@ else
   MKDIR   = mkdir -p
   RM      = rm -f --
   RMDIR   = rm -fr --
-  SASS    = sassc
+  SASS    = sass
   UNZIP   = unzip -o $1 -d $2
 endif
 

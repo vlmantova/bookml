@@ -238,7 +238,8 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 }
 
 /* WCAG 2.1 AA 1.4.3: Contrast + link contrast from WCAG 2.0 */
-.book .book-body .page-wrapper .page-inner section.normal a {
+.book .book-body .page-wrapper .page-inner section.normal a,
+.ltx_note_mark {
   color: #3B78B5;
 }
 
@@ -410,5 +411,31 @@ mjx-container[jax="SVG"][display="true"] {
     &::after, &::before {
       content: none;
     }
+  }
+}
+
+/* fix standard LaTeXML footnotes */
+.ltx_note_content {
+  padding-left: 1em;
+
+  & .ltx_note_mark {
+    position: relative;
+    left: auto;
+    top: -.5em;
+  }
+
+  .book.color-theme-1 & {
+    background-color: #fdf6e3;
+    border-color: #f5d06c;
+  }
+
+  .book.color-theme-2 & {
+    background-color: #2d3143;
+    border-color: #3b3f54;
+    box-shadow: 5px 5px 10px black;
+  }
+
+  &>.ltx_tag.ltx_tag_note {
+    display: none;
   }
 }

@@ -171,14 +171,16 @@
     <xsl:choose>
       <xsl:when test="@ns">
         <xsl:element name="{@name}" namespace="{@ns}">
-          <xsl:apply-templates>
+          <xsl:apply-templates select="ltx:xmlattr" />
+          <xsl:apply-templates select="node()[not(self::ltx:xmlattr)]">
             <xsl:with-param name="context" select="$context"/>
           </xsl:apply-templates>
         </xsl:element>
       </xsl:when>
       <xsl:otherwise>
         <xsl:element name="{@name}">
-          <xsl:apply-templates>
+          <xsl:apply-templates select="ltx:xmlattr" />
+          <xsl:apply-templates select="node()[not(self::ltx:xmlattr)]">
             <xsl:with-param name="context" select="$context"/>
           </xsl:apply-templates>
         </xsl:element>
@@ -190,14 +192,16 @@
     <xsl:choose>
       <xsl:when test="@ns">
         <xsl:element name="{@name}" namespace="{@ns}">
-          <xsl:apply-templates>
+          <xsl:apply-templates select="ltx:xmlattr" />
+          <xsl:apply-templates select="node()[not(self::ltx:xmlattr)]">
             <xsl:with-param name="context" select="'inline'"/>
           </xsl:apply-templates>
         </xsl:element>
       </xsl:when>
       <xsl:otherwise>
         <xsl:element name="{@name}">
-          <xsl:apply-templates>
+          <xsl:apply-templates select="ltx:xmlattr"/>
+          <xsl:apply-templates select="node()[not(self::ltx:xmlattr)]">
             <xsl:with-param name="context" select="'inline'"/>
           </xsl:apply-templates>
         </xsl:element>

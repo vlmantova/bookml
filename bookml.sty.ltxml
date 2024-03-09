@@ -175,7 +175,7 @@ DefConstructorI('\bml@css', undef, sub {
             my $styles = ',_all,';
             if ($_ =~ /\.([^.]+)\.css$/i) {
               $styles = ",$1,"; }
-            if ($styles =~ /,(?:_all|$bml_style),/) {
+            if ($styles =~ /,(?:_all|$bml_style|$bml_style-$bml_jobname),/) {
               RequireResource($_); } }
         }
       },
@@ -309,8 +309,8 @@ DefConstructorI('\bml@colors', undef, sub {
   for my $attr ('color', 'fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color') {
     for my $node ($document->findnodes("//*[\@$attr]")) {
       my $color_hex = $node->getAttribute($attr);
-      next if $color_hex eq 'none';                    # see SVG <paint> values
-      $color_hex = '#000000' if $color_hex eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
+      next if $color_hex =~ m/^(none|context-fill|context-stroke)$|^url\(/; # see SVG <paint> values
+      $color_hex = '#000000' if $color_hex eq 'black';                      # $LaTeXML::Common::Font::DEFCOLOR
       $color_hex = substr($color_hex,1);
       my $class = genColors($attr,$color_hex);
       $document->addClass($node, $class); } }
@@ -323,7 +323,7 @@ DefConstructorI('\bml@colors', undef, sub {
 
   if ($bml_colors_css) {
     (mkdir("bmluser") or die "cannot create directory bmluser: $!") unless -d "bmluser";
-    my $cssfile = "bmluser/$bml_jobname.colors.gitbook.css";
+    my $cssfile = "bmluser/colors.gitbook-$bml_jobname.css";
     open(my $fh, '>', $cssfile) or die "cannot write to $cssfile: $!";
     print $fh $bml_colors_css;
     close($fh); }
@@ -476,12 +476,11 @@ DefMacro('\bml@includeimage', '\stepcounter{bml@imagecounter}\includegraphics{bm
 DefConstructor('\bml@add@depth{}', \&BMLAddDepth);
 
 my $bml_depth;
-my $jobname = ToString(Expand(T_CS('\jobname')));
 my $source  = LookupValue('SOURCEFILE');
 my $outdir  = pathname_concat('bmlimages', $bml_jobname);
-my $dvifile = pathname_concat($outdir,     $jobname . '.dvi');
+my $dvifile = pathname_concat($outdir,     $bml_jobname . '.dvi');
 my $svgfmt  = pathname_concat('bmlimages', '%f-%0p.svg');
-my $dpth    = pathname_concat($outdir,     $jobname . '.dpth');
+my $dpth    = pathname_concat($outdir,     $bml_jobname . '.dpth');
 
 sub BMLAddDepth {
   my ($document, $counter) = @_;
@@ -534,12 +533,12 @@ sub BMLGenerateImages {
   my @lmk_invocation = ('latexmk', '-output-format=dvi',
     '-interaction=nonstopmode',     '-halt-on-error',
     '-output-directory=' . $outdir, '-usepretex=' . $preclass,
-    '-jobname=' . $jobname,         $source);
+    '-jobname=' . $bml_jobname,     $source);
   if ($^O =~ /^(MSWin|cygwin)/) {
     require Win32::ShellQuote;
     @lmk_invocation = Win32::ShellQuote::quote_system_list(@lmk_invocation); }
   &$bml_NoteLog('Calling ' . join(' ', @lmk_invocation));
-  &$bml_NoteLog('Logs in ' . pathname_concat($outdir, $jobname . '.log'));
+  &$bml_NoteLog('Logs in ' . pathname_concat($outdir, $bml_jobname . '.log'));
   my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
     @lmk_invocation);
 
@@ -619,7 +618,7 @@ sub BMLGenerateImages {
   waitpid($lmk_pid, 0);
   if ($! || $?) {
     &$bml_ProgressSpindown('BookML images');
-    return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see $outdir/$jobname.log for more details",
+    return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see $outdir/$bml_jobname.log for more details",
       $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
       'Invocation:', @lmk_invocation); }
 
@@ -632,7 +631,7 @@ sub BMLGenerateImages {
       untie %bml_depth_db; }
     else {
       # delete the depth cache
-      Info('I/O', 'dpth', undef, "Couldn't open the depth cache ($dpth) for $jobname.tex, message was '$!'; SVGs and depth cache will be recreated");
+      Info('I/O', 'dpth', undef, "Couldn't open the depth cache ($dpth) for $bml_jobname.tex, message was '$!'; SVGs and depth cache will be recreated");
       $rebuild = 1; } }
 
   # if the DVI has changed, or the depth cache is invalid, rebuild the images
@@ -668,7 +667,7 @@ sub BMLGenerateImages {
     waitpid($dsvg_pid, 0);
     if ($! || $?) {
       &$bml_ProgressSpindown('BookML images');
-      return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; see $jobname.latexml.log for more details",
+      return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; see $bml_jobname.latexml.log for more details",
         $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
         'Invocation:', @dsvg_invocation); }
 
@@ -681,7 +680,7 @@ sub BMLGenerateImages {
       untie %bml_depth_db; }
     else {
       # delete the depth cache
-      Error('I/O', 'dpth', undef, "Couldn't create the depth cache ($dpth) for $jobname.tex, message was '$!'; deleting $dpth");
+      Error('I/O', 'dpth', undef, "Couldn't create the depth cache ($dpth) for $bml_jobname.tex, message was '$!'; deleting $dpth");
       unlink $dpth if -f $dpth; } }
 
   &$bml_ProgressSpindown('BookML images');

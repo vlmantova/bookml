@@ -61,7 +61,7 @@
     </xsl:copy>
   </xsl:template>
 
-  <xsl:template match="*[@color]" mode="bml-colors">
+  <xsl:template match="*[@color | @mathcolor]" mode="bml-colors">
     <xsl:copy>
       <xsl:apply-templates select="@*[local-name()!='class']" mode="bml-colors"/>
       <xsl:attribute name="class">
@@ -69,7 +69,7 @@
         <xsl:if test="@class">
           <xsl:value-of select="concat(@class,' ')"/>
         </xsl:if>
-        <xsl:value-of select="concat('bml_color_',substring(@color,2))"/>
+        <xsl:value-of select="concat('bml_color_',substring(string(@color | @mathcolor),2))"/>
       </xsl:attribute>
       <xsl:apply-templates select="node()" mode="bml-colors"/>
     </xsl:copy>

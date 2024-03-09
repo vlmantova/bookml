@@ -19,7 +19,6 @@
 # (1) where to store auxiliary files (*.aux, *.d, *.toc,...)
 AUX_DIR    ?= auxdir
 BACKUP_DIR ?= backups
-DEPS_DIR   ?= $(AUX_DIR)/deps
 # (2) latexmk command and options
 LATEXMK      ?= latexmk
 LATEKMKFLAGS ?=
@@ -49,27 +48,32 @@ TEXFOT      ?= $(if $(call bml.which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
 # (10) various terminal commands: by default, use typical Windows or Unix version
 bml.is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
-ZIP         ?= $(if $(bml.is.win),$(if $(shell where zip 2>NUL),zip,miktex-zip),zip)
+ifeq ($(bml.is.win),true)
+  ZIP         ?= $(if $(shell where zip 2>NUL),zip,miktex-zip)
+  CP          := copy
+  RMDIR       := rd /s /q
+  RM          := del /f /s /q
+  MKDIR       := mkdir
+else
+  ZIP         ?= zip
+  CP          := cp
+  RMDIR       := rm -fr --
+  RM          := rm -f --
+  MKDIR       := mkdir -p --
+endif
 ZIP_EXCLUDE ?= -x
-CP          := $(if $(bml.is.win),copy,cp)
-RMDIR       := $(if $(bml.is.win),rd /s /q,rm -fr --)
-RM          := $(if $(bml.is.win),del /f /s /q,rm -f --)
-MKDIR       := $(if $(bml.is.win),mkdir,mkdir -p --)
 ### END CONFIGURATION
 
 ### INTERNAL VARIABLES
 BOOKML_DEPS_HTML = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl \
   bookml/*.rng bookml/CSS/*.css bookml/gitbook/css/fontawesome/*.ttf \
-  bookml/gitbook/css/*.css bookml/js/*.js bmluser/*.css)
+  bookml/gitbook/css/*.css bookml/js/*.js)
 BOOKML_DEPS_XML  = $(wildcard bookml/*.ltxml bookml/*.rng)
+
+BMLGOALS = $(MAKECMDGOALS)
 
 ### UTILS
 # cross-platform convenience variables
-bml.pathsep := $(if $(bml.is.win),$(strip \),/)
-bml.null    := $(if $(bml.is.win),2>NUL,2>/dev/null)
-bml.lt      := $(if $(bml.is.win),^<,"<")
-bml.gt      := $(if $(bml.is.win),^>,">")
-bml;        := $(if $(bml.is.win),&,;)
 bml.openp   := (
 bml.closedp := )
 define bml.nl # newline
@@ -78,7 +82,11 @@ define bml.nl # newline
 endef
 
 # find if a command is available
-bml.which = $(if $(bml.is.win),$(shell where "$1" 2>NUL),$(shell command -v "$1"))
+ifeq ($(bml.is.win),true)
+  bml.which = $(shell where "$1" 2>NUL)
+else
+  bml.which = $(shell command -v "$1")
+endif
 # recursively list all files and folders, or just files, within a directory (after https://stackoverflow.com/a/18258352)
 bml.reclist      = $(foreach d,$(wildcard $(1:=/*)),$(call bml.reclist,$d) $d)
 bml.reclist.file = $(foreach d,$(wildcard $(1:=/*)),$(eval _x:=$(call bml.reclist.file,$d))$(if $(_x),$(_x),$d)) # BUG: empty folders are interpreted as files
@@ -98,16 +106,16 @@ bml.grep = $(findstring $1,$(call bml.file,$2))
 ifeq ($(BACKUP_DIR),)
   bml.backup=
 else ifeq ($(bml.is.win),true)
-  bml.backup = if exist "$*" \
-    (if not exist $(BACKUP_DIR)\$* ($(call bml.cmd,move /Y $* $(BACKUP_DIR)\$*) & exit) \
-     else (for /l %%i in (1,1,999) do (echo $(bml.magenta)Backing up '$*' to '$(BACKUP_DIR)\$*'$(bml.reset) >&2 & \
-       if not exist $(BACKUP_DIR)\$*.~%%i~ ($(call bml.cmd,move /Y $* $(BACKUP_DIR)\$*.~%%i~) & exit))) \
+  bml.backup = if exist "$(1)" \
+    (if not exist $(BACKUP_DIR)\$(1) ($(call bml.cmd,move /Y $(1) $(BACKUP_DIR)\$(1)) & exit) \
+     else (for /l %%i in (1,1,999) do (echo $(bml.magenta)Backing up '$(1)' to '$(BACKUP_DIR)\$(1)'$(bml.reset) >&2 & \
+       if not exist $(BACKUP_DIR)\$(1).~%%i~ ($(call bml.cmd,move /Y $(1) $(BACKUP_DIR)\$(1).~%%i~) & exit))) \
      & echo $(bml.red)Too many backups. Clear the '$(BACKUP_DIR)' folder and try again.$(bml.reset) >&2 & exit 1)
 else
-  bml.backup = if [[ -d "$*" ]]; then echo "$(bml.magenta)Backing up '$*' to '$(BACKUP_DIR)/$*'$(bml.reset)" >&2 ; \
-    if [[ ! -d "$(BACKUP_DIR)/$*" ]] ; then $(call bml.cmd,mv -f "$*" "$(BACKUP_DIR)/$*"); \
+  bml.backup = if [[ -d "$(1)" ]]; then echo "$(bml.magenta)Backing up '$(1)' to '$(BACKUP_DIR)/$(1)'$(bml.reset)" >&2 ; \
+    if [[ ! -d "$(BACKUP_DIR)/$(1)" ]] ; then $(call bml.cmd,mv -f "$(1)" "$(BACKUP_DIR)/$(1)"); \
     else for ((i=1;i<1000;++i)) ; do \
-      if [[ ! -d "$(BACKUP_DIR)/$*.~$$i~" ]] ; then $(call bml.cmd,mv -f "$*" "$(BACKUP_DIR)/$*.~$$i~") && exit ; fi ; done \
+      if [[ ! -d "$(BACKUP_DIR)/$(1).~$$i~" ]] ; then $(call bml.cmd,mv -f "$(1)" "$(BACKUP_DIR)/$(1).~$$i~") && exit ; fi ; done \
     ; echo "$(bml.red)Too many backups. Clear the '$(BACKUP_DIR)' folder and try again.$(bml.reset)" >&2 && exit 1 ; fi ; fi
 endif
 
@@ -116,7 +124,11 @@ endif
 # progress output (code inspired by GMSL)
 bml.spc := $(strip) $(strip)
 bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg) )
-bml.cmd  = $(call bml.echo,$(bml.cyan)$(if $(bml.is.win),$1,$(subst ",\",$1))) $(bml;)$1
+ifeq ($(bml.is.win),true)
+  bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$1
+else
+  bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$(subst \,\\,$1)
+endif
 bml.prog = $(call bml.box,$1)
 
 # colors
@@ -134,16 +146,25 @@ ifeq ($(if $(bml.is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)
   bml.bluebg  := $(bml.esc)[44m
   bml.reset   := $(bml.esc)[0m
 endif
+bml.echo    = $(info $1$(bml.reset))
 
 ifeq ($(bml.is.win),true)
   SHELL      := cmd.exe
   __ignore   := $(shell chcp 65001)
-  bml.echo    = echo $1$(bml.reset) >&2
   bml.ospath  = $(subst /,$(bml.pathsep),$1)
+  bml.pathsep := $(strip \)
+  bml.null    := 2>NUL
+  bml.lt      := ^<
+  bml.gt      := ^>
+  bml;        := &
 else
   SHELL      := bash
-  bml.echo    = echo "$1$(bml.reset)" >&2
   bml.ospath  = $1
+  bml.pathsep := /
+  bml.null    := 2>/dev/null
+  bml.lt      := "<"
+  bml.gt      := ">"
+  bml;        := ;
 endif
 
 # painful version comparison
@@ -189,6 +210,9 @@ bml.testver = $(call bml.echo,$(bml.cyan)$1:$(call bml.recver,$2,$3,$4)$(bml.res
 # delete files on error
 .DELETE_ON_ERROR:
 
+# force recompilation
+.PHONY: FORCE
+
 # default targets
 all:
 	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
@@ -214,7 +238,7 @@ clean:  clean-aux clean-backup clean-html clean-pdf clean-scorm clean-xml clean-
 .PHONY: clean-aux clean-backup clean-html clean-pdf clean-scorm clean-xml clean-zip
 
 clean-aux:
-	-@$(RMDIR) $(call bml.ospath,$(DEPS_DIR) $(AUX_DIR))
+	-@$(RMDIR) $(call bml.ospath,$(AUX_DIR))
 clean-backup:
 	-@$(RMDIR) $(call bml.ospath,$(wildcard $(patsubst %/index.html,$(BACKUP_DIR)/%,$(TARGETS.HTML))$(patsubst %/index.html,$(BACKUP_DIR)/%.~*~,$(TARGETS.HTML))))
 clean-html:
@@ -287,11 +311,9 @@ detect-zip:
 	  $(filter Zip_%,$(subst Zip ,Zip_,$(shell $(ZIP) -v $(bml.null)))))))
 	@$(call bml.testver,          zip,,,$(zip_ver))
 
-# dependencies detected by latexmk
--include $(wildcard $(DEPS_DIR)/*.d)
 
 # create directories
-$(AUX_DIR) $(DEPS_DIR) $(BACKUP_DIR):
+$(AUX_DIR) $(BACKUP_DIR):
 	@$(MKDIR) "$(call bml.ospath,$@)"
 
 # copy PDF and synctex.gz files from $(AUX_DIR) to main folder
@@ -301,68 +323,69 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/%.pdf
 	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/$*.synctex.gz)" "$(call bml.ospath,$*.synctex.gz)"
 	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/$*.synctex)" "$(call bml.ospath,$*.synctex)"
 
-# build PDF files (in $(AUX_DIR))
-$(AUX_DIR)/%.pdf: %.tex | $(AUX_DIR) $(DEPS_DIR)
-	@$(call bml.prog,pdflatex: $< → $*.pdf)
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -norc -interaction=nonstopmode -halt-on-error -recorder \
-	  -deps -deps-out="$(DEPS_DIR)/$*.d" -MP -output-directory="$(AUX_DIR)" -pdf -dvi- -ps- "$<")
-#	escape spaces in the filenames reported by latexmk
-	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(DEPS_DIR)/$*.d"
+# build PDF and deps files (in $(AUX_DIR))
+
+$(AUX_DIR)/%.pdf $(AUX_DIR)/%.pdf.d: %.tex $$(if $$(filter $(AUX_DIR)/$$*.pdf,$$(BMLGOALS)),,FORCE) | $$(AUX_DIR)
+	@$(eval _recurse:=$(if $(filter $(AUX_DIR)/$*.pdf,$(BMLGOALS)),,yes))
+	@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$(AUX_DIR)/$*.pdf" "BMLGOALS=$(AUX_DIR)/$*.pdf")
+	@$(if $(_recurse),,$(call bml.prog,pdflatex: $*.tex → $*.pdf))
+	@$(if $(_recurse),,$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -recorder \
+	  -deps -deps-out="$(AUX_DIR)/$*.pdf.d" -MP -output-directory="$(AUX_DIR)" -pdf -dvi- -ps- "$*"))
+	@$(if $(_recurse),,$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/$*.pdf.d")
+
+$(foreach STEM,$(patsubst $(AUX_DIR)/%.pdf,%,$(filter $(AUX_DIR)/%.pdf,$(BMLGOALS))),$(eval include $(AUX_DIR)/$(STEM).pdf.d))
 
 # build XML files
 $(AUX_DIR)/%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf
 	@$(call bml.prog,latexml: $< → $@)
-	@$(call bml.cmd,$(LATEXML) $(if $(call bml.grep,{bookml/bookml},$<),,--preamble=literal:$(if $(bml.is.win),\,\\)RequirePackage{bookml/bookml} \
+	@$(call bml.cmd,$(LATEXML) $(if $(call bml.grep,{bookml/bookml},$<),,--preamble=literal:\RequirePackage{bookml/bookml} \
 	  ) $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/$*.latexml.log" --destination="$@" "$<")
 
-# build HTML files and alternative formats
-$(AUX_DIR)/%.altformats.d: $(AUX_DIR)/%.xml bookml/XSLT/proc-altformats.xsl bookml/xsltproc.pl | $(AUX_DIR)
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-altformats.xsl "$<" --output "$@" --stringparam BML_TARGET "$*/index.html")
+# discover postprocessing dependencies, including bmluser/ files and alternative formats
+$(AUX_DIR)/%.resources.d: $(AUX_DIR)/%.xml bookml/XSLT/proc-resources.xsl bookml/xsltproc.pl | $(AUX_DIR)
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$*/index.html")
 
-ifneq ($(BML.ALTFORMATS.RECURSE),)
--include $(wildcard $(AUX_DIR)/$(BML.ALTFORMATS.RECURSE).altformats.d)
-endif
-%/index.html: $(AUX_DIR)/%.xml $(BOOKML_DEPS_HTML) $(AUX_DIR)/%.altformats.d $$(wildcard bmlimages/$$**.svg) | $(BACKUP_DIR)
-# recurse so that we build *after* $(AUX_DIR)/%.altformats.d has been created
-ifeq ($(BML.ALTFORMATS.RECURSE),)
-	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) BML.ALTFORMATS.RECURSE="$*" "$@"
-else
-	@$(call bml.prog,latexmlpost: $< → $@)
-# backup the existing folder (we do not want stray files from previous builds end up in the final output)
-	@$(bml.backup)
-	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
+# build HTML and deps files
+
+# build recursively to force inclusion of deps files
+%/index.html: $$(if $$(filter $$@,$$(BMLGOALS)),$(AUX_DIR)/$$*.xml $$(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$*-*.svg) $$(wildcard bmlimages/$$*/$$*.dpth) | $$(BACKUP_DIR),FORCE)
+	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
+	@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
+	@$(if $(_recurse),,@$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
+	@$(if $(_recurse),,$(call bml.backup,$*))
+	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
-	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$@" "$<")
-endif
+	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$*/index.html" "$(AUX_DIR)/$*.xml"))
+
+$(foreach STEM,$(patsubst %/index.html,%,$(filter %/index.html,$(BMLGOALS))),$(eval include $(AUX_DIR)/$(STEM).resources.d))
+
+# package HTML output and manifest into SCORM package
+SCORM.%.zip: $(AUX_DIR)/%/imsmanifest.xml $$(filter-out $$*/LaTeXML.cache,$$(call bml.reclist.file,$$*))
+	@$(call bml.prog,SCORM: $* → $@)
+	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
+	@$(call bml.cmd,cd "$(AUX_DIR)/$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet "..$(bml.pathsep)..$(bml.pathsep)$@" imsmanifest.xml)
+	@$(call bml.cmd,cd "$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)$@" . "$(ZIP_EXCLUDE)LaTeXML.cache")
 
 # package HTML output into zip file
-%.zip: %/index.html $$(filter-out %/LaTeXML.cache,$$(call bml.reclist,$$*))
+%.zip: %/index.html $$(filter-out $$*/LaTeXML.cache,$$(call bml.reclist.file,$$*))
 	@$(call bml.prog,zip: $(<D) → $@)
 	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
 	@$(call bml.cmd,$(ZIP) --quiet --recurse-paths "$@" "$*" "$(ZIP_EXCLUDE)$*$(bml.pathsep)LaTeXML.cache")
 
 # create BookML minimal manifest (a list of files generated by latexmlpost in XML format)
-$(AUX_DIR)/%.manifest-xml: %/index.html $$(filter-out %/LaTeXML.cache,$$(call bml.reclist,$$*)) | $(AUX_DIR)
-# recurse to build manifest (so that $(bml.reclist.file) is evaluated *after* index.html has been built)
-ifeq ($(BML.MANIFEST.RECURSE),)
-	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) BML.MANIFEST.RECURSE=1 "$@"
-else
-	@echo $(bml.lt)manifest$(bml.gt) > $@
-	$(foreach f,index.html $(filter-out index.html LaTeXML.cache,$(patsubst $*/%,%,$(call bml.reclist.file,$*))), \
-	  @echo $(bml.lt)file$(bml.gt)$f$(bml.lt)/file$(bml.gt) >> $@ $(bml.nl))
-	@echo $(bml.lt)/manifest$(bml.gt) >> $@
-endif
+# build recursively to evaluate $(bml.reclist.file) *after* index.html has been built
+# (without FORCE, SCORM.%.zip gets recompiled on every call)
+$(AUX_DIR)/%.manifest-xml: $$(if $$(filter $$@,$$(BMLGOALS)),$$*/index.html $$(filter-out $$*/LaTeXML.cache,$$(call bml.reclist.file,$$*)) | $(AUX_DIR),FORCE)
+	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
+	@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
+	@$(if $(_recurse),,echo $(bml.lt)manifest$(bml.gt) > $@)
+	@$(if $(_recurse),,$(foreach f,index.html $(filter-out index.html LaTeXML.cache,$(patsubst $*/%,%,$(call bml.reclist.file,$*))), \
+	  echo $(bml.lt)file$(bml.gt)$f$(bml.lt)/file$(bml.gt) >> $@$(bml.nl)))
+	@$(if $(_recurse),,echo $(bml.lt)/manifest$(bml.gt) >> $@)
 
 # create SCORM manifest
-$(AUX_DIR)/%/imsmanifest.xml: $(AUX_DIR)/%.xml $(AUX_DIR)/%.manifest-xml bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
-	@$(call bml.prog,SCORM manifest: $< → $@)
+$(AUX_DIR)/%/imsmanifest.xml: $(AUX_DIR)/%.manifest-xml bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
+	@$(call bml.prog,SCORM manifest: $*.xml → $@)
 	@$(MKDIR) "$(call bml.ospath,$(AUX_DIR)/$*)"
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$<" --output "$@" \
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$(AUX_DIR)/$*.xml" --output "$@" \
 	   --stringparam BML_MANIFEST "$*.manifest-xml")
-
-# package HTML output and manifest into SCORM package
-SCORM.%.zip: %/index.html $(AUX_DIR)/%/imsmanifest.xml $$(filter-out LaTeXML.cache,$$(call bml.reclist,$$*))
-	@$(call bml.prog,SCORM: $(<D) → $@)
-	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
-	@$(call bml.cmd,cd "$(AUX_DIR)/$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet "..$(bml.pathsep)..$(bml.pathsep)$@" imsmanifest.xml)
-	@$(call bml.cmd,cd "$(<D)") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)$@" . "$(ZIP_EXCLUDE)LaTeXML.cache")

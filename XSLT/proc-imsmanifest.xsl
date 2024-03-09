@@ -56,7 +56,10 @@
         <lom:lom>
           <lom:general>
             <xsl:apply-templates select="ltx:title" mode="lom" />
-            <xsl:apply-templates select="ltx:abstract" />
+            <xsl:if test="not(ltx:rdf[@property='dcterms:subject'])">
+              <xsl:apply-templates select="ltx:abstract" />
+            </xsl:if>
+            <xsl:apply-templates select="ltx:rdf" />
           </lom:general>
           <lom:lifeCycle>
             <xsl:apply-templates select="ltx:creator[ltx:personname]" />
@@ -100,6 +103,15 @@
         <xsl:apply-templates />
       </lom:string>
     </lom:title>
+  </xsl:template>
+
+  <xsl:template match="ltx:rdf" />
+  <xsl:template match="ltx:rdf[@property='dcterms:subject']">
+    <lom:description>
+      <lom:string>
+        <xsl:value-of select="@content" />
+      </lom:string>
+    </lom:description>
   </xsl:template>
 
   <xsl:template match="ltx:abstract">

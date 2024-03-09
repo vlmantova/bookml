@@ -102,8 +102,7 @@ bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
 $(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
 	$(eval _date:=$(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d'))
 	$(eval _version:=$(shell git log HEAD^..HEAD --format='%(describe)'))
-	sed -e "s!@DATE@!$(_date)!g" \
-	    -e "s!@VERSION@!$(_version)!g" "$<" > "$@"
+	perl -pe "s!\@DATE@!$(_date)!g; s!\@VERSION@!$(_version)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)

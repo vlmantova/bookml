@@ -35,8 +35,8 @@ endif
 
 
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
-GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
-GITBOOK_JS     := $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js plugin-fontsettings.js plugin-bookdown.js)
+GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-search.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
+GITBOOK_JS     := $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js jquery.highlight.js plugin-search.js plugin-fontsettings.js plugin-bookdown.js)
 GITBOOK_DIRS   := $(patsubst %,gitbook/%,css/fontawesome css js) gitbook
 GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
 
@@ -45,7 +45,7 @@ BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml.sty bookml/latexml.sty
 BOOKML_LTXML := bookml/bookml.sty.ltxml bookml/schema.rng
-BOOKML_MK    := bookml/bookml.mk bookml/xsltproc.pl
+BOOKML_MK    := bookml/bookml.mk bookml/search_index.pl bookml/xsltproc.pl
 BOOKML_DIRS  := $(patsubst %,bookml/%,$(GITBOOK_DIRS)) bookml/CSS bookml/XSLT bookml
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
@@ -112,6 +112,11 @@ gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 	patch -p1 <plugin-bookdown.js.patch
+
+# patch search
+gitbook/js/plugin-search.js: $(GITBOOK_SOURCE)/js/plugin-search.js plugin-search.js.patch | $(GITBOOK_DIRS)
+	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
+	patch -p1 <plugin-search.js.patch
 
 CSS/%.css: CSS/%.scss
 	$(SASS) "$<" "$@"

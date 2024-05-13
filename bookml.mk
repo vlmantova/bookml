@@ -348,14 +348,15 @@ $(AUX_DIR)/%.resources.d: $(AUX_DIR)/%.xml bookml/XSLT/proc-resources.xsl bookml
 # build HTML and deps files
 
 # build recursively to force inclusion of deps files
-%/index.html: $$(if $$(filter $$@,$$(BMLGOALS)),$(AUX_DIR)/$$*.xml $$(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$*-*.svg) $$(wildcard bmlimages/$$*/$$*.dpth) | $$(BACKUP_DIR),FORCE)
+%/index.html: $$(if $$(filter $$@,$$(BMLGOALS)),$(AUX_DIR)/$$*.xml $$(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$*-*.svg) $$(wildcard bmlimages/$$*/$$*.dpth) bookml/search_index.pl bookml/XSLT/proc-text.xsl | $$(BACKUP_DIR),FORCE)
 	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
 	@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
-	@$(if $(_recurse),,@$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
+	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
 	@$(if $(_recurse),,$(call bml.backup,$*))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
 	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$*/index.html" "$(AUX_DIR)/$*.xml"))
+	@$(if $(_recurse),,$(call bml.cmd,$(PERL) bookml/search_index.pl "$*"))
 
 $(foreach STEM,$(patsubst %/index.html,%,$(filter %/index.html,$(BMLGOALS))),$(eval include $(AUX_DIR)/$(STEM).resources.d))
 

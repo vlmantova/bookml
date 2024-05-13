@@ -1,0 +1,34 @@
+--- a/gitbook/js/plugin-search.js
++++ b/gitbook/js/plugin-search.js
+@@ -46,7 +46,7 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+         }
+         fuse = new Fuse(data.map((_data => {
+             return {
+-                url: _data[0],
++                urls: _data[0],
+                 title: _data[1],
+                 body: _data[2]
+             };
+@@ -59,6 +59,7 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+             },
+             _search.opts
+         ));
++        $('li[data-path=""]').data('path', currentPath());
+     }
+ 
+     // Fetch the search index
+@@ -73,8 +74,12 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+         switch (_search.engine) {
+             case 'fuse':
+                 if (!fuse) return;
+-                results = fuse.search(q).map(function(result) {
+-                    var parts = result.item.url.split('#');
++                results = [].concat.apply([], fuse.search(q).map(function (result) {
++                    return result.item.urls;
++                })).filter(function (url, index, array) {
++                    return array.indexOf(url) == index;
++                }).map(function (url) {
++                    var parts = url.split('#');
+                     return {
+                         path: parts[0],
+                         hash: parts[1]

@@ -79,6 +79,7 @@
   <xsl:template match="/" mode="head-javascript">
     <xsl:if test="$GITBOOK">
       <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6"></script>
     </xsl:if>
     <xsl:apply-imports/>
   </xsl:template>
@@ -128,7 +129,9 @@
               <xsl:otherwise>null</xsl:otherwise>
             </xsl:choose>
             <xsl:text>,
-                  "search": false,
+                "search": {
+                  "engine": "fuse"
+                },
                   "toc": {
                     "collapse": "none"
                   }

@@ -148,6 +148,7 @@ if ($bml_style eq 'gitbook') {
   for my $res (qw(
     bookml/gitbook/css/style.css
     bookml/gitbook/css/plugin-table.css
+    bookml/gitbook/css/plugin-search.css
     bookml/gitbook/css/plugin-bookdown.css
     bookml/gitbook/css/plugin-fontsettings.css
     )
@@ -156,6 +157,8 @@ if ($bml_style eq 'gitbook') {
   # end of body
   for my $res (qw(
     bookml/gitbook/js/app.min.js
+    bookml/gitbook/js/jquery.highlight.js
+    bookml/gitbook/js/plugin-search.js
     bookml/gitbook/js/plugin-fontsettings.js
     bookml/gitbook/js/plugin-bookdown.js
   )) { BMLRequireResource($res, location => 'body'); }

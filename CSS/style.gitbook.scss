@@ -114,13 +114,13 @@ h1.title {
 }
 
 /* Disable sidebar if there is no table of contents */
-.book.bml-no-navtoc {
+.book.bml-no-navtoc:not(.with-search) {
   .book-body, .book-header.fixed {
     left: 0;
   }
 }
 
-.book.bml-no-navtoc {
+.book.bml-no-navtoc:not(.with-search) {
   .book-summary, .book-header>a:first-of-type {
     display: none;
   }

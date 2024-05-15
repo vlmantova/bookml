@@ -125,9 +125,11 @@ endif
 bml.spc := $(strip) $(strip)
 bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg) )
 ifeq ($(bml.is.win),true)
-  bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$1
+  bml.cmd  = echo $(bml.cyan)$1$(bml.reset) & $1
+  bml.echo = echo $1$(bml.reset)
 else
   bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$(subst \,\\,$1)
+  bml.echo = $(info $1$(bml.reset))
 endif
 bml.prog = $(call bml.box,$1)
 
@@ -146,7 +148,6 @@ ifeq ($(if $(bml.is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)
   bml.bluebg  := $(bml.esc)[44m
   bml.reset   := $(bml.esc)[0m
 endif
-bml.echo    = $(info $1$(bml.reset))
 
 ifeq ($(bml.is.win),true)
   SHELL      := cmd.exe

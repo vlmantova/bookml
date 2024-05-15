@@ -22,7 +22,7 @@ ifeq ($(is.win),true)
   RM     = del /f /s /q
   RMDIR  = rd /s /q
   SASS   = sass
-  UNZIP	 = tar -C $1 -xf $2
+  UNZIP	 = tar -C $2 -xf $1
 else
   ospath  = $1
   CP      = cp

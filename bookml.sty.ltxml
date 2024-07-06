@@ -286,7 +286,7 @@ DefConstructorI('\bml@colors', undef, sub {
       $bml_colors_sepiamode{$color_hex} //= BMLColorSepiaMode($color)->toHex;
       my $dark_hex = $bml_colors_darkmode{$color_hex};
       my $sepia_hex = $bml_colors_sepiamode{$color_hex};
-      $bml_colors_css .= ".$class {$attr:#$color_hex} .book.color-theme-1 .$class {$attr:$sepia_hex} .book.color-theme-2 .$class {$attr:$dark_hex}\n"; }
+      $bml_colors_css .= ".$class {$attr:#$color_hex !important} .book.color-theme-1 .$class {$attr:$sepia_hex !important} .book.color-theme-2 .$class {$attr:$dark_hex !important}\n"; }
 
     return $class;
   }

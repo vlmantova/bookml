@@ -53,14 +53,3 @@
        .on('click', function(e) {
          bookInner.scrollTop(0);
          bookBody.scrollTop(0);
-@@ -239,9 +235,7 @@
-     try { inIframe = window.self !== window.top; } catch (e) {}
-     return inIframe;
-   };
--  if (inIFrame()) {
--    $(window).on('blur unload', saveScrollPos);
--  }
-+  $(window).on('blur unload', saveScrollPos);
- 
-   $(function(e) {
-     var pos = gs.get('bodyScrollTop');

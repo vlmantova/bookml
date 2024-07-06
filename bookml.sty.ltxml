@@ -183,9 +183,9 @@ DefConstructorI('\bml@css', undef, sub {
         }
       },
       'bookml/CSS', (-d 'bmluser') ? 'bmluser' : ());
-    # move <ltx:resource> up to the root or they will not work
+    # move <ltx:resource> up to the top or they will not work
     my ($firstnonresource) = $document->findnodes('/*/*[local-name()!="resource"]');
-    for my $node ($document->findnodes('//*/*/ltx:resource')) {
+    for my $node ($document->findnodes('//ltx:resource')) {
       $node->unbindNode();
       $document->documentElement->insertBefore($node, $firstnonresource); }
     return;
@@ -286,7 +286,7 @@ DefConstructorI('\bml@colors', undef, sub {
       $bml_colors_sepiamode{$color_hex} //= BMLColorSepiaMode($color)->toHex;
       my $dark_hex = $bml_colors_darkmode{$color_hex};
       my $sepia_hex = $bml_colors_sepiamode{$color_hex};
-      $bml_colors_css .= ".$class {$attr:#$color_hex !important} .book.color-theme-1 .$class {$attr:$sepia_hex !important} .book.color-theme-2 .$class {$attr:$dark_hex !important}\n"; }
+      $bml_colors_css .= ".$class {$attr:#$color_hex} .book.color-theme-1 .$class {$attr:$sepia_hex} .book.color-theme-2 .$class {$attr:$dark_hex}\n"; }
 
     return $class;
   }
@@ -295,7 +295,8 @@ DefConstructorI('\bml@colors', undef, sub {
   for my $node ($document->findnodes('//*[@_font]')) {
     my $color = $document->getNodeFont($node)->getColor;
     $color = '000000' if $color eq 'black'; # $LaTeXML::Common::Font::DEFCOLOR
-    my $class = genColors('color', $color); }
+    my $class = genColors('color', $color);
+    $document->addClass($node, $class); }
 
   # <ltx:* framecolor="...">
   for my $node ($document->findnodes('//*[@framecolor]')) {

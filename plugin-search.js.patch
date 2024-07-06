@@ -32,3 +32,12 @@
                      return {
                          path: parts[0],
                          hash: parts[1]
+@@ -229,7 +234,7 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+ 
+ 
+         // Type in search bar
+-        $(document).on("keyup", ".book-search input", function(e) {
++        $(document).on("keydown", ".book-search input", function(e) {
+             var key = (e.keyCode ? e.keyCode : e.which);
+             // [Yihui] Escape -> close search box; Up/Down/Enter: previous/next highlighted
+             if (key == 27) {

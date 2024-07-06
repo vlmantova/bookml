@@ -355,7 +355,7 @@ $(AUX_DIR)/%.resources.d: $(AUX_DIR)/%.xml bookml/XSLT/proc-resources.xsl bookml
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
 	@$(if $(_recurse),,$(call bml.backup,$*))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
-	  $(if $(SPLITAT),--splitat=$(SPLITAT)) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
+	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --xsltparameter=BMLSEARCH:yes $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
 	  --dbfile=$(AUX_DIR)/"$*".LaTeXML.db --log="$(AUX_DIR)/$*.latexmlpost.log" --destination="$*/index.html" "$(AUX_DIR)/$*.xml"))
 	@$(if $(_recurse),,$(call bml.cmd,$(PERL) bookml/search_index.pl "$*"))
 

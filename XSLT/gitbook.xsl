@@ -29,6 +29,8 @@
     extension-element-prefixes = "func"
     exclude-result-prefixes = "ltx f func b exsl">
 
+  <xsl:param name="BMLSEARCH" select="'no'"/>
+
   <!-- gitbook *requires* navigationtoc=context -->
   <xsl:template match="/">
     <xsl:if test="$GITBOOK and not(//ltx:navigation/ltx:TOC[@format='context'])">
@@ -47,7 +49,7 @@
     </xsl:choose>
   </xsl:template>
 
-  <!-- change colours into classes -->
+  <!-- remove colour attributes to avoid interference with the bml_*color* classes -->
   <xsl:template match="@*|node()" mode="bml-colors">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()" mode="bml-colors"/>
@@ -61,19 +63,8 @@
     </xsl:copy>
   </xsl:template>
 
-  <xsl:template match="*[@color | @mathcolor]" mode="bml-colors">
-    <xsl:copy>
-      <xsl:apply-templates select="@*[local-name()!='class']" mode="bml-colors"/>
-      <xsl:attribute name="class">
-        <xsl:value-of select="@class"/>
-        <xsl:if test="@class">
-          <xsl:value-of select="concat(@class,' ')"/>
-        </xsl:if>
-        <xsl:value-of select="concat('bml_color_',substring(string(@color | @mathcolor),2))"/>
-      </xsl:attribute>
-      <xsl:apply-templates select="node()" mode="bml-colors"/>
-    </xsl:copy>
-  </xsl:template>
+  <!-- latexmlpost generates styling math* attributes using find_inherited_attribute; we trust that CSS inheritance will do the work for us -->
+  <xsl:template match="@color | @mathcolor | @backgroundcolor | @mathbackground | @framecolor" mode="bml-colors" />
 
   <!-- additional javascript -->
   <xsl:template match="/" mode="head-javascript">
@@ -110,14 +101,14 @@
           <xsl:apply-templates select="." mode="body-end"/>
           <script type="text/javascript">
             <xsl:text>
-              gitbook.require(["gitbook"], function(gitbook) {
-              gitbook.start({
-                "fontsettings": {
-                  "theme": "white",
-                  "family": "sans",
-                  "size": 2
-                },
-                "download": </xsl:text>
+                gitbook.require(["gitbook"], function(gitbook) {
+                gitbook.start({
+                  "fontsettings": {
+                    "theme": "white",
+                    "family": "sans",
+                    "size": 2
+                  },
+                  "download": </xsl:text>
             <xsl:choose>
               <xsl:when test="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
                 <xsl:text>[ </xsl:text>
@@ -129,9 +120,15 @@
               <xsl:otherwise>null</xsl:otherwise>
             </xsl:choose>
             <xsl:text>,
-                "search": {
-                  "engine": "fuse"
-                },
+                  "search": </xsl:text>
+            <xsl:choose>
+              <xsl:when test="$BMLSEARCH='yes'"><xsl:text>{
+                    "engine": "fuse"
+                  }</xsl:text>
+              </xsl:when>
+              <xsl:otherwise>false</xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>,
                   "toc": {
                     "collapse": "none"
                   }

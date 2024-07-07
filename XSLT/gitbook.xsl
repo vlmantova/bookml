@@ -22,6 +22,7 @@
     version   = "1.0"
     xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
     xmlns:ltx = "http://dlmf.nist.gov/LaTeXML"
+    xmlns:svg = "http://www.w3.org/2000/svg"
     xmlns:f   = "http://dlmf.nist.gov/LaTeXML/functions"
     xmlns:func = "http://exslt.org/functions"
     xmlns:b    = "https://vlmantova.github.io/bookml/functions"
@@ -63,8 +64,23 @@
     </xsl:copy>
   </xsl:template>
 
-  <!-- latexmlpost generates styling math* attributes using find_inherited_attribute; we trust that CSS inheritance will do the work for us -->
+  <!-- remove redundant attributes that can interfere with MathJax -->
   <xsl:template match="@color | @mathcolor | @backgroundcolor | @mathbackground | @framecolor" mode="bml-colors" />
+
+  <!-- inject @color, @mathcolor into @class (may generate duplicate classes, but we do not care) -->
+  <xsl:template match="@class" mode="bml-colors" />
+  <xsl:template match="/*//*[@class | @color | @mathcolor]" mode="bml-colors">
+    <xsl:variable name="class">
+      <xsl:value-of select="@class" />
+      <xsl:for-each select="@color | @mathcolor">
+        bml_color_<xsl:value-of select="substring-after(.,'#')" />
+      </xsl:for-each>
+    </xsl:variable>
+    <xsl:copy>
+      <xsl:attribute name="class"><xsl:value-of select="normalize-space($class)" /></xsl:attribute>
+      <xsl:apply-templates select="@*|node()" mode="bml-colors"/>
+    </xsl:copy>
+  </xsl:template>
 
   <!-- additional javascript -->
   <xsl:template match="/" mode="head-javascript">
@@ -461,7 +477,7 @@
 
   <!-- ensure that block elements wider than the page can be scrolled -->
   <!-- this list is likely not exhaustive -->
-  <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture | ltx:tabular | ltx:graphics">
+  <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture[not(svg:svg and count(*)=1)] | ltx:tabular | ltx:graphics">
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="$GITBOOK and $context != 'inline'">

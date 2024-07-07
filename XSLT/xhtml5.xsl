@@ -506,4 +506,51 @@
     <xsl:text> </xsl:text>
   </xsl:template>
 
+  <!-- recreate missing viewBox attribute -->
+  <xsl:template match="ltx:picture[svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
+    <svg:svg>
+      <!-- copy id, class from parent ltx:picture, but do NOT derive css style from size -->
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_classes" />
+      <xsl:call-template name="copy_foreign_attributes" />
+      <xsl:apply-templates select="." mode="add_RDFa" />
+      <!-- but copy other svg:svg attributes -->
+      <xsl:for-each select="svg:svg/@*">
+        <xsl:apply-templates select="." mode="copy-attribute" />
+      </xsl:for-each>
+      <xsl:variable name="width" select="svg:svg/@width" />
+      <xsl:variable name="height" select="svg:svg/@height" />
+      <xsl:choose>
+        <!-- SVGs created by pgfsys-latexml.def.ltxml (always "0 0 $width $height" in v0.8.7, v0.8.8) -->
+        <xsl:when test="starts-with(svg:svg/svg:g/@transform,'translate(')">
+          <xsl:variable name="translate" select="substring-before(substring-after(svg:svg/svg:g/@transform,'translate('),')')" />
+          <xsl:variable name="minx" select="-number(substring-before($translate,','))" />
+          <xsl:variable name="miny" select="number(substring-after($translate,','))-$height" />
+          <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' ',$miny,' ',$width,' ',$height)" /></xsl:attribute>
+        </xsl:when>
+        <!-- SVGs created by xy.tex.ltxml -->
+        <xsl:when test="starts-with(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 ') and not(svg:svg/@style)">
+          <xsl:variable name="matrix" select="substring-before(substring-after(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 '),')')" />
+          <xsl:variable name="minx" select="number(substring-before($matrix,' '))" />
+          <!-- here $miny is used for vertical alignment -->
+          <xsl:variable name="miny" select="number(substring-after($matrix,' '))-$height" />
+          <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' 0 ',$width,' ',$height)" /></xsl:attribute>
+          <xsl:attribute name="style">vertical-align: <xsl:value-of select="$miny" />px;</xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:if test="@description">
+        <xsl:if test="@fragid">
+          <xsl:attribute name="aria-labelledby"><xsl:value-of select="@fragid"/>-title</xsl:attribute>
+        </xsl:if>
+        <svg:title>
+          <xsl:if test="@fragid">
+            <xsl:attribute name="id"><xsl:value-of select="@fragid"/>-title</xsl:attribute>
+          </xsl:if>
+          <xsl:value-of select="@description" />
+        </svg:title>
+      </xsl:if>
+      <xsl:apply-templates select="svg:svg/*"/>
+    </svg:svg>
+  </xsl:template>
+
 </xsl:stylesheet>

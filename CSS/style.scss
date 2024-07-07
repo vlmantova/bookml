@@ -49,3 +49,8 @@ mjx-assistive-mml {
   bottom: 0 !important;
   clip-path: polygon(0 0, 0 1px, 1px 0);
 }
+
+/* render text-in-formulas as actual text so that it supports CSS vertical alignment */
+mtext {
+  display: inline-block;
+}

@@ -69,6 +69,18 @@
     </xsl:if>
   </xsl:template>
 
+  <xsl:template match="/" mode="head-resources">
+    <xsl:variable name="font-size" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'bml-font-size=&quot;')],'bml-font-size=&quot;'),'&quot;')" />
+    <xsl:variable name="dpi" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'DPI=&quot;')],'DPI=&quot;'),'&quot;')" />
+    <xsl:if test="$font-size">
+      <style>:root { --bml-ltx-font-size: <xsl:value-of select="$font-size" />; }</style>
+    </xsl:if>
+    <xsl:if test="$dpi">
+      <style>:root { --bml-ltxml-dpi: <xsl:value-of select="$dpi" />; }</style>
+    </xsl:if>
+    <xsl:apply-imports />
+  </xsl:template>
+
   <!-- add BookML resources at the end of the body, including MathJax -->
   <xsl:template match="/" mode="body-end">
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=body')]" mode="bml-resource"/>

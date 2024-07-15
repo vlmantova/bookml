@@ -63,7 +63,7 @@ ol.ltx_enumerate>li.ltx_item>.ltx_tag {
 /* Ensure that oversized figures are scrollable */
 .ltx_figure {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
 }
 
 /* Reduce margins smoothly on small screens */

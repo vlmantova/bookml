@@ -477,11 +477,11 @@
 
   <!-- ensure that block elements wider than the page can be scrolled -->
   <!-- this list is likely not exhaustive -->
-  <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture[not(svg:svg and count(*)=1)] | ltx:tabular | ltx:graphics">
+  <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture | ltx:tabular | ltx:graphics">
     <xsl:param name="context"/>
     <xsl:choose>
       <xsl:when test="$GITBOOK and $context != 'inline'">
-        <div style="max-width: 100%; overflow-x: auto; overflow-y: hidden;">
+        <div class="bml-overflow-wrapper">
           <xsl:apply-imports/>
         </div>
       </xsl:when>

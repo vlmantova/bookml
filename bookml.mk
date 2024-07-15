@@ -76,6 +76,7 @@ BMLGOALS = $(MAKECMDGOALS)
 # cross-platform convenience variables
 bml.openp   := (
 bml.closedp := )
+bml.comma   := ,
 define bml.nl # newline
 
 
@@ -255,6 +256,13 @@ clean-xml:
 	-@$(RMDIR) $(call bml.ospath,$(patsubst $(AUX_DIR)/%.xml,bmlimages/%,$(TARGETS.XML)))
 clean-zip:
 	-@$(RM) $(call bml.ospath,$(TARGETS.ZIP))
+
+# check for updates (initially, Docker only)
+ifdef BOOKML_VERSION
+check-for-update:
+	@$(if $(call ver.lt,@VERSION@,$(BOOKML_VERSION)),$(call bml.echo,$(bml.yellow)BookML update $(BOOKML_VERSION) available$(bml.comma) run `update` to install it))
+.PHONY: check-for-update
+endif
 
 # version detection targets
 detect: detect-sources detect-bookml detect-make detect-tex detect-perl \

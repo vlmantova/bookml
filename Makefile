@@ -51,7 +51,9 @@ BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOO
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 
-.PHONY: all release clean test
+BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
+
+.PHONY: all release clean test docker
 .PRECIOUS:
 .SECONDARY:
 .SECONDEXPANSION:
@@ -59,6 +61,9 @@ RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUma
 all: $(GITBOOK_OUT) $(CSS)
 
 release: release.zip example.zip template.zip
+
+docker: release
+	docker buildx build --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) .
 
 test: example.zip template.zip
 	-$(RMDIR) test-example test-template
@@ -101,8 +106,7 @@ bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
 
 $(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
 	$(eval _date:=$(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d'))
-	$(eval _version:=$(shell git log HEAD^..HEAD --format='%(describe)'))
-	perl -pe "s!\@DATE@!$(_date)!g; s!\@VERSION@!$(_version)!g" "$<" > "$@"
+	perl -pe "s!\@DATE@!$(_date)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)

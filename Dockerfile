@@ -1,15 +1,11 @@
-### TeX Live base image (TL2021 as for ar5ivist, for better compatibility with LaTeXML)
-FROM ubuntu:22.04 AS texlive
-ARG DEBIAN_FRONTEND=noninteractive
-RUN set -ex && apt-get update -qq && apt-get install -qy tzdata texlive-full
-
-### LaTeXML
-# virtually identical to ar5ivist, but using plain LaTeXML 0.8.8
-FROM texlive AS latexml
+### TeX Live base image must be Debian-based
+### default is TL2021 like ar5ivist, to maximise compatibility with LaTeXML
+ARG TEXLIVE=ghcr.io/vlmantova/bookml-texlive:2021
+FROM $TEXLIVE AS latexml
 
 ARG DEBIAN_FRONTEND=noninteractive
-ADD https://launchpad.net/ubuntu/+archive/primary/+files/latexml_0.8.8-1_all.deb /
-RUN set -ex && apt-get update -qq && apt-get install -qy latexml
+RUN set -ex && apt-get update -qq && apt-get install -qy curl ghostscript imagemagick latexml --no-install-recommends
+RUN set -ex && curl -L https://launchpad.net/ubuntu/+archive/primary/+files/latexml_0.8.8-1_all.deb -o /latexml_0.8.8-1_all.deb
 RUN set -ex && dpkg -i /latexml_0.8.8-1_all.deb || apt -f install && rm /latexml_0.8.8-1_all.deb
 
 # Enable imagemagick policy permissions for work with arXiv PDF/EPS files
@@ -34,7 +30,9 @@ ENV MAGICK_DISK_LIMIT=2GiB \
 FROM latexml AS bookml
 
 LABEL org.opencontainers.image.source=https://github.com/vlmantova/bookml
-LABEL org.opencontainers.image.description="Run BookML in the current working directory"
+LABEL org.opencontainers.image.title="BookML runner"
+LABEL org.opencontainers.image.description="Run BookML in the current working directory.\
+Usage: `docker run -t -v.:/source ghcr.io/vlmantova/bookml:$BOOKML_VERSION`"
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -46,6 +44,8 @@ RUN set -ex && apt-get update -qq && apt-get -qy install \
 COPY release.zip /release.zip
 
 ARG BOOKML_VERSION
+LABEL org.opencontainers.image.version=$BOOKML_VERSION
+
 COPY --chmod=755 <<EOF /run-bookml
 #!/usr/bin/bash
 set -euo pipefail

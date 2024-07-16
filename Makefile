@@ -53,7 +53,7 @@ RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUma
 
 BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
 
-.PHONY: all release clean test docker
+.PHONY: all release clean test docker docker-texlive
 .PRECIOUS:
 .SECONDARY:
 .SECONDEXPANSION:
@@ -62,8 +62,11 @@ all: $(GITBOOK_OUT) $(CSS)
 
 release: release.zip example.zip template.zip
 
-docker: release
-	docker buildx build --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) .
+docker: Dockerfile release.zip
+	nerdctl --namespace buildkit build --platform amd64,arm64 --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:latest --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) .
+
+docker-texlive: Dockerfile-texlive
+	nerdctl --namespace buildkit build --platform amd64,arm64 --tag ghcr.io/vlmantova/bookml-texlive:2021 -f "$<" .
 
 test: example.zip template.zip
 	-$(RMDIR) test-example test-template

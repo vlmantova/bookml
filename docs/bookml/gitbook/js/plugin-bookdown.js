@@ -235,7 +235,9 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
     try { inIframe = window.self !== window.top; } catch (e) {}
     return inIframe;
   };
-  $(window).on('blur unload', saveScrollPos);
+  if (inIFrame()) {
+    $(window).on('blur unload', saveScrollPos);
+  }
 
   $(function(e) {
     var pos = gs.get('bodyScrollTop');

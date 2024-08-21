@@ -7,6 +7,7 @@ LaTeXML.cache
 /backups
 !/docs/*.pdf
 /.vscode
+/bmluser/colors.*.css
 
 ### Copied from https://github.com/github/gitignore
 

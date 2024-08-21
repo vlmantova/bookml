@@ -75,7 +75,7 @@
 \title{BookML\@: automated LaTeX to \href{https://bookdown.org/yihui/bookdown/html.html\#gitbook-style}{bookdown}-style HTML and SCORM, powered by \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML}}
 \author{Vincenzo Mantova}
 
-\date{15\textsuperscript{th} May 2023}
+\date{21\textsuperscript{st} August 2024}
 
 \begin{document}
 
@@ -139,7 +139,7 @@ The \ltxinline|bookml| package accepts a few options (for instance use \ltxinlin
   \item[\texttt{style=none}] Use the \LaTeXML{} style with no tweaks (except for backported styles and some fixes).
   \item[\texttt{nomathjax}] Do not include MathJax in the output.
   \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
-  \item[\texttt{imagescale=X.XXX}] Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
+  \item[\texttt{imagescale=X.XXX}] \textbf{(DEPRECATED)} Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
   \item[\texttt{nohtmlsyntax}] Disable the \HTML{} syntax that makes \ltxinline|\<| into the BookML command for introducing \HTML{} tags. Required if you already define \ltxinline|\<| for something else.
 \end{description}
 
@@ -148,7 +148,7 @@ The \ltxinline|bookml| package accepts a few options (for instance use \ltxinlin
 \subsection{\CSS{} and fonts}
 The \CSS{} files in the folder \lstinline|bmluser|, if one exists, are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles.
 
-If the file name ends with \lstinline|.style1,style2.css|, then that file will be used only when \lstinline|style=style1| or \lstinline|style=style2| is passed. You can use \lstinline|._all.css| to ensure that the file is included in every style.
+If the file name ends with \lstinline|.style1,style2-jobname.css|, then that file will be used only when \lstinline|style=style1| is passed, or when \lstinline|style=style2| is passed and the file is called \lstinline|jobname.tex|. You can use \lstinline|._all.css| to ensure that the file is included in every style.
 
 The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this manual has been compiled with \href{https://vlmantova.github.io/bookml/bmluser/latin-modern.plain.css}{\texttt{latin-modern.plain.css}} that sets the font to Latin Modern.
 
@@ -160,9 +160,9 @@ You can copy the file \texttt{bookml/LaTeXML-html5.xsl} one level up and modify 
 
 By default, files are split into separate pages for each section. You can change this by running \lstinline|make SPLITAT=chapter| or \lstinline|make SPLITAT=|.
 
-To make the change permanent, add the line \lstinline|SPLITAT=chapter| to \texttt{GNUmakefile}. You can also specify different values per file, for instance \lstinline|docs/index.html: SPLITAT=|.
+To make the change permanent, add the line \lstinline|SPLITAT=chapter| to \texttt{GNUmakefile}. You can also specify different values per file, for instance \lstinline|docs.zip: SPLITAT=| (or better yet, \lstinline|auxdir/html/docs/index.html: SPLITAT=|).
 
-The \lstinline|latexml| command line can be further customize by setting the variables \lstinline|LATEXMLEXTRAFLAGS| and \lstinline|LATEXMLPOSTEXTRAFLAGS|. See the file \texttt{bookml/bookml.mk} for further options.
+The \lstinline|latexml| command line can be further customize by setting the variables \lstinline|LATEXMLEXTRAFLAGS| and \lstinline|LATEXMLPOSTEXTRAFLAGS|. See the file \texttt{bookml/bookml.mk} for all the options and the default values.
 
 \section{Commands}
 
@@ -185,7 +185,7 @@ Call \ltxinline|\bmlDescription{textual description}| \emph{right after} an imag
 \LaTeXML{} version 0.8.7 and later support the new \LaTeX{} syntax which (eventually) will also embed the alternative text in the PDF output: \ltxinline|\includegraphics[alt={textual description}]|.
 
 \subsection{Disable MathJax for some equations}
-Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from processing the equation. Useful if you want to use MathJax, but you have equations that are better handled by the browser. When used inside an environment creating multiple equations, it applies only to the ones containing the command. See Figure~\ref{fig:disable-mathjax}.
+Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from processing the equation. Useful if you want to use MathJax, but you have equations that are better handled by the browser (you may need to include a suitable font, such as Latin Modern Math or STIX Two Math). When used inside an environment creating multiple equations, it applies only to the ones containing the command. See Figure~\ref{fig:disable-mathjax}.
 
 \begin{figure}
   \begin{lstlisting}[style=bookml]
@@ -210,23 +210,22 @@ Note that the package \ltxinline|latexml| also offers \ltxinline|\lxAddClass| an
 \subsection{Generate pictures with \LaTeX{}}
 \label{sec:external-image}
 
-\LaTeXML{} supports the \ltxinline|picture| environment as well as \emph{some} \tikzname{} pictures and some \Xy-matrices. For various reasons, the output is usually mangled, and compilation times blow up. Some common packages are not supported altogether (for instance \ltxinline|tikzcd|, \ltxinline|animate|).
+\LaTeXML{} supports the \ltxinline|picture| environment as well as \tikzname{} pictures and some \Xy-matrices. In some situations, especially with \Xy-matrices, the output is can be mangled. Some common packages are not supported altogether (for instance \ltxinline|animate|).
 
 BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing \LaTeXML{} entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
 \begin{lstlisting}[style=bookml]
-\bmlImageEnvironment{tikzpicture,tikzcd}
 \bmlImageEnvironment{animateinline}
 
-% optional, but strongly recommended:
-% do not load tikz when running in LaTeXML
-\iflatexml\else
 \usepackage{tikz}
-\usetikzlibrary{cd}
+\usepackage{tikzcd}
+% optional, but speeds up compilation:
+% do not load animate when running in LaTeXML
+\iflatexml\else
 \usepackage{animate}
 \fi
 \end{lstlisting}
 
-All environments passed to \ltxinline|\bmlImageEnvironment|, in this case \ltxinline|tikzpicture|, \ltxinline|tikzcd|, \ltxinline|animate|, will be compiled with \LaTeX{} using \lstinline[frame=none]|latexmk| and converted to SVG images via \lstinline[frame=none]|dvisvgm|. Note that in this example \LaTeXML{} will not load \tikzname{} at all. Figure~\ref{fig:duck} demonstrates this approach.
+All environments passed to \ltxinline|\bmlImageEnvironment|, in this case \ltxinline|animate|, will be compiled with \LaTeX{} using \lstinline[frame=none]|latexmk| and converted to SVG images via \lstinline[frame=none]|dvisvgm|. Figure~\ref{fig:duck} demonstrates this approach.
 
 \begin{figure}
   \begin{lstlisting}[style=bookml]

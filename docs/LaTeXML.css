@@ -29,10 +29,11 @@
 .ltx_page_footer:before {
     content:"."; display:block; height:0; clear:both; visibility:hidden; }
 
-.ltx_page_logo     { font-size:80%; margin-top: 5px; clear:both; float:right; }
+.ltx_page_logo     { font-size:90%; margin-top: 5px; clear:both; float:right; }
 a.ltx_LaTeXML_logo { text-decoration: none; }
 .ltx_page_logo img { vertical-align:-3px; }
-
+.ltx_page_navbar .ltx_LaTeXML_logo,
+.ltx_page_logo .ltx_LaTeXML_logo { font-size:110%; }
 /* if shown */
 .ltx_page_navbar li { white-space:nowrap; display:block; overflow:hidden; }
 /* If ref got turned into span, it's "this section"*/
@@ -52,8 +53,9 @@ a.ltx_LaTeXML_logo { text-decoration: none; }
 .ltx_runin { display:inline; }
 .ltx_runin:after { content:" "; }
 .ltx_runin + .ltx_para,
-.ltx_runin + .ltx_para p,
-.ltx_runin + p { display:inline; }
+.ltx_runin + .ltx_para p:first-child,
+.ltx_runin + p:first-child {
+    display:inline; }
 
 .ltx_outdent { margin-left: -2em; }
 
@@ -162,6 +164,7 @@ a.ltx_LaTeXML_logo { text-decoration: none; }
 .ltx_p,
 .ltx_quote,
 .ltx_block,
+.ltx_logical-block,
 .ltx_para {
     display: block; }
 
@@ -187,7 +190,8 @@ a.ltx_LaTeXML_logo { text-decoration: none; }
 .ltx_td.ltx_align_justify,  .ltx_th.ltx_align_justify { white-space:normal; }
 
 .ltx_tabular .ltx_tabular { width:100%; }
-.ltx_inline-block { display:inline-block; }
+.ltx_inline-block,
+.ltx_inline-logical-block { display:inline-block; }
 
 /* tabbing is always a standalone paragraph-level construct */
 .ltx_tabular.ltx_tabbing { 
@@ -230,18 +234,25 @@ table.ltx_eqn_eqnarray tr.ltx_eqn_lefteqn + tr td.ltx_align_right { min-width:2e
     display:block; }
 .ltx_itemize .ltx_item,
 .ltx_enumerate .ltx_item {
-    display: list-item; }
+    display: list-item; white-space:nowrap; }
 
 /* Position the tag to look like a normal item bullet. */
 li.ltx_item > .ltx_tag {
     display:inline-block; margin-left:-1.5em; min-width:1.5em;
     text-align:right; }
-.ltx_item .ltx_tag + .ltx_para,
-.ltx_item .ltx_tag + .ltx_para .ltx_p  { display:inline; }
+.ltx_item .ltx_tag + .ltx_para {
+    display:inline-block; vertical-align:top;}
+.ltx_item .ltx_tag + .ltx_para .ltx_p  {
+    display:inline; }
+.ltx_item > .ltx_para > .ltx_p:first-child {
+    text-indent:0em; }
+
+.ltx_item > .ltx_para > .ltx_p { margin-top:0em; margin-bottom:0em; }
+dd.ltx_item { margin-bottom:0.5em; }
 
 /* NOTE: Need to try harder to get runin appearance? */
 dl.ltx_description dt { margin-right:0.5em; float:left;
-                    font-weight:bold; font-size:95%; }
+                        font-weight:bold; font-size:95%; }
 dl.ltx_description dd { margin-left:5em; }
 dl.ltx_description dl.ltx_description dd { margin-left:3em; }
 
@@ -274,6 +285,7 @@ dl.ltx_description dl.ltx_description dd { margin-left:3em; }
 .ltx_float .ltx_listing {
     margin: 0; }
 .ltx_listingline { white-space:nowrap; min-height:1em; }
+.ltx_lst_space { white-space: pre; }
 .ltx_lst_numbers_left .ltx_listingline .ltx_tag {
     background-color:transparent;
     margin-left:-3em; width:2.5em;
@@ -347,9 +359,23 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 .ltx_td,
 .ltx_th      { display:table-cell; }
 
-.ltx_framed  { border:1px solid black;}
 .ltx_tabular .ltx_td,
 .ltx_tabular .ltx_th { padding:0.1em 0.5em; }
+.ltx_tabular .ltx_td.ltx_nopad_l,
+.ltx_tabular .ltx_th.ltx_nopad_l { padding-left:0; }
+.ltx_tabular .ltx_td.ltx_nopad_r,
+.ltx_tabular .ltx_th.ltx_nopad_r { padding-right:0; }
+
+/* min-height does NOT apply to tr! */
+.ltx_tabular .ltx_tr td:first-child::after,
+.ltx_tabular .ltx_tr th:first-child::after {
+   content: "";
+   display: inline-block;
+   vertical-align: top;
+   min-height: 1em;
+}
+
+
 /* regular lines */
 .ltx_border_t  { border-top:1px solid black; }
 .ltx_border_r  { border-right:1px solid black; }
@@ -366,6 +392,8 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 .ltx_border_B  { border-bottom:1px solid gray; }
 .ltx_border_L  { border-left:1px solid gray; }
 /* Framing */
+.ltx_framed    { padding:3pt; }
+span.ltx_framed       { display:inline-block; text-indent:0; } /* avoid padding/margin collapse */
 .ltx_framed_rectangle { border-style:solid; border-width:1px; }
 .ltx_framed_top       { border-top-style:solid; border-top-width:1px; }
 .ltx_framed_left      { border-left-style:solid; border-left-width:1px; }
@@ -376,6 +404,8 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
                         border-bottom-style:solid; border-bottom-width:1px; }
 .ltx_framed_leftright { border-left-style:solid; border-left-width:1px;
                         border-right-style:solid; border-right-width:1px; }
+
+.ltx_rule { vertical-align: bottom; height: 0.4pt; width: 0.4pt; }
 
 /*======================================================================
  Misc */
@@ -398,6 +428,7 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 .ltx_note:hover .ltx_note_content,
 .ltx_note .ltx_note_content:hover {
    display:block; position:absolute; z-index:10; }
+.ltx_note.ltx_marginpar_left { display:none; }
 
 .ltx_ERROR        { color:red; }
 .ltx_rdf          { display:none; }
@@ -431,6 +462,22 @@ span.ltx_rowspan { position:absolute; top:0; bottom:0; }
 .ltx_font_smallcaps  { font-variant: small-caps; font-style:normal; }
 .ltx_font_oldstyle   { font-variant-numeric: oldstyle-nums; }
 .ltx_font_mathcaligraphic { font-family: "Lucida Calligraphy", "Zapf Chancery","URW Chancery L"; }
+/* Fallbacks for when content+mathvariant cannot be mapped to Unicode */
+.ltx_mathvariant_italic        { font-style: italic; }
+.ltx_mathvariant_bold          { font-weight: bold; }
+.ltx_mathvariant_bold-italic   { font-style: italic; font-weight: bold; }
+.ltx_mathvariant_sans-serif             { font-family: sans-serif; }
+.ltx_mathvariant-bold-sans-serif        { font-family: sans-serif; font-weight: bold; }
+.ltx_mathvariant-sans-serif-italic      { font-family: sans-serif; font-style: italic; }
+.ltx_mathvariant-bold-sans-serif-italic { font-family: sans-serif; font-style: italic; font-weight: bold; }
+.ltx_mathvariant_monospace     { font-family: monospace; }
+/* Can we say anything generic about double-struck, script or fraktur ? */
+.ltx_mathvariant_double-struck { font-weight: bold; }
+.ltx_mathvariant_script        { font-family: "Lucida Calligraphy", "Zapf Chancery","URW Chancery L", cursive; }
+.ltx_mathvariant_bold-script   { font-family: "Lucida Calligraphy", "Zapf Chancery","URW Chancery L", cursive; font-weight: bold; }
+.ltx_mathvariant-fraktur       { }/* ??? */
+.ltx_mathvariant_bold-fraktur  { font-weight: bold; }
+
 /*
 
 .ltx_font_mathscript { ? }

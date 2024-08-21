@@ -291,6 +291,14 @@ Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltx
 
 See \texttt{template.tex}, \texttt{template-sans.tex}, \texttt{template-sans-large.tex} for an example.
 
+\subsection{SCORM description}
+BookML supports adding metadata to your SCORM packages via the \texttt{hyperref} package:
+\begin{lstlisting}[style=bookml]
+\usepackage{hyperref}
+\hypersetup{pdfsubject={Description of this file}}
+\end{lstlisting}
+Note that the metadata is not specific to the SCORM package, but will also become part of the PDF. Use \ltxinline|\iflatexml...\fi| appropriately if you need different information. If the \texttt{pdfsubject} is not present, the abstract will be used as description.
+
 \subsection{Direct \HTML{} input}
 
 You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.

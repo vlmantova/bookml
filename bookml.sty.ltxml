@@ -472,7 +472,6 @@ AtEndDocument(sub {
 });
 
 AtEndDocument(sub {
-    return unless $bml_style eq 'gitbook';
     return T_CS('\bml@css');
 });
 

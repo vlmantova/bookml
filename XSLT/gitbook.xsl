@@ -38,7 +38,7 @@
       <xsl:message terminate="yes">bookml: you must call latexmlpost/latexmlc with --navigationtoc=context or disable the gitbook style via \usepackage[style=plain]{bookml}</xsl:message>
     </xsl:if>
     <xsl:choose>
-      <xsl:when test="*/@bml-colors-done">
+      <xsl:when test="not($GITBOOK) or */@bml-colors-done">
         <xsl:apply-imports/>
       </xsl:when>
       <xsl:otherwise>

@@ -1,0 +1,7 @@
+### TeX Live base image (TL2021 like ar5ivist, for better compatibility with LaTeXML)
+FROM ubuntu:22.04
+ARG DEBIAN_FRONTEND=noninteractive
+RUN set -ex && apt-get update -qq && apt-get install -qy tzdata texlive-full
+LABEL org.opencontainers.image.source=https://github.com/vlmantova/bookml
+LABEL org.opencontainers.image.title="TeX Live 2021 base for BookML"
+LABEL org.opencontainers.image.description="TeX Live 2021 base for BookML"

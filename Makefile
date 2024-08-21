@@ -53,7 +53,7 @@ RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUma
 
 BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
 
-.PHONY: all release clean test docker docker-texlive
+.PHONY: all release clean test docker docker-amd64 docker-arm64 docker-texlive docker-texlive-amd64 docker-texlive-arm64
 .PRECIOUS:
 .SECONDARY:
 .SECONDEXPANSION:
@@ -62,11 +62,27 @@ all: $(GITBOOK_OUT) $(CSS)
 
 release: release.zip example.zip template.zip
 
-docker: Dockerfile release.zip
-	nerdctl --namespace buildkit build --platform amd64,arm64 --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:latest --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) .
+docker-texlive-ctx docker-bookml-ctx:
+	@$(MKDIR) "$@"
 
-docker-texlive: Dockerfile-texlive
-	nerdctl --namespace buildkit build --platform amd64,arm64 --tag ghcr.io/vlmantova/bookml-texlive:2021 -f "$<" .
+docker-bookml-ctx/release.zip: release.zip | docker-bookml-ctx
+	$(CP) "$<" "$@"
+
+docker-amd64 docker-arm64: docker-%: Dockerfile docker-bookml-ctx/release.zip
+	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-$* -f "$<" docker-bookml-ctx
+
+docker: docker-amd64 docker-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-arm64
+
+docker-texlive-amd64 docker-texlive-arm64: docker-texlive-%: Dockerfile-texlive | docker-texlive-ctx
+	docker build --platform linux/$* --tag ghcr.io/vlmantova/bookml-texlive:2021-$* -f "$<" docker-texlive-ctx
+
+docker-texlive: docker-texlive-amd64 docker-texlive-arm64
+	docker manifest create ghcr.io/vlmantova/bookml-texlive:2021 --amend ghcr.io/vlmantova/bookml-texlive:2021-amd64 --amend ghcr.io/vlmantova/bookml-texlive:2021-arm64
+
+manifest:
+	podman manifest create ghcr.io/vlmantova/bookml:latest ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)
 
 test: example.zip template.zip
 	-$(RMDIR) test-example test-template
@@ -85,7 +101,7 @@ example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) GNUmakefile --output-file "../$@"
 
 clean:
-	-$(RMDIR) test-example test-template
+	-$(RMDIR) test-example test-template docker-texlive docker-bookml
 	-$(RMDIR) $(call ospath,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip)
 
 $(GITBOOK_SOURCE):

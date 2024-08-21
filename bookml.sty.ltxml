@@ -435,7 +435,7 @@ DefConstructorI('\bml@css', undef, sub {
             my $styles = ',_all,';
             if ($_ =~ /\.([^.]+)\.css$/i) {
               $styles = ",$1,"; }
-            if ($styles =~ /,(?:_all|$bml_style|$bml_style-$bml_jobname),/) {
+            if ($styles =~ /,(?:_all|\Q$bml_style\E|\Q$bml_style-$bml_jobname\E),/) {
               RequireResource($_); } }
         }
       },

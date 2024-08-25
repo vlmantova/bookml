@@ -1,0 +1,33 @@
+### TeX Live base image must be Debian-based
+ARG TEXLIVE_VERSION=2021
+ARG TEXLIVE=ghcr.io/vlmantova/bookml-texlive:$TEXLIVE_VERSION
+
+FROM $TEXLIVE
+ARG DEBIAN_FRONTEND=noninteractive
+ARG LATEXML_VERSION=0.8.8
+RUN set -ex && apt-get update -qq && apt-get install -qy curl ghostscript imagemagick latexml --no-install-recommends
+RUN set -ex && curl -L https://launchpad.net/ubuntu/+archive/primary/+files/latexml_${LATEXML_VERSION}-1_all.deb -o /latexml_${LATEXML_VERSION}-1_all.deb
+RUN set -ex && dpkg -i /latexml_${LATEXML_VERSION}_all.deb || apt -f install && rm /latexml_${LATEXML_VERSION}-1_all.deb
+
+# Enable imagemagick policy permissions for work with arXiv PDF/EPS files
+# Extend imagemagick resource allowance to be able to create with high-quality images
+RUN perl -pi.bak -e 's/rights="none" pattern="([XE]?PS\d?|PDF)"/rights="read|write" pattern="$1"/g;' \
+  -e 's/policy domain="resource" name="width" value="(\w+)"/policy domain="resource" name="width" value="126KP"/;' \
+  -e 's/policy domain="resource" name="height" value="(\w+)"/policy domain="resource" name="height" value="126KP"/;' \
+  -e 's/policy domain="resource" name="area" value="(\w+)"/policy domain="resource" name="area" value="2GiB"/;' \
+  -e 's/policy domain="resource" name="disk" value="(\w+)"/policy domain="resource" name="disk" value="8GiB"/;' \
+  -e 's/policy domain="resource" name="memory" value="(\w+)"/policy domain="resource" name="memory" value="2GiB"/;' \
+  -e 's/policy domain="resource" name="map" value="(\w+)"/policy domain="resource" name="map" value="2GiB"/;' \
+  /etc/ImageMagick-6/policy.xml
+
+ENV MAGICK_DISK_LIMIT=2GiB \
+  MAGICK_MEMORY_LIMIT=512MiB \
+  MAGICK_MAP_LIMIT=1GiB \
+  MAGICK_TIME_LIMIT=900 \
+  MAGICK_TMPDIR=/dev/shm \
+  TMPDIR=/dev/shm
+
+ARG TEXLIVE_VERSION
+LABEL org.opencontainers.image.source=https://github.com/vlmantova/bookml
+LABEL org.opencontainers.image.title="LaTeXML $LATEXML_VERSION + TeX Live $TEXLIVE_VERSION base for BookML"
+LABEL org.opencontainers.image.description="LaTeXML $LATEXML_VERSION + TeX Live $TEXLIVE_VERSION base for BookML"

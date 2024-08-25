@@ -62,18 +62,24 @@ all: $(GITBOOK_OUT) $(CSS)
 
 release: release.zip example.zip template.zip
 
-docker-texlive-ctx docker-bookml-ctx:
+docker-texlive-ctx docker-latexml-ctx docker-bookml-ctx:
 	@$(MKDIR) "$@"
 
 docker-bookml-ctx/release.zip: release.zip | docker-bookml-ctx
 	$(CP) "$<" "$@"
 
 docker-amd64 docker-arm64: docker-%: Dockerfile docker-bookml-ctx/release.zip
-	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-$* -f "$<" docker-bookml-ctx
+	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-$* -f "$<" docker-bookml-ctx
 
 docker: docker-amd64 docker-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-arm64
+
+docker-latexml-amd64 docker-latexml-arm64: docker-latexml-%: Dockerfile-latexml | docker-latexml-ctx
+	docker build --platform linux/$* --tag ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-$* -f "$<" docker-latexml-ctx
+
+docker-latexml: docker-latexml-amd64 docker-latexml-arm64
+	docker manifest create ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021 --amend ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-arm64
 
 docker-texlive-amd64 docker-texlive-arm64: docker-texlive-%: Dockerfile-texlive | docker-texlive-ctx
 	docker build --platform linux/$* --tag ghcr.io/vlmantova/bookml-texlive:2021-$* -f "$<" docker-texlive-ctx

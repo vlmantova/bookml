@@ -1,5 +1,7 @@
 ### TeX Live base image must be Debian-based
-ARG LATEXML=ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021
+ARG TEXLIVE_VERSION=2022
+ARG LATEXML_VERSION=0.8.8
+ARG LATEXML=ghcr.io/vlmantova/bookml-latexml:${LATEXML_VERSION}-tl${TEXLIVE_VERSION}
 
 ### BookML
 FROM $LATEXML

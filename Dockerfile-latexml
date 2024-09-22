@@ -5,9 +5,11 @@ ARG TEXLIVE=ghcr.io/vlmantova/bookml-texlive:$TEXLIVE_VERSION
 FROM $TEXLIVE
 ARG DEBIAN_FRONTEND=noninteractive
 ARG LATEXML_VERSION=0.8.8
-RUN set -ex && apt-get update -qq && apt-get install -qy curl ghostscript imagemagick latexml --no-install-recommends
+RUN set -ex && apt-get update -qq && apt-get install -qy curl dvisvgm ghostscript latexml --no-install-recommends
 RUN set -ex && curl -L https://launchpad.net/ubuntu/+archive/primary/+files/latexml_${LATEXML_VERSION}-1_all.deb -o /latexml_${LATEXML_VERSION}-1_all.deb
 RUN set -ex && dpkg -i /latexml_${LATEXML_VERSION}_all.deb || apt -f install && rm /latexml_${LATEXML_VERSION}-1_all.deb
+# use dvisvgm from system so as to have matching libgs, mupdf
+RUN rm /usr/local/bin/dvisvgm
 
 # Enable imagemagick policy permissions for work with arXiv PDF/EPS files
 # Extend imagemagick resource allowance to be able to create with high-quality images

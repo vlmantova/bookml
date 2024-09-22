@@ -250,6 +250,7 @@ endif
 detect: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \
 	detect-latexmk detect-texfot detect-preview detect-zip
+	@#
 .PHONY: detect
 .PHONY: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \

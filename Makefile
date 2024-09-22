@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-23  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-24  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,24 +68,26 @@ docker-texlive-ctx docker-latexml-ctx docker-bookml-ctx:
 docker-bookml-ctx/release.zip: release.zip | docker-bookml-ctx
 	$(CP) "$<" "$@"
 
+TEXLIVE_VERSION=2021
+LATEXML_VERSION=0.8.8
 docker-amd64 docker-arm64: docker-%: Dockerfile docker-bookml-ctx/release.zip
-	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-$* -f "$<" docker-bookml-ctx
+	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-$* -f "$<" docker-bookml-ctx
 
 docker: docker-amd64 docker-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx0.8.8-tl2021-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
+	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
 
 docker-latexml-amd64 docker-latexml-arm64: docker-latexml-%: Dockerfile-latexml | docker-latexml-ctx
-	docker build --platform linux/$* --tag ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-$* -f "$<" docker-latexml-ctx
+	docker build --platform linux/$* --build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-$* -f "$<" docker-latexml-ctx
 
 docker-latexml: docker-latexml-amd64 docker-latexml-arm64
-	docker manifest create ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021 --amend ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-amd64 --amend ghcr.io/vlmantova/bookml-latexml:0.8.8-tl2021-arm64
+	docker manifest create ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION) --amend ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
 
 docker-texlive-amd64 docker-texlive-arm64: docker-texlive-%: Dockerfile-texlive | docker-texlive-ctx
-	docker build --platform linux/$* --tag ghcr.io/vlmantova/bookml-texlive:2021-$* -f "$<" docker-texlive-ctx
+	docker build --platform linux/$* --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-$* -f "$<" docker-texlive-ctx
 
 docker-texlive: docker-texlive-amd64 docker-texlive-arm64
-	docker manifest create ghcr.io/vlmantova/bookml-texlive:2021 --amend ghcr.io/vlmantova/bookml-texlive:2021-amd64 --amend ghcr.io/vlmantova/bookml-texlive:2021-arm64
+	docker manifest create ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION) --amend ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-arm64
 
 manifest:
 	podman manifest create ghcr.io/vlmantova/bookml:latest ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)

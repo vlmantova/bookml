@@ -39,3 +39,6 @@ EOF
 
 WORKDIR /source
 ENTRYPOINT ["/run-bookml"]
+
+# reset TMPDIR to usual value or biber will not work
+ENV TMPDIR=/tmp

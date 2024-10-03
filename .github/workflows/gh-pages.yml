@@ -1,0 +1,39 @@
+name: Publish GitHub Pages
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Extract BookML
+        uses: docker://ghcr.io/vlmantova/bookml:latest
+        with:
+          args: update
+      - name: Compile
+        uses: docker://ghcr.io/vlmantova/bookml:latest
+      - name: Setup pages
+        uses: actions/configure-pages@v5
+      - name: upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages
+          path: '*.tar'
+          retention-days: 1
+          if-no-files-found: error
+          overwrite: true
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

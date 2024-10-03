@@ -216,10 +216,10 @@
   <xsl:template match="/ltx:*" mode="end">
     <xsl:choose>
       <xsl:when test="$GITBOOK">
-        <xsl:if test="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']">
+        <xsl:if test="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer'] | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']">
           <xsl:text>&#x0A;</xsl:text>
           <footer class="bml_footer">
-            <xsl:apply-templates select="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']/*"/>
+            <xsl:apply-templates select="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']/* | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']/*"/>
           </footer>
         </xsl:if>
       </xsl:when>

@@ -52,6 +52,7 @@ BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOO
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 
 BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
+BOOKML_DATE    = $(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d')
 
 .PHONY: all release clean test docker docker-amd64 docker-arm64 docker-texlive docker-texlive-amd64 docker-texlive-arm64
 .PRECIOUS:
@@ -132,8 +133,7 @@ bookml/GNUmakefile: template/GNUmakefile | $(BOOKML_DIRS)
 bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
 
 $(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
-	$(eval _date:=$(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d'))
-	perl -pe "s!\@DATE@!$(_date)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
+	perl -pe "s!\@DATE@!$(BOOKML_DATE)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)

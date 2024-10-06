@@ -7,11 +7,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Extract BookML
-        uses: docker://ghcr.io/vlmantova/bookml:latest
+        uses: docker://ghcr.io/vlmantova/bookml-full:latest-amd64
         with:
           args: update
       - name: Compile
-        uses: docker://ghcr.io/vlmantova/bookml:latest
+        uses: docker://ghcr.io/vlmantova/bookml-full:latest-amd64
       - name: Setup pages
         uses: actions/configure-pages@v5
       - name: upload outputs

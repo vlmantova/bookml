@@ -54,7 +54,9 @@ RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUma
 BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
 BOOKML_DATE    = $(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d')
 
-.PHONY: all release clean test docker docker-amd64 docker-arm64 docker-texlive docker-texlive-amd64 docker-texlive-arm64
+ARCHS=amd64 arm64
+SCHEMES=basic small medium full
+.PHONY: all release clean test $(foreach scheme,$(SCHEMES),docker-manifest-$(scheme)) $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arch) docker-push-$(scheme)-$(arch)))
 .PRECIOUS:
 .SECONDARY:
 .SECONDEXPANSION:
@@ -63,35 +65,45 @@ all: $(GITBOOK_OUT) $(CSS)
 
 release: release.zip example.zip template.zip
 
-docker-texlive-ctx docker-latexml-ctx docker-bookml-ctx:
+docker-ctx:
 	@$(MKDIR) "$@"
 
-docker-bookml-ctx/release.zip: release.zip | docker-bookml-ctx
+docker-ctx/release.zip: release.zip | docker-ctx
 	$(CP) "$<" "$@"
 
 TEXLIVE_VERSION=2021
 LATEXML_VERSION=0.8.8
-docker-amd64 docker-arm64: docker-%: Dockerfile docker-bookml-ctx/release.zip
-	docker build --platform linux/$* --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) --build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-$* -f "$<" docker-bookml-ctx
+IS_LATEST=yes
+$(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arch))): docker-build-%: Dockerfile docker-ctx/release.zip
+	$(eval ARCH=$(lastword $(subst -, ,$*)))
+	$(eval SCHEME=$(firstword $(subst -, ,$*)))
+	$(eval TAG=$(BOOKML_VERSION)-$(ARCH))
+	docker build --load --build-arg=BUILDKIT_INLINE_CACHE=1 \
+		$(foreach scheme,$(SCHEMES),--cache-from=type=registry,ref=ghcr.io/vlmantova/bookml-$(scheme):latest-$(ARCH) --cache-from=type=registry,ref=ghcr.io/vlmantova/bookml-$(scheme):$(TAG) ) \
+		--cache-to=type=inline,mode=max --platform linux/$(ARCH) \
+		--build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --build-arg=TEXLIVE_SCHEME=$(SCHEME) \
+		--build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) \
+		--progress=plain \
+		--tag=ghcr.io/vlmantova/bookml-$(SCHEME):$(TAG) $(if $(IS_LATEST),--tag=ghcr.io/vlmantova/bookml-$(SCHEME):latest-$(ARCH)) \
+		-f "$<" docker-ctx
 
-docker: docker-amd64 docker-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:$(BOOKML_VERSION) --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
-	docker manifest create ghcr.io/vlmantova/bookml:latest --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)-lx$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
+$(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-push-$(scheme)-$(arch))): docker-push-%: docker-build-%
+	$(eval ARCH=$(lastword $(subst -, ,$*)))
+	$(eval SCHEME=$(firstword $(subst -, ,$*)))
+	$(eval TAG=$(BOOKML_VERSION)-$(ARCH))
+	docker push ghcr.io/vlmantova/bookml-$(SCHEME):$(TAG)
+	$(if $(IS_LATEST),docker push ghcr.io/vlmantova/bookml-$(SCHEME):latest-$(ARCH))
 
-docker-latexml-amd64 docker-latexml-arm64: docker-latexml-%: Dockerfile-latexml | docker-latexml-ctx
-	docker build --platform linux/$* --build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-$* -f "$<" docker-latexml-ctx
-
-docker-latexml: docker-latexml-amd64 docker-latexml-arm64
-	docker manifest create ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION) --amend ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml-latexml:$(LATEXML_VERSION)-tl$(TEXLIVE_VERSION)-arm64
-
-docker-texlive-amd64 docker-texlive-arm64: docker-texlive-%: Dockerfile-texlive | docker-texlive-ctx
-	docker build --platform linux/$* --build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --tag ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-$* -f "$<" docker-texlive-ctx
-
-docker-texlive: docker-texlive-amd64 docker-texlive-arm64
-	docker manifest create ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION) --amend ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-amd64 --amend ghcr.io/vlmantova/bookml-texlive:$(TEXLIVE_VERSION)-arm64
-
-manifest:
-	podman manifest create ghcr.io/vlmantova/bookml:latest ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)
+$(foreach scheme,$(SCHEMES),docker-manifest-$(scheme)): docker-manifest-%:
+	$(eval TAG=$(BOOKML_VERSION))
+	docker buildx imagetools create \
+		--tag=ghcr.io/vlmantova/bookml-$*:$(BOOKML_VERSION) $(if $(IS_LATEST),--tag=ghcr.io/vlmantova/bookml-$*:latest) \
+		--annotation=index:org.opencontainers.image.source=https://github.com/vlmantova/bookml \
+		--annotation=index:org.opencontainers.image.title='BookML $(BOOKML_VERSION) runner (LaTeXML $(LATEXML_VERSION), TeX Live $(TEXLIVE_VERSION) $*)' \
+		--annotation=index:org.opencontainers.image.licenses=GPL-3.0-or-later \
+		--annotation=org.opencontainers.image.version=$(BOOKML_VERSION) \
+		--annotation=org.opencontainers.image.description='Run BookML in the current working directory. Usage: `docker run --rm -i -t -v.:/source ghcr.io/vlmantova/bookml:$(BOOKML_VERSION)`' \
+		$(foreach arch,$(ARCHS),ghcr.io/vlmantova/bookml-$*:$(TAG)-$(arch))
 
 test: example.zip template.zip
 	-$(RMDIR) test-example test-template
@@ -110,7 +122,7 @@ example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) GNUmakefile --output-file "../$@"
 
 clean:
-	-$(RMDIR) test-example test-template docker-texlive docker-bookml
+	-$(RMDIR) test-example test-template docker-ctx
 	-$(RMDIR) $(call ospath,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip)
 
 $(GITBOOK_SOURCE):

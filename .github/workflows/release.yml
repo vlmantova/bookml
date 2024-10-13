@@ -27,3 +27,107 @@ jobs:
           notes: ${{ github.event.head_commit.message }}
         run: |
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title="$tag" --notes "$notes" --draft *.zip
+      - name: Cache release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.zip
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  docker-amd64:
+    runs-on: ubuntu-latest
+    name: Create docker images (amd64)
+    needs: build
+    strategy:
+      # only one at a time, so that each scheme reuses the previous scheme cache
+      max-parallel: 1
+      matrix:
+        scheme: [basic, small, medium, mediumextra, full]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: make
+          version: 1.0
+      - name: Download cached release
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: docker-ctx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up containerd snapshotter
+        uses: depot/use-containerd-snapshotter-action@v1
+      - name: Log in to GitHub registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and push scheme ${{ matrix.scheme }} for amd64
+        env:
+          version: ${{ github.ref_name }}
+          date: ${{ github.event.head_commit.timestamp }}
+        run: make BOOKML_VERSION="$version" docker-push-${{ matrix.scheme }}-amd64
+
+  docker-arm64:
+    runs-on: ubuntu-latest
+    name: Create docker images (arm64)
+    needs: build
+    strategy:
+      # only one at a time, so that each scheme reuses the previous scheme cache
+      max-parallel: 1
+      matrix:
+        scheme: [basic, small, medium, mediumextra, full]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: make
+          version: 1.0
+      - name: Download cached release
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: docker-ctx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up containerd snapshotter
+        uses: depot/use-containerd-snapshotter-action@v1
+      - name: Log in to GitHub registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and push scheme ${{ matrix.scheme }} for arm64
+        env:
+          version: ${{ github.ref_name }}
+          date: ${{ github.event.head_commit.timestamp }}
+        run: make BOOKML_VERSION="$version" docker-push-${{ matrix.scheme }}-arm64
+        timeout-minutes: 720
+
+  manifest:
+    runs-on: ubuntu-latest
+    name: Push multi-platform manifests
+    needs: [docker-amd64, docker-arm64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: make
+          version: 1.0
+      - name: Log in to GitHub registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Push manifests
+        env:
+          version: ${{ github.ref_name }}
+        run: |
+          make BOOKML_VERSION="$version" docker-manifest-basic docker-manifest-small docker-manifest-medium docker-manifest-mediumextra docker-manifest-full docker-manifest

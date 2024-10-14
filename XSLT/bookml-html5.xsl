@@ -87,12 +87,15 @@
 
     <!-- MathJax -->
     <xsl:if test="$MATHJAX3">
-      <!-- polyfill for IE11 -->
-      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"/>
-      <!-- mml-chtml component only (maths is already in MathML) -->
       <xsl:text>&#x0A;</xsl:text>
       <script>
         MathJax = {
+          chtml: {
+            mathmlSpacing: true
+          },
+          svg: {
+            mathmlSpacing: true
+          },
           startup: {
             ready() {
               // do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone)
@@ -184,6 +187,7 @@
         };
       </script>
       <xsl:text>&#x0A;</xsl:text>
+      <!-- mml-chtml component only (maths is already in MathML) -->
       <script id="MathJax-script" async=""
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-chtml.js"/>
       <xsl:text>&#x0A;</xsl:text>

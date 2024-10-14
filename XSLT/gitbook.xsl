@@ -344,13 +344,6 @@
     <xsl:choose>
       <xsl:when test="$GITBOOK">
         <xsl:text>&#x0A;</xsl:text>
-        <!-- prepend the first appendix with 'Appendix' divider -->
-        <xsl:if test="$GITBOOK and b:has-class('ltx_tocentry_appendix') and not(b:has-class('ltx_tocentry_appendix',preceding-sibling::ltx:tocentry[1]))">
-          <li class="appendix">
-            <span><b>Appendix</b></span>
-          </li>
-          <xsl:text>&#x0A;</xsl:text>
-        </xsl:if>
         <!-- TODO: figure out what data-level, data-path are for -->
         <li data-level="{ltx:ref//ltx:tag[1]/text()}"
             data-path="{b:url-without-fragment(ltx:ref/@href)}">

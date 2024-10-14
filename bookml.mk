@@ -246,11 +246,17 @@ check-for-update:
 .PHONY: check-for-update
 endif
 
+# dump auxdir into zip file
+.PHONY: aux-zip
+aux-zip: | $(AUX_DIR)
+	-@$(call bml.cmd,$(RM) "AUX.$(AUX_DIR).zip")
+	@$(call bml.cmd,$(ZIP) --quiet --recurse-paths "AUX.$(AUX_DIR).zip" "$(AUX_DIR)")
+
 # version detection targets
 detect: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \
 	detect-latexmk detect-texfot detect-preview detect-zip
-	@#
+	@
 .PHONY: detect
 .PHONY: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \
@@ -305,11 +311,7 @@ detect-zip:
 
 
 # create directories
-$(AUX_DIR)/deps: | $(AUX_DIR)
-$(AUX_DIR)/html: | $(AUX_DIR)
-$(AUX_DIR)/latexmlaux: | $(AUX_DIR)
-$(AUX_DIR)/pdf: | $(AUX_DIR)
-$(AUX_DIR)/xml: | $(AUX_DIR)
+$(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml): | $(AUX_DIR)
 $(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml):
 	@$(MKDIR) "$(call bml.ospath,$@)"
 

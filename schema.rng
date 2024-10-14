@@ -19,7 +19,6 @@
       </zeroOrMore>
       <zeroOrMore>
         <choice>
-          <ref name="Flow.model"/>
           <ref name="Block.model"/>
           <ref name="Para.model"/>
         </choice>

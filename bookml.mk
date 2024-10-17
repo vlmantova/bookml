@@ -279,7 +279,7 @@ detect-perl:
 detect-latexml:
 	@$(eval latexml_ver:=$(subst $(bml.closedp),,$(filter %$(bml.closedp), \
 	  $(shell $(LATEXML) --VERSION 2>&1))))
-	@$(call bml.testver,      LaTeXML,0.8.5,0.8.6,$(latexml_ver))
+	@$(call bml.testver,      LaTeXML,0.8.5,0.8.8,$(latexml_ver))
 detect-imagemagick:
 	@$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
 	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(bml.null)))))

@@ -1,86 +1,47 @@
-%%% common LaTeX classes will work fine
 \documentclass[oneside,11pt]{amsart}
 
-%%% recommended for PDF quality: better handling of accented characters and ligatures
-\usepackage[utf8]{inputenc}
+%%% RECOMMENDED
+% better accented letters and ligatures in PDF
 \usepackage[T1]{fontenc}
-
-%%% REQUIRED for accessibility: set the language for the output (here 'en-GB')
+% set language of outputs
 \usepackage[british]{babel}
-
-%%% REQUIRED for correct formatting and tagging of BookML output: title and author
-\title{Title}
-\author{Author}
-\date{Date}
-
-%%% RECOMMENDED for PDF quality: enable clickable links and metadata in PDFs
-% the option pdfusetitle adds \author and \title to the PDF metadata
+% PDF hyperlinks and metadata
 \usepackage[pdfusetitle]{hyperref}
-
-%%% RECOMMENDED for PDF quality: higher quality equivalent of Computer Modern
+% higher quality variant of Computer Modern
 \usepackage{lmodern}
+% title and author
+\title{BookML template}
+\author{Author}
 
-%%% OPTIONAL: additional BookML and LaTeXML functionality
+%%% OPTIONAL
+% additional BookML and LaTeXML functionality
 \usepackage{bookml/bookml}
-
-%%% REQUIRED for TikZ: use bmlImageEnvironment for TikZ and other images, since
-%%%                    LaTeXML is slow and often produces garbled TikZ output
-%%%                    (this requires \usepackage{bookml/bookml})
-% tell BookML to compile tikzpicture and tikzcd environments into images via LaTeX
-\bmlImageEnvironment{tikzpicture,tikzcd}
-% hide all TikZ-related commands from LaTeXML, but leave them when generating the PDF
-\iflatexml            % are we compiling through LaTeXML?
-\else
-\usepackage{tikz}     % if not, load TikZ as usual
-\usetikzlibrary{cd}
-\usepackage[all]{xy}
-% other TikZ-related command MUST be here, before \fi
-\fi
-
-%%% OPTIONAL for accessibility: additional versions of the document (e.g. large print)
-% the additional formats will be recompiled automatically whenever there are changes
-% you may use "\jobname" instead of "template" to pick up the name from this very file
-\bmlAltFormat{template.pdf}{PDF (serif)} % always included; here \bmlAltFormat simply changes its label
+% additional versions of the document (e.g. large print) for inclusion in the HTML output
+\bmlAltFormat{template.pdf}{PDF (serif)} % this version is always included unless it's given an empty name
 \bmlAltFormat{template-sans.pdf}{PDF (sans serif)}
 \bmlAltFormat{template-sans-large.pdf}{PDF (sans, large)}
-
-% very cheap way of generating a 'large print' PDF (~19% bigger)
-\ifcsname bmlCrop\endcsname % is \bmlCrop defined?
-\usepackage{crop}           % if so, load the package crop
-\fi
-%%% What is \bmlCrop?
-% template-sans-large.tex uses \input{template.tex} to read this file.
-% Before that, it defines \bmlCrop, so that the above code imports crop.
-% It also uses \PassOptionsToPackage to tweak the options of crop.
-% The result has identical pagination as the normal PDF so you do not need
-% to review both versions.
-%
-% However, the magnification is very limited. If you need larger magnification,
-% you may have to use a larger font, in which case the large print PDF will
-% will look different and must be reviewed regularly.
-
-% rest of preamble
+% simple way of generating a large print PDF (~19% bigger) without changing pagination
+\ifcsname bmlCrop\endcsname\usepackage{crop}\fi
+% short text description used for PDF and SCORM metadata
+\hypersetup{pdfsubject={A barebone template for LaTeX documents to be used with BookML.}}
 
 \begin{document}
 
-%%% RECOMMENDED for SCORM: the abstract becomes the description of the SCORM package
-\begin{abstract}
-  Abstract (will appear as description on your LMS).
-\end{abstract}
-
 \maketitle
 
-%%% OPTIONAL: footer for HTML output, for instance a copyright notice
-% note that the footer does not appear in the PDF
-% the PDF footer can be done in any of the usual ways (e.g. fancyhdr)
+%%% OPTIONAL
+% footer for HTML output (will not appear in the PDF)
 \begin{lxFooter}
-  Footer: copyright \copyright{} 2022-23 Author.
+  Copyright \copyright{} 2024 Author.
 \end{lxFooter}
 
-Content (you may also \texttt{\textbackslash{}input} or
-\texttt{\textbackslash{}include} other files, including bibliographies).
+\LaTeX{} content.
 
-A formula:
-\[ e^{\pi i} = -1. \]
+% copyright notice for PDF output
+\iflatexml\else
+\begin{center}
+  {\small Copyright \copyright{} 2024 Author.}
+\end{center}
+\fi
 
 \end{document}

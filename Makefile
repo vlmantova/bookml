@@ -128,7 +128,7 @@ release.zip: $(RELEASE_OUT)
 
 example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	-$(RM) "$(call ospath,$@)"
-	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex)) GNUmakefile --output-file "../$@"
+	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex) $(wildcard $*/.github)) GNUmakefile --output-file "../$@"
 
 clean:
 	-$(RMDIR) test-example test-template docker-ctx

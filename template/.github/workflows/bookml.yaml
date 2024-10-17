@@ -1,0 +1,19 @@
+name: Compile with BookML
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out LaTeX files
+        uses: actions/checkout@v4
+      - name: Compile with BookML
+        # you may replace bookml with bookml-basic, bookml-small, bookml-medium to download fewer packages
+        uses: docker://ghcr.io/vlmantova/bookml:latest
+        with:
+          args: all aux-zip
+      - name: Upload outputs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          title: ${{ github.run_number }}
+        run: gh release create "${{ github.ref_name }}" --repo="$GITHUB_REPOSITORY" --title="build $title" --notes="${{ github.event.head_commit.message }}" --draft *.zip

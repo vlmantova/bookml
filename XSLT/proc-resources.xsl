@@ -22,6 +22,8 @@
   xmlns:ltx="http://dlmf.nist.gov/LaTeXML"
   exclude-result-prefixes="ltx">
 
+  <xsl:import href="utils.xsl"/>
+
   <xsl:output
     method="text"
     encoding="utf-8" />
@@ -29,6 +31,9 @@
   <xsl:param name="BML_TARGET" />
 
   <xsl:template match="/">
+    <xsl:if test="$BMLSTYLE='gitbook'">
+      <xsl:value-of select="$BML_TARGET" /><xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
+    </xsl:if>
     <xsl:apply-templates select="//ltx:resource" />
   </xsl:template>
 

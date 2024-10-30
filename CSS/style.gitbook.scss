@@ -397,13 +397,22 @@ mjx-container[jax="SVG"][display="true"] {
   /* unset bookdown font size, restore spaces */
   &>pre>code {
     font-size: inherit;
-    white-space: pre;
+    white-space: normal;
+    display: block;
   }
 
   /* adjust position of download button */
   &>.ltx_listing_data {
     margin-left: -100%;
   }
+}
+
+/* typeset line numbers within container */
+.ltx_lst_numbers_left .ltx_listingline .ltx_tag {
+  position: initial;
+  display: inline-block;
+  margin-left: 0;
+  width: 1.7em;
 }
 
 .book .book-body .page-wrapper .page-inner section.normal {

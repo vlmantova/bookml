@@ -146,4 +146,3 @@ EOF
 
 WORKDIR /source
 ENTRYPOINT ["/run-bookml"]
-USER ubuntu

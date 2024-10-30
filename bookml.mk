@@ -1,4 +1,4 @@
-# BookML: bookdown flavoured GitBook port for LaTeXML
+﻿# BookML: bookdown flavoured GitBook port for LaTeXML
 # Copyright (C) 2021-23 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ SYNCTEX      ?= 5 # must produce *.synctex.gz
 LATEXML          ?= latexml
 LATEXMLPOST      ?= latexmlpost
 LATEXMLFLAGS     ?=
-LATEXMLPOSTFLAGS ?= --urlstyle=file --navigationtoc=context --sourcedirectory=.
+LATEXMLPOSTFLAGS ?= --urlstyle=file --sourcedirectory=.
 # (4) for *adding* options without changing the default ones
 LATEXMLEXTRAFLAGS     ?=
 LATEXMLPOSTEXTRAFLAGS ?= --pmml --mathtex
@@ -352,7 +352,7 @@ $(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.xml $$(BOOKML_DEPS_HTML) $$(wi
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
 	-@$(if $(_recurse),,$(call bml.cmd,$(RMDIR) $(call bml.ospath,$(AUX_DIR)/html/$*)))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
-	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --xsltparameter=BMLSEARCH:yes $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
+	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --xsltparameter=BMLSEARCH:yes $(LATEXMLPOSTAUTOFLAGS) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
 	  --dbfile=$(AUX_DIR)/latexmlaux/"$*".LaTeXML.db --log="$(AUX_DIR)/latexmlaux/$*.latexmlpost.log" --destination="$@" "$<"))
 	@$(if $(_recurse),,$(call bml.cmd,$(PERL) bookml/search_index.pl "$(AUX_DIR)/html/$*"))
 

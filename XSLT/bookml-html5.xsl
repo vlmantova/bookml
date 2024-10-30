@@ -90,12 +90,6 @@
       <xsl:text>&#x0A;</xsl:text>
       <script>
         MathJax = {
-          chtml: {
-            mathmlSpacing: true
-          },
-          svg: {
-            mathmlSpacing: true
-          },
           startup: {
             ready() {
               // do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone)

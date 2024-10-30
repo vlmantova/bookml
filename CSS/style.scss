@@ -82,17 +82,23 @@ mtext {
     /* do not do this again if nested */
     svg & {
       zoom: initial;
-      font-size: initial;
     }
   }
 }
 
-/* Safari has a long standing bug when foreign objects create a new stacking context
+/* WebKit has a long standing bug when foreign objects create a new stacking context
    The workaround is to remove the MathJax CSS properties that trigger the issue  */
-@supports (font: -apple-system-body) {
-  foreignObject mjx-container[jax="CHTML"] {
+@media (-webkit-transform-2d) {
+  foreignObject>mjx-container[jax="CHTML"] {
     position: initial !important;
     will-change: initial;
+    &>mjx-assistive-mml {
+      width: 1px !important;
+      height: 1px !important;
+      position: initial !important;
+      margin-inline-start: -1px !important;
+      vertical-align: 1px !important;
+    }
   }
 }
 

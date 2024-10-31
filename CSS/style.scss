@@ -89,7 +89,7 @@ mtext {
 /* WebKit has a long standing bug when foreign objects create a new stacking context
    The workaround is to remove the MathJax CSS properties that trigger the issue  */
 @media (-webkit-transform-2d) {
-  foreignObject>mjx-container[jax="CHTML"] {
+  foreignObject>mjx-container[jax="CHTML"], foreignObject>mjx-container[jax="SVG"] {
     position: initial !important;
     will-change: initial;
     &>mjx-assistive-mml {

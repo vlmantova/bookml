@@ -17,30 +17,57 @@
 % additional BookML and LaTeXML functionality
 \usepackage{bookml/bookml}
 % additional versions of the document (e.g. large print) for inclusion in the HTML output
-\bmlAltFormat{template.pdf}{PDF (serif)} % this version is always included unless it's given an empty name
-\bmlAltFormat{template-sans.pdf}{PDF (sans serif)}
-\bmlAltFormat{template-sans-large.pdf}{PDF (sans, large)}
+\bmlAltFormat{\jobname.pdf}{PDF (serif)} % this version is always included unless it's given an empty name
+\bmlAltFormat{\jobname-sans.pdf}{PDF (sans serif)}
+\bmlAltFormat{\jobname-sans-large.pdf}{PDF (sans, large)}
 % simple way of generating a large print PDF (~19% bigger) without changing pagination
 \ifcsname bmlCrop\endcsname\usepackage{crop}\fi
 % short text description used for PDF and SCORM metadata
-\hypersetup{pdfsubject={A barebone template for LaTeX documents to be used with BookML.}}
+\hypersetup{pdfsubject={Empty template for use with BookML.}}
 
 \begin{document}
 
 \maketitle
 
+You can use this template in the following ways:
+\begin{enumerate}
+  \item Replace the content of \texttt{template.tex} with your content. To change the file names in the output, rename:
+  \begin{itemize}
+      \item \texttt{template.tex} to \texttt{NAME.tex},
+      \item \texttt{template-sans.tex} to \texttt{NAME-sans.tex} (and adjust its content),
+      \item \texttt{template-sans-large.tex} to \texttt{NAME-sans-large.tex} (and adjust its content).
+  \end{itemize}
+  \item Add \LaTeX{} files to the same folder containing \texttt{template.tex}. Any files containing the string \verb|\documentclass| (even commented out) will be compiled separately. You may delete \texttt{template.tex} and accompanying \texttt{sans} and \texttt{sans-large} files if you are not using them.
+\end{enumerate}
+In all cases, consult \texttt{template.tex} for how to use more advanced BookML functionality (such as providing large print PDFs or setting additional PDF and SCORM metadata).
+
+\bigskip
+
+For use with Overleaf (requires paid account):
+\begin{enumerate}
+  \item Upload the template to a new Overleaf project. Ensure that the \texttt{.github} folder is also included.
+  \item From the Overleaf menu, sync the project with a new (private) GitHub repository. After one or two minutes, the new repository will have a release containing the various BookML outputs.
+  \item Every time you push your Overleaf changes to GitHub, a new build will start and generate a new release.
+  \item For a moderate speed up, replace \texttt{bookml:latest} with one of
+  \begin{itemize}
+      \item \texttt{bookml-basic:latest},
+      \item \texttt{bookml-small:latest},
+      \item \texttt{bookml-medium:latest},
+  \end{itemize}
+  in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
+\end{enumerate}
+
 %%% OPTIONAL
 % footer for HTML output (will not appear in the PDF)
 \begin{lxFooter}
-  Copyright \copyright{} 2024 Author.
+  Copyright \copyright{} 2024 Author. Compiled with BookML \BookMLversion.
 \end{lxFooter}
-
-\LaTeX{} content.
 
 % copyright notice for PDF output
 \iflatexml\else
+\bigskip
 \begin{center}
-  {\small Copyright \copyright{} 2024 Author.}
+  {\small Copyright \copyright{} 2024 Author. Compiled with BookML \BookMLversion.}
 \end{center}
 \fi
 

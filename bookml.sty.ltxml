@@ -398,6 +398,8 @@ DeclareOption(undef, sub {
 
 ProcessOptions();
 
+DefMacroI('\BookMLversion', undef, $bmlVersion);
+
 RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
 
 if ($bml_style eq 'gitbook') {

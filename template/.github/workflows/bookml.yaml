@@ -13,7 +13,12 @@ jobs:
         # you may replace bookml with bookml-basic, bookml-small, bookml-medium to download fewer packages
         uses: docker://ghcr.io/vlmantova/bookml:latest
         with:
-          args: -k all aux-zip # warning: aux-zip must be run *sequentially after* all
+          args: -k all
+        timeout-minutes: 10 # increase if required
+      - name: Pack auxiliary folder
+        uses: docker://ghcr.io/vlmantova/bookml-basic:latest
+        with:
+          args: aux-zip
       - name: Upload outputs
         if: ${{ always() }}
         env:

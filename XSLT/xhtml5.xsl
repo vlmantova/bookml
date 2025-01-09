@@ -273,7 +273,7 @@
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="ltx:enumerate/ltx:item/ltx:para[1]/ltx:p[1] | ltx:itemize/ltx:item/ltx:para[1]/ltx:p[1]">
+  <xsl:template match="ltx:enumerate/ltx:item[ltx:tags]/ltx:para[1]/ltx:p[1] | ltx:itemize/ltx:item[ltx:tags]/ltx:para[1]/ltx:p[1]">
     <xsl:param name="context"/>
     <xsl:text>&#x200B;</xsl:text> <!-- zero width space to prevent newlines -->
     <xsl:element name="{f:blockelement($context,'p')}" namespace="{$html_ns}">

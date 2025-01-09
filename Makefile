@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
+reverse =  $(if $(1),$(call reverse,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)))
 ifeq ($(is.win),true)
   ospath = $(subst /,\,$1)
   CP     = copy
@@ -37,7 +38,7 @@ endif
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
 GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-search.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
 GITBOOK_JS     := $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js jquery.highlight.js plugin-search.js plugin-fontsettings.js plugin-bookdown.js)
-GITBOOK_DIRS   := $(patsubst %,gitbook/%,css/fontawesome css js) gitbook
+GITBOOK_DIRS   := gitbook $(patsubst %,gitbook/%,css css/fontawesome js)
 GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
 
 CSS          := $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
@@ -46,7 +47,7 @@ BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml.sty bookml/latexml.sty
 BOOKML_LTXML := bookml/bookml.sty.ltxml bookml/schema.rng
 BOOKML_MK    := bookml/bookml.mk bookml/search_index.pl bookml/xsltproc.pl
-BOOKML_DIRS  := $(patsubst %,bookml/%,$(GITBOOK_DIRS)) bookml/CSS bookml/XSLT bookml
+BOOKML_DIRS  := bookml bookml/CSS bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
@@ -132,7 +133,7 @@ example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 
 clean:
 	-$(RMDIR) test-example test-template docker-ctx
-	-$(RMDIR) $(call ospath,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip)
+	-$(RMDIR) $(call ospath,$(call reverse,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip))
 
 $(GITBOOK_SOURCE):
 	git submodule update --init bookdown
@@ -158,7 +159,7 @@ $(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): boo
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
-	sed -e "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g" "$<" > "$@"
+	perl -pe "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g" "$<" > "$@"
 
 # patch automatic TOC highlighting and scrolling
 gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)

@@ -47,6 +47,11 @@ ol.ltx_enumerate>li.ltx_item>.ltx_tag {
   padding-right: max(min(0.5%,0.3em),0.2em); /* this seems the closest to default UA <ol>'s */
 }
 
+/* tweak margins within list items */
+.book .book-body .page-wrapper .page-inner section.normal li.ltx_item>.ltx_para>.ltx_p {
+  margin-bottom: 0em;
+}
+
 /* Reduce margins on listings and ensure content fits the container */
 .ltx_listing {
   margin-right: 0;

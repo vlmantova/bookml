@@ -35,7 +35,10 @@ PERL ?= perl
 # (6) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
 SPLITAT ?= section
 # (7) source files: by default, all .tex files containing a \documentclass
-SOURCES ?= $(foreach f,$(wildcard *.tex),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
+ifndef SOURCES
+$(if $(filter-out %.tex,$(wildcard *.tex)),$(warning Some .tex files have spaces in their names, which is not supported!))
+endif
+SOURCES ?= $(foreach f,$(filter %.tex,$(wildcard *.tex)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
 TARGETS.PDF   ?= $(SOURCES:.tex=.pdf)
 TARGETS.XML   ?= $(patsubst %.pdf,$(AUX_DIR)/xml/%.xml,$(TARGETS.PDF))
@@ -348,7 +351,7 @@ $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/xml/%.xml bookml/XSLT/proc-resources.xsl 
 # build recursively to force inclusion of deps files
 $(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.xml $$(BOOKML_DEPS_HTML) $$(wildcard bmlimages/$$*-*.svg) $$(wildcard bmlimages/$$*/$$*.dpth) bookml/search_index.pl bookml/XSLT/proc-text.xsl $$(if $$(filter $$@,$$(BMLGOALS)),,FORCE) | $$(AUX_DIR)/html
 	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
-	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
+	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@" "SOURCES=$*.tex")
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $*/index.html))
 	-@$(if $(_recurse),,$(call bml.cmd,$(RMDIR) $(call bml.ospath,$(AUX_DIR)/html/$*)))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
@@ -378,7 +381,7 @@ $(AUX_DIR)/html/%.zip: $$(AUX_DIR)/html/$$*/index.html $$(filter-out $$(AUX_DIR)
 # build recursively to evaluate $(bml.reclist.file) *after* index.html has been built
 $(AUX_DIR)/latexmlaux/%.manifest: $$(AUX_DIR)/html/$$*/index.html $$(filter-out $$(AUX_DIR)/html/$$*/imsmanifest.xml,$$(filter-out $$(AUX_DIR)/html/$$*/LaTeXML.cache,$$(call bml.reclist.file,$$(AUX_DIR)/html/$$*))) | $$(AUX_DIR)/latexmlaux
 	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
-	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
+	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@" "SOURCES=$*.tex")
 	@$(if $(_recurse),,echo $(bml.lt)manifest$(bml.gt) > $@)
 	@$(if $(_recurse),,$(foreach f,index.html $(filter-out index.html LaTeXML.cache,$(patsubst $(AUX_DIR)/html/$*/%,%,$(call bml.reclist.file,$(AUX_DIR)/html/$*))), \
 	  echo $(bml.lt)file$(bml.gt)$f$(bml.lt)/file$(bml.gt) >> $@$(bml.nl)))

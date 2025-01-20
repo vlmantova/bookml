@@ -1,45 +1,14 @@
-name: Compile with BookML
 on: push
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Check out LaTeX files
-        uses: actions/checkout@v4
+      # see https://github.com/vlmantova/bookml-action for all configuration options
       - name: Compile with BookML
-        id: bookml
-        # replace /bookml: with /bookml-basic:, /bookml-small:, /bookml-medium: to download fewer packages
-        uses: docker://ghcr.io/vlmantova/bookml:latest
+        uses: vlmantova/bookml-action@v1
         with:
-          entrypoint: /bin/sh
-          args: -c "/run-bookml -k all | tee .git/bookml-report"
-        timeout-minutes: 6 # increase if required
-      - name: Pack auxiliary folder
-        uses: docker://ghcr.io/vlmantova/bookml-basic:latest
-        with:
-          args: aux-zip
-      - name: Upload outputs
-        if: ${{ always() }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          notes_1: |-
-            ${{ steps.bookml.outcome == 'cancelled' && '**The build was cancelled. Some outputs may be missing.** ' || ( steps.bookml.outcome == 'failure' && '**Parts of the build have failed. Consult the AUX file for more information.** ' || '**All outputs have been built.**' ) }}
-
-            *Commit message:* ${{ github.event.head_commit.message }}
-
-            ### Summarised output
-            <pre><code>
-          notes_2: |-
-            </code></pre>
-
-            ### Full output
-            <details><summary><b>Click to show full output</b></summary>
-            <pre><code>
-          notes_3: |-
-            </code></pre></details>
-          title: "${{ steps.bookml.outcome == 'cancelled' && 'cancelled' || ( steps.bookml.outcome == 'failure' && 'failed' || 'successful' ) }} build: ${{ github.event.head_commit.message }}"
-          ref: ${{ github.ref_name }}
-          tag: build-${{ github.run_number }}
-        run: gh release create "$tag" --target="$ref" --repo="$GITHUB_REPOSITORY" --title="$title" --notes="$notes_1$(head -n 5 .git/bookml-report)"$'\n'$'\n'...$'\n'$'\n'"$(tail -n 5 .git/bookml-report)$notes_2$(cat .git/bookml-report)$notes_3" *.zip
+          # scheme can be basic, small, medium, full
+          scheme: full
+          timeout-minutes: 6

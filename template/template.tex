@@ -48,26 +48,21 @@ For use with Overleaf (requires paid account):
   \item Upload the template to a new Overleaf project. Ensure that the \texttt{.github} folder is also included.
   \item From the Overleaf menu, sync the project with a new (private) GitHub repository. After one or two minutes, you will receive an email announcing that the repository has a new a release containing the various BookML outputs. Follow the link in the email to download them.
   \item Every time you sync your Overleaf changes to GitHub, a new build will start and generate a new release.
-  \item For a moderate speed up, replace \texttt{bookml:latest} with one of
-  \begin{itemize}
-      \item \texttt{bookml-basic:latest},
-      \item \texttt{bookml-small:latest},
-      \item \texttt{bookml-medium:latest},
-  \end{itemize}
-  in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
+  \item For a moderate speed up, change the \TeX{} Live scheme in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
+  \item If the build is cancelled, increase the timeout in the same file. See the \href{https://github.com/vlmantova/bookml-action}{BookML action documentation} for more details.
 \end{enumerate}
 
 %%% OPTIONAL
 % footer for HTML output (will not appear in the PDF)
 \begin{lxFooter}
-  Copyright \copyright{} 2024 Author. Compiled with BookML \BookMLversion.
+  Copyright \copyright{} 2025 Author. Compiled with BookML \BookMLversion.
 \end{lxFooter}
 
 % copyright notice for PDF output
 \iflatexml\else
 \bigskip
 \begin{center}
-  {\small Copyright \copyright{} 2024 Author. Compiled with BookML \BookMLversion.}
+  {\small Copyright \copyright{} 2025 Author. Compiled with BookML \BookMLversion.}
 \end{center}
 \fi
 

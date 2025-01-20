@@ -133,12 +133,14 @@ COPY --chmod=755 <<EOF /run-bookml
 set -euo pipefail
 if [[ \${1-} == update ]] ; then
   [[ -d bookml ]] && rm -fr bookml
+  echo Updating BookML...
   unzip /release.zip
   exit 0
 elif [[ -d bookml ]] ; then
   make -q BOOKML_VERSION="$BOOKML_VERSION" -f bookml/bookml.mk check-for-update || echo 'BookML update available, run `update` to install it'
 else
-  unzip /release.zip
+  echo Unpacking BookML...
+  unzip -q /release.zip
 fi
 [[ -f GNUmakefile || -f Makefile ]] || cp bookml/GNUmakefile GNUmakefile
 exec make "\$@"

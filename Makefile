@@ -44,8 +44,8 @@ GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITB
 CSS          := $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
 BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
-BOOKML_LTX   := bookml/bookml.sty bookml/latexml.sty
-BOOKML_LTXML := bookml/bookml.sty.ltxml bookml/schema.rng
+BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
+BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng
 BOOKML_MK    := bookml/bookml.mk bookml/search_index.pl bookml/xsltproc.pl
 BOOKML_DIRS  := bookml bookml/CSS bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
@@ -154,7 +154,7 @@ bookml/GNUmakefile: template/GNUmakefile | $(BOOKML_DIRS)
 
 bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
 
-$(patsubst %,bookml/%,bookml.mk bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
+$(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
 	perl -pe "s!\@DATE@!$(BOOKML_DATE)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding

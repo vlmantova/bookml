@@ -37,7 +37,7 @@
     <xsl:apply-templates select="//ltx:resource" />
   </xsl:template>
 
-  <xsl:template match="ltx:resource[contains(concat(@type,';'),';bmllocation=download;') or starts-with(@src,'bmluser/')]">
+  <xsl:template match="ltx:resource">
     <xsl:value-of select="$BML_TARGET" /><xsl:text>: </xsl:text><xsl:value-of select="@src" /><xsl:text>&#x0A;</xsl:text>
     <xsl:value-of select="@src" /><xsl:text>:&#x0A;</xsl:text>
   </xsl:template>

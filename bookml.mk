@@ -322,8 +322,8 @@ $(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml):
 # use relative paths is possible (with extra work if there are spaces)
 $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
 	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$*.pdf)")
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/$*.synctex.gz)" "$(call bml.ospath,$*.synctex.gz)"
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/$*.synctex)" "$(call bml.ospath,$*.synctex)"
+	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex.gz)" "$(call bml.ospath,$*.synctex.gz)" $(bml.null)
+	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex)" "$(call bml.ospath,$*.synctex)" $(bml.null)
 
 # build PDF and deps files (in $(AUX_DIR))
 
@@ -337,8 +337,11 @@ $(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORC
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
 
 # build XML files
+# (Windows can sometimes set the READONLY attribute on the xml folder,
+#  especially on cloud drives, and this trips LaTeXML)
 $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
 	@$(call bml.prog,latexml: $< → $@)
+	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
 	  $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/latexmlaux/$*.latexml.log" --destination="$@" "$<")
 
@@ -370,6 +373,9 @@ $(AUX_DIR)/html/SCORM.%.zip: $(AUX_DIR)/html/%/imsmanifest.xml
 	@$(call bml.prog,SCORM: $* → $@)
 	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
 	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)html$(bml.pathsep)$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)SCORM.$*.zip" . "$(ZIP_EXCLUDE)LaTeXML.cache")
+
+# prevent make from trying to build the files in $(AUX_DIR)/html for which we have no recipe
+$(foreach f,$(call bml.reclist.file,$(AUX_DIR)/html),$(eval $(f):))
 
 # package HTML output into zip file
 $(AUX_DIR)/html/%.zip: $$(AUX_DIR)/html/$$*/index.html $$(filter-out $$(AUX_DIR)/html/$$*/imsmanifest.xml,$$(filter-out $$(AUX_DIR)/html/$$*/LaTeXML.cache,$$(call bml.reclist.file,$$(AUX_DIR)/html/$$*)))

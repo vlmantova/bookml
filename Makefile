@@ -46,7 +46,7 @@ BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
 BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng
-BOOKML_MK    := bookml/bookml.mk bookml/search_index.pl bookml/xsltproc.pl
+BOOKML_MK    := bookml/bookml.mk bookml/manifest.pl bookml/search_index.pl bookml/xsltproc.pl
 BOOKML_DIRS  := bookml bookml/CSS bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 

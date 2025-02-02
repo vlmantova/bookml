@@ -86,6 +86,11 @@
     </xsl:choose>
   </func:function>
 
+  <func:function name="b:lower-case">
+    <xsl:param name="string" />
+    <func:result select="translate($string,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')"/>
+  </func:function>
+
   <!-- bookml options -->
   <xsl:variable name="BOOKML_OPTIONS">
     <!-- expected: <?latexml package="bookml/bookml" options="$options"?> -->

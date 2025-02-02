@@ -740,7 +740,7 @@ DefConstructor('\bmlRawHTML Digested', sub {
 # Image generation via LaTeX
 my $bml_depth;
 my $source  = LookupValue('SOURCEFILE');
-my $outdir  = pathname_concat('bmlimages', $bml_jobname);
+my $outdir  = pathname_concat('bmlimages/dvi/', $bml_jobname);
 my $dvifile = pathname_concat($outdir,     $bml_jobname . '.dvi');
 my $svgfmt  = pathname_concat('bmlimages', '%f-%0p.svg');
 my $dpth    = pathname_concat($outdir,     $bml_jobname . '.dpth');
@@ -953,7 +953,7 @@ DefPrimitive('\bml@image@generate', sub {
     &$bml_ProgressSpindown('BookML images');
 
     # do not run twice!
-    Let('\bml@image@generate', undef);
+    Let('\bml@image@generate', '\relax');
     return;
 });
 

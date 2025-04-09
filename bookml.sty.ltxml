@@ -42,6 +42,8 @@ my $bmlVersion = '@VERSION@';
 
 my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog, $bml_NoteSTDERR);
 
+my $bml_mathjax = 3;
+
 if (!defined &ProgressSpinup) {
   # pre-0.8.6 reporting
   $bml_ProgressSpinup   = \&NoteBegin;
@@ -114,8 +116,8 @@ DeclareOption('style=gitbook', sub { $bml_style   = 'gitbook'; return; });
 DeclareOption('style=none',    sub { $bml_style   = 'none';    return; });
 DeclareOption('htmlsyntax',    sub { $bml_htmlsyn = 1;         return; });
 DeclareOption('nohtmlsyntax',  sub { $bml_htmlsyn = 0;         return; });
-DeclareOption('mathjax=2');
-DeclareOption('nomathjax');
+DeclareOption('mathjax=2',     sub { $bml_mathjax = 2;         return; });
+DeclareOption('nomathjax',     sub { $bml_mathjax = undef;     return; });
 
 # LaTeXML currently does not support the class options 10pt, 11pt, etc so we have to do the work ourselves
 my %bml_font_sizes = (
@@ -425,6 +427,11 @@ if ($bml_style eq 'gitbook') {
   # additional files to be copied over
   RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.ttf', type => 'font/ttf');
 }
+
+if ($bml_mathjax == 3) {
+  BMLRequireResource('bookml/js/mathjax3.js', location => 'body'); }
+elsif ($bml_mathjax == 2) {
+  BMLRequireResource('bookml/js/mathjax2.js', location => 'body'); }
 
 # CSS files
 DefConstructorI('\bml@css', undef, sub {

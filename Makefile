@@ -18,6 +18,7 @@ is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
 reverse =  $(if $(1),$(call reverse,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)))
 ifeq ($(is.win),true)
   ospath = $(subst /,\,$1)
+  SHELL  = cmd.exe
   CP     = copy
   MKDIR  = mkdir
   RM     = del /f /s /q
@@ -43,12 +44,13 @@ GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITB
 
 CSS          := $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
 BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
+BOOKML_JS    := $(patsubst %,bookml/%,$(wildcard js/*))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
 BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng
 BOOKML_MK    := bookml/bookml.mk bookml/manifest.pl bookml/search_index.pl bookml/xsltproc.pl
-BOOKML_DIRS  := bookml bookml/CSS bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
-BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
+BOOKML_DIRS  := bookml bookml/CSS bookml/js bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
+BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 

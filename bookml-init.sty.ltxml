@@ -27,6 +27,8 @@ package LaTeXML::Package::Pool;
 use strict;
 use warnings;
 
-AtBeginDocument(sub { RequirePackage('bookml/bookml'); });
+# bookml/bookml uses AtBeginDocument()! we must load it in the
+# @document@preamble@atend hook which runs *before* @at@begin@document
+PushValue('@document@preamble@atend', Tokenize('\usepackage{bookml/bookml}'));
 
 1;

@@ -1,7 +1,39 @@
 MathJax = {
   startup: {
     ready: () => {
-      // do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone)
+      /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/
+      const MmlMo = MathJax._.core.MmlTree.MmlNodes.mo.MmlMo;
+      const OperatorDictionary = MathJax._.core.MmlTree.OperatorDictionary;
+
+      MmlMo.prototype.checkOperatorTable = function (mo) {
+        let [form1, form2, form3] = this.handleExplicitForm(this.getForms());
+        this.attributes.setInherited('form', form1);
+        let OPTABLE = this.constructor.OPTABLE;
+        let def = OPTABLE[form1][mo] || OPTABLE[form2][mo] || OPTABLE[form3][mo];
+        if (def) {
+          if (this.getProperty('texClass') === undefined) {
+            this.texClass = def[2];
+          }
+          for (const name of Object.keys(def[3] || {})) {
+            this.attributes.setInherited(name, def[3][name]);
+          }
+          this.lspace = (def[0] + 1) / 18;
+          this.rspace = (def[1] + 1) / 18;
+        } else {
+          let range = OperatorDictionary.getRange(mo);
+          // changed here: apply TeX class only for 'mo' elements
+          if (range && range[3] == 'mo') {
+            if (this.getProperty('texClass') === undefined) {
+              this.texClass = range[2];
+            }
+            const spacing = this.constructor.MMLSPACING[range[2]];
+            this.lspace = (spacing[0] + 1) / 18;
+            this.rspace = (spacing[1] + 1) / 18;
+          }
+        }
+      };
+
+      /*** do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone) ***/
       class bmlFindMathML extends MathJax._.input.mathml.FindMathML.FindMathML {
         processMath(set) {
           const adaptor = this.adaptor;
@@ -18,7 +50,7 @@ MathJax = {
 
       MathJax.startup.defaultReady();
 
-      // preprocess MathML to make MathJax aware of certain LaTeXML and BookML additional info
+      /*** preprocess MathML to make MathJax aware of certain LaTeXML and BookML additional info ***/
       const mmlFilters = MathJax.startup.input[0].mmlFilters;
 
       // convert the LaTeXML calligraphic (chancery) annotation to a form MathJax understands
@@ -38,37 +70,15 @@ MathJax = {
         }
       });
 
-      // adjust characters based on Unicode variation sequences
+      /*** adjust characters based on Unicode variation sequences ***/
       const replacements = {
         // MathJax renders the empty set as the U+FE00 variant, so the plain character needs adjusting
         '∅': { variant: 'variant' },
-        // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
-        '𝒜\xFE00': { text: 'A', variant: 'tex-calligraphic' },
-        'ℬ\xFE00': { text: 'B', variant: 'tex-calligraphic' },
-        '𝒞\xFE00': { text: 'C', variant: 'tex-calligraphic' },
-        '𝒟\xFE00': { text: 'D', variant: 'tex-calligraphic' },
-        'ℰ\xFE00': { text: 'E', variant: 'tex-calligraphic' },
-        'ℱ\xFE00': { text: 'F', variant: 'tex-calligraphic' },
-        '𝒢\xFE00': { text: 'G', variant: 'tex-calligraphic' },
-        'ℋ\xFE00': { text: 'H', variant: 'tex-calligraphic' },
-        'ℐ\xFE00': { text: 'I', variant: 'tex-calligraphic' },
-        '𝒥\xFE00': { text: 'J', variant: 'tex-calligraphic' },
-        '𝒦\xFE00': { text: 'K', variant: 'tex-calligraphic' },
-        'ℒ\xFE00': { text: 'L', variant: 'tex-calligraphic' },
-        'ℳ\xFE00': { text: 'M', variant: 'tex-calligraphic' },
-        '𝒩\xFE00': { text: 'N', variant: 'tex-calligraphic' },
-        '𝒪\xFE00': { text: 'O', variant: 'tex-calligraphic' },
-        '𝒫\xFE00': { text: 'P', variant: 'tex-calligraphic' },
-        '𝒬\xFE00': { text: 'Q', variant: 'tex-calligraphic' },
-        'ℛ\xFE00': { text: 'R', variant: 'tex-calligraphic' },
-        '𝒮\xFE00': { text: 'S', variant: 'tex-calligraphic' },
-        '𝒯\xFE00': { text: 'T', variant: 'tex-calligraphic' },
-        '𝒰\xFE00': { text: 'U', variant: 'tex-calligraphic' },
-        '𝒱\xFE00': { text: 'V', variant: 'tex-calligraphic' },
-        '𝒲\xFE00': { text: 'W', variant: 'tex-calligraphic' },
-        '𝒳\xFE00': { text: 'X', variant: 'tex-calligraphic' },
-        '𝒴\xFE00': { text: 'Y', variant: 'tex-calligraphic' },
-        '𝒵\xFE00': { text: 'Z', variant: 'tex-calligraphic' }
+      };
+
+      // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
+      for (const letter in script2latin) {
+        replacements[letter + '\uFE00'] = { text: script2latin[letter], variant: 'tex-calligraphic' };
       };
 
       mmlFilters.add((args) => {

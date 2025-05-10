@@ -1,5 +1,45 @@
 {
   let config = () => {
+    /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/
+    MathJax.Hub.Register.StartupHook("MathML Jax Ready", function () {
+      const TEXCLASS = MathJax.ElementJax.mml.TEXCLASS;
+      // changed here: TEXCLASS.REL whenever the range is marked as 'mi' or 'mn' in MathJax 3
+      MathJax.ElementJax.mml.mo.prototype.RANGES = [
+        [0x20, 0x7F, TEXCLASS.REL, "BasicLatin"],
+        [0xA0, 0xBF, TEXCLASS.ORD, "Latin1Supplement"],
+        [0xC0, 0xFF, TEXCLASS.REL, "Latin1Supplement"],
+        [0x100, 0x17F, TEXCLASS.REL],
+        [0x180, 0x24F, TEXCLASS.REL],
+        [0x2B0, 0x2FF, TEXCLASS.ORD, "SpacingModLetters"],
+        [0x300, 0x36F, TEXCLASS.ORD, "CombDiacritMarks"],
+        [0x370, 0x3FF, TEXCLASS.REL, "GreekAndCoptic"],
+        [0x1E00, 0x1EFF, TEXCLASS.REL],
+        [0x2000, 0x206F, TEXCLASS.PUNCT, "GeneralPunctuation"],
+        [0x2070, 0x209F, TEXCLASS.ORD],
+        [0x20A0, 0x20CF, TEXCLASS.ORD],
+        [0x20D0, 0x20FF, TEXCLASS.ORD, "CombDiactForSymbols"],
+        [0x2100, 0x214F, TEXCLASS.REL, "LetterlikeSymbols"],
+        [0x2150, 0x218F, TEXCLASS.REL],
+        [0x2190, 0x21FF, TEXCLASS.REL, "Arrows"],
+        [0x2200, 0x22FF, TEXCLASS.BIN, "MathOperators"],
+        [0x2300, 0x23FF, TEXCLASS.ORD, "MiscTechnical"],
+        [0x2460, 0x24FF, TEXCLASS.ORD],
+        [0x2500, 0x259F, TEXCLASS.ORD],
+        [0x25A0, 0x25FF, TEXCLASS.ORD, "GeometricShapes"],
+        [0x2700, 0x27BF, TEXCLASS.ORD, "Dingbats"],
+        [0x27C0, 0x27EF, TEXCLASS.ORD, "MiscMathSymbolsA"],
+        [0x27F0, 0x27FF, TEXCLASS.REL, "SupplementalArrowsA"],
+        [0x2900, 0x297F, TEXCLASS.REL, "SupplementalArrowsB"],
+        [0x2980, 0x29FF, TEXCLASS.ORD, "MiscMathSymbolsB"],
+        [0x2A00, 0x2AFF, TEXCLASS.BIN, "SuppMathOperators"],
+        [0x2B00, 0x2BFF, TEXCLASS.ORD, "MiscSymbolsAndArrows"],
+        [0x1D400, 0x1D7FF, TEXCLASS.REL]
+      ];
+    });
+
+    /*** preprocess MathML to make MathJax aware of certain LaTeXML and BookML additional info ***/
+    // convert the LaTeXML calligraphic (chancery) annotation to a form MathJax understands
+    // since the corresponding Unicode characters render as script (rounded)
     const script2latin = {
       '𝒜': 'A', 'ℬ': 'B', '𝒞': 'C', '𝒟': 'D', 'ℰ': 'E', 'ℱ': 'F', '𝒢': 'G',
       'ℋ': 'H', 'ℐ': 'I', '𝒥': 'J', '𝒦': 'K', 'ℒ': 'L', 'ℳ': 'M', '𝒩': 'N',
@@ -15,37 +55,15 @@
       }
     }, 1);
 
-    // adjust characters based on Unicode variation sequences
+    /*** adjust characters based on Unicode variation sequences ***/
     const replacements = {
       // MathJax renders the empty set as the U+FE00 variant, so the plain character needs adjusting
-      '∅': { variant: 'variant' },
-      // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
-      '𝒜\xFE00': { text: 'A', variant: 'tex-caligraphic' },
-      'ℬ\xFE00': { text: 'B', variant: 'tex-caligraphic' },
-      '𝒞\xFE00': { text: 'C', variant: 'tex-caligraphic' },
-      '𝒟\xFE00': { text: 'D', variant: 'tex-caligraphic' },
-      'ℰ\xFE00': { text: 'E', variant: 'tex-caligraphic' },
-      'ℱ\xFE00': { text: 'F', variant: 'tex-caligraphic' },
-      '𝒢\xFE00': { text: 'G', variant: 'tex-caligraphic' },
-      'ℋ\xFE00': { text: 'H', variant: 'tex-caligraphic' },
-      'ℐ\xFE00': { text: 'I', variant: 'tex-caligraphic' },
-      '𝒥\xFE00': { text: 'J', variant: 'tex-caligraphic' },
-      '𝒦\xFE00': { text: 'K', variant: 'tex-caligraphic' },
-      'ℒ\xFE00': { text: 'L', variant: 'tex-caligraphic' },
-      'ℳ\xFE00': { text: 'M', variant: 'tex-caligraphic' },
-      '𝒩\xFE00': { text: 'N', variant: 'tex-caligraphic' },
-      '𝒪\xFE00': { text: 'O', variant: 'tex-caligraphic' },
-      '𝒫\xFE00': { text: 'P', variant: 'tex-caligraphic' },
-      '𝒬\xFE00': { text: 'Q', variant: 'tex-caligraphic' },
-      'ℛ\xFE00': { text: 'R', variant: 'tex-caligraphic' },
-      '𝒮\xFE00': { text: 'S', variant: 'tex-caligraphic' },
-      '𝒯\xFE00': { text: 'T', variant: 'tex-caligraphic' },
-      '𝒰\xFE00': { text: 'U', variant: 'tex-caligraphic' },
-      '𝒱\xFE00': { text: 'V', variant: 'tex-caligraphic' },
-      '𝒲\xFE00': { text: 'W', variant: 'tex-caligraphic' },
-      '𝒳\xFE00': { text: 'X', variant: 'tex-caligraphic' },
-      '𝒴\xFE00': { text: 'Y', variant: 'tex-caligraphic' },
-      '𝒵\xFE00': { text: 'Z', variant: 'tex-caligraphic' }
+      '∅': { variant: 'variant' }
+    };
+
+    // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
+    for (const letter in script2latin) {
+      replacements[letter + '\uFE00'] = { text: script2latin[letter], variant: 'tex-caligraphic' };
     };
 
     MathJax.Hub.preProcessors.Add((args) => {

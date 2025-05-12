@@ -411,30 +411,17 @@ $(AUX_DIR)/html/%/imsmanifest.xml: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.
 	   --stringparam BML_MANIFEST "../latexmlaux/$*.manifest")
 
 # image conversions
-bmlimages:
-	@$(MKDIR) "$(call bml.ospath,$@)"
-bmlimages/svg: | bmlimages
-	@$(MKDIR) "$(call bml.ospath,$@)"
-bmlimages/svg/%: | $$(@D)
-	@$(MKDIR) "$(call bml.ospath,$@)"
-
-# override %.pdf rules
-bmlimages/svg/%.pdf: | $$(@D)
-	@$(MKDIR) "$(call bml.ospath,$@)"
-bmlimages/svg/%.PDF: | $$(@D)
-	@$(MKDIR) "$(call bml.ospath,$@)"
-
-bmlimages/svg/%.eps: | $$(@D)
-	@$(MKDIR) "$(call bml.ospath,$@)"
-bmlimages/svg/%.EPS: | $$(@D)
-	@$(MKDIR) "$(call bml.ospath,$@)"
-
-bmlimages/svg/%.svg: %.pdf | $$(@D)
+bmlimages/svg/%.svg: %.pdf | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
-bmlimages/svg/%.svg: %.PDF | $$(@D)
+bmlimages/svg/%.svg: %.PDF | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
 
-bmlimages/svg/%.svg: %.eps | $$(@D)
+bmlimages/svg/%.svg: %.eps | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
-bmlimages/svg/%.svg: %.EPS | $$(@D)
+bmlimages/svg/%.svg: %.EPS | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
+
+# /./ disambiguates between %.svg, %pdf targets and actual folders
+# a hack, but required to keep compatibility with GNU make 3.81
+bmlimages/svg/%/./:
+	$(MKDIR) "$(call bml.ospath,$(@))"

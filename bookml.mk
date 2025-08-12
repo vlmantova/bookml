@@ -425,3 +425,5 @@ bmlimages/svg/%.svg: %.EPS | $$(@D)/./
 # a hack, but required to keep compatibility with GNU make 3.81
 bmlimages/svg/%/./:
 	$(MKDIR) "$(call bml.ospath,$(@))"
+bmlimages/svg/./:
+	$(MKDIR) "$(call bml.ospath,$(@))"

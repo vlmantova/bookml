@@ -425,7 +425,7 @@
     </xsl:attribute>
   </xsl:template>
 
-  <!-- MathJax workaround for non-text content in <mtext> -->
+  <!-- MathJax workaround for non-text content in <mtext> (not needed with MathJax v4) -->
   <xsl:template match="m:math[not(b:in-list(@class,'bml_disable_mathjax',' '))]//m:mtext[*]">
     <xsl:choose>
       <xsl:when test="$MATHJAX3 or $MATHJAX2">

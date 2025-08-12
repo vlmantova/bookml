@@ -473,7 +473,7 @@
   <xsl:template match="ltx:equation[f:countcolumns() &gt; 1] | ltx:equationgroup | ltx:picture | ltx:tabular | ltx:graphics">
     <xsl:param name="context"/>
     <xsl:choose>
-      <xsl:when test="$GITBOOK and $context != 'inline'">
+      <xsl:when test="$GITBOOK and $context != 'inline' and ($MATHJAX4 and not(self::ltx:equationgroup) and not(self::ltx:equation))">
         <div class="bml-overflow-wrapper">
           <xsl:apply-imports/>
         </div>

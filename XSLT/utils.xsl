@@ -44,8 +44,9 @@
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
+  <xsl:variable name="MATHJAX4" select="b:if-option('mathjax=4')"/>
   <xsl:variable name="MATHJAX3"
-    select="not(b:if-option('nomathjax') or $MATHJAX2)"/>
+    select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX4)"/>
 
   <!-- alter $fragment by overriding mode="bml-alter" -->
   <xsl:template name="bml-alter">

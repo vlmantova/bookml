@@ -117,6 +117,8 @@ DeclareOption('style=none',    sub { $bml_style   = 'none';    return; });
 DeclareOption('htmlsyntax',    sub { $bml_htmlsyn = 1;         return; });
 DeclareOption('nohtmlsyntax',  sub { $bml_htmlsyn = 0;         return; });
 DeclareOption('mathjax=2',     sub { $bml_mathjax = 2;         return; });
+DeclareOption('mathjax=3',     sub { $bml_mathjax = 3;         return; });
+DeclareOption('mathjax=4',     sub { $bml_mathjax = 4;         return; });
 DeclareOption('nomathjax',     sub { $bml_mathjax = undef;     return; });
 
 # LaTeXML currently does not support the class options 10pt, 11pt, etc so we have to do the work ourselves
@@ -430,6 +432,8 @@ if ($bml_style eq 'gitbook') {
 
 if ($bml_mathjax == 3) {
   BMLRequireResource('bookml/js/mathjax3.js', location => 'body'); }
+elsif ($bml_mathjax == 4) {
+  BMLRequireResource('bookml/js/mathjax4.js', location => 'body'); }
 elsif ($bml_mathjax == 2) {
   BMLRequireResource('bookml/js/mathjax2.js', location => 'body'); }
 

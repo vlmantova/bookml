@@ -1,6 +1,5 @@
 {
-  // convert the LaTeXML calligraphic (chancery) annotation to a form MathJax understands
-  // since the corresponding Unicode characters render as script (rounded)
+  /*** convert the LaTeXML calligraphic (chancery) annotation to a form MathJax understands ***/
   const script2latin = {
     '𝒜': 'A', 'ℬ': 'B', '𝒞': 'C', '𝒟': 'D', 'ℰ': 'E', 'ℱ': 'F', '𝒢': 'G',
     'ℋ': 'H', 'ℐ': 'I', '𝒥': 'J', '𝒦': 'K', 'ℒ': 'L', 'ℳ': 'M', '𝒩': 'N',
@@ -8,70 +7,81 @@
     '𝒱': 'V', '𝒲': 'W', '𝒳': 'X', '𝒴': 'Y', '𝒵': 'Z',
   };
 
-  // adjust characters based on Unicode variation sequences
+  const filterLaTeXMLCalligraphic = (args) => {
+    for (const n of args.data.getElementsByClassName('ltx_font_mathcaligraphic')) {
+      n.setAttribute('data-mjx-variant', '-tex-calligraphic');
+      const letter = script2latin[n.textContent];
+      if (letter !== undefined) { n.textContent = letter; }
+    }
+  };
+
+  /*** adjust characters based on Unicode variation sequences ***/
   const replacements = {
     // MathJax renders the empty set as the U+FE00 variant, so the plain character needs adjusting
     '∅': { alternate: '1' },
-    // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
-    '𝒜\uFE00': { text: 'A', variant: '-tex-calligraphic' },
-    'ℬ\uFE00': { text: 'B', variant: '-tex-calligraphic' },
-    '𝒞\uFE00': { text: 'C', variant: '-tex-calligraphic' },
-    '𝒟\uFE00': { text: 'D', variant: '-tex-calligraphic' },
-    'ℰ\uFE00': { text: 'E', variant: '-tex-calligraphic' },
-    'ℱ\uFE00': { text: 'F', variant: '-tex-calligraphic' },
-    '𝒢\uFE00': { text: 'G', variant: '-tex-calligraphic' },
-    'ℋ\uFE00': { text: 'H', variant: '-tex-calligraphic' },
-    'ℐ\uFE00': { text: 'I', variant: '-tex-calligraphic' },
-    '𝒥\uFE00': { text: 'J', variant: '-tex-calligraphic' },
-    '𝒦\uFE00': { text: 'K', variant: '-tex-calligraphic' },
-    'ℒ\uFE00': { text: 'L', variant: '-tex-calligraphic' },
-    'ℳ\uFE00': { text: 'M', variant: '-tex-calligraphic' },
-    '𝒩\uFE00': { text: 'N', variant: '-tex-calligraphic' },
-    '𝒪\uFE00': { text: 'O', variant: '-tex-calligraphic' },
-    '𝒫\uFE00': { text: 'P', variant: '-tex-calligraphic' },
-    '𝒬\uFE00': { text: 'Q', variant: '-tex-calligraphic' },
-    'ℛ\uFE00': { text: 'R', variant: '-tex-calligraphic' },
-    '𝒮\uFE00': { text: 'S', variant: '-tex-calligraphic' },
-    '𝒯\uFE00': { text: 'T', variant: '-tex-calligraphic' },
-    '𝒰\uFE00': { text: 'U', variant: '-tex-calligraphic' },
-    '𝒱\uFE00': { text: 'V', variant: '-tex-calligraphic' },
-    '𝒲\uFE00': { text: 'W', variant: '-tex-calligraphic' },
-    '𝒳\uFE00': { text: 'X', variant: '-tex-calligraphic' },
-    '𝒴\uFE00': { text: 'Y', variant: '-tex-calligraphic' },
-    '𝒵\uFE00': { text: 'Z', variant: '-tex-calligraphic' }
+  };
+
+  // MathJax renders script characters in rounded style, which is fine for no variation and U+FE01
+  for (const letter in script2latin) {
+    replacements[letter + '\uFE00'] = { text: script2latin[letter], variant: '-tex-calligraphic' };
+  };
+
+  const filterUnicodeVariationSequences = (args) => {
+    let nodes = document.evaluate('.//m:mi | .//m:mn | .//m:mo | .//m:ms', args.data,
+      () => 'http://www.w3.org/1998/Math/MathML', XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
+    for (let i = 0; i < nodes.snapshotLength; i++) {
+      const n = nodes.snapshotItem(i);
+      const repl = replacements[n.innerHTML];
+      if (repl !== undefined) {
+        const text = repl['text'];
+        for (attribute in repl) {
+          if (attribute !== 'text') { n.setAttribute('data-mjx-' + attribute, repl[attribute]); }
+        }
+        if (text !== undefined) { n.innerHTML = text; }
+      }
+    };
   };
 
   MathJax = {
     mml: {
       allowHtmlInTokenNodes: true,
       mmlFilters: [
-        (args) => {
-          for (const n of args.data.getElementsByClassName('ltx_font_mathcaligraphic')) {
-            n.setAttribute('data-mjx-variant', '-tex-calligraphic');
-            const letter = script2latin[n.textContent];
-            if (letter !== undefined) { n.textContent = letter; }
-          }
-        },
-        (args) => {
-          let nodes = document.evaluate('.//m:mi | .//m:mn | .//m:mo | .//m:ms', args.data,
-            () => 'http://www.w3.org/1998/Math/MathML', XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
-          for (let i = 0; i < nodes.snapshotLength; i++) {
-            const n = nodes.snapshotItem(i);
-            const repl = replacements[n.innerHTML];
-            if (repl !== undefined) {
-              const text = repl['text'];
-              for (attribute in repl) {
-                if (attribute !== 'text') { n.setAttribute('data-mjx-' + attribute, repl[attribute]); }
-              }
-              if (text !== undefined) { n.innerHTML = text; }
-            }
-          }
-        },
+        filterLaTeXMLCalligraphic,
+        filterUnicodeVariationSequences,
       ],
     },
     startup: {
       ready: () => {
-        // do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone)
+        /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/
+        const MmlMo = MathJax._.core.MmlTree.MmlNodes.mo.MmlMo;
+        const OperatorDictionary = MathJax._.core.MmlTree.OperatorDictionary;
+        const getRange = OperatorDictionary.getRange;
+        const OPDEF = OperatorDictionary.OPDEF;
+        const TEXCLASS = MathJax._.core.MmlTree.MmlNode.TEXCLASS;
+
+        MmlMo.prototype.getOperatorDef = function (mo) {
+          const [form1, form2, form3] = this.handleExplicitForm(this.getForms());
+          this.attributes.setInherited('form', form1);
+          const CLASS = this.constructor;
+          const OPTABLE = CLASS.OPTABLE;
+          const def = OPTABLE[form1][mo] || OPTABLE[form2][mo] || OPTABLE[form3][mo];
+          if (def) {
+            return def;
+          }
+          this.setProperty('noDictDef', true);
+          const limits = this.attributes.get('movablelimits');
+          const isOP = !!mo.match(CLASS.opPattern);
+          if ((isOP || limits) && this.getProperty('texClass') === undefined) {
+            return OPDEF(1, 2, TEXCLASS.OP);
+          }
+          const range = getRange(mo);
+          // changed here: use REL TeX class for non-mo elements
+          const texClass = range && range[3] == 'mo' ? range[2] : TEXCLASS.REL;
+          const [l, r] = CLASS.MMLSPACING[texClass];
+          return OPDEF(l, r, texClass);
+        };
+
+        /*** do not process equations disabled with \bmlDisableMathJax (code suggested by Davide P. Cervone) ***/
         class bmlFindMathML extends MathJax._.input.mathml.FindMathML.FindMathML {
           processMath(set) {
             const adaptor = this.adaptor;

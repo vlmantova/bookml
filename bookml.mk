@@ -20,7 +20,7 @@
 AUX_DIR    ?= auxdir
 # (2) latexmk command and options
 LATEXMK      ?= latexmk
-LATEKMKFLAGS ?=
+LATEXMKFLAGS ?=
 SYNCTEX      ?= 5 # must produce *.synctex.gz
 # (3) latexml commands and options
 LATEXML          ?= latexml
@@ -335,9 +335,10 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
 -include $(wildcard $(AUX_DIR)/deps/*.pdfdeps)
 
 # force rebuild if pdfdeps file is missing
+# typo LATEKMKFLAGS preserved for backwards compatibility
 $(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps
 	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -recorder \
+	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(LATEXMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" -pdf -dvi- -ps- "$<")
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
 

@@ -181,7 +181,7 @@ h1.title {
 }
 
 /* Ensure the paragraphs are scrollable if necessary */
-.ltx_para {
+:root:not(.bml_mathjax4) .ltx_para {
   overflow-x: auto;
   overflow-y: visible;
 }
@@ -338,8 +338,10 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 
   max-width: 100%;
   min-height: 2.75em;
-  overflow-x: auto;
-  overflow-y: visible;
+  :root:not(.bml_mathjax4) & {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
 
   padding: 0.85em;
 

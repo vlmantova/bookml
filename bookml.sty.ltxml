@@ -437,6 +437,9 @@ elsif ($bml_mathjax == 4) {
 elsif ($bml_mathjax == 2) {
   BMLRequireResource('bookml/js/mathjax2.js', location => 'body'); }
 
+if ($bml_mathjax) {
+  AssignMapping('DOCUMENT_CLASSES', "bml_mathjax$bml_mathjax" => 1); }
+
 # CSS files
 DefConstructorI('\bml@css', undef, sub {
     my ($document) = @_;

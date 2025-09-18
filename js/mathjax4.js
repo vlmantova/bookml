@@ -43,6 +43,23 @@
   };
 
   MathJax = {
+    loader: {
+      'output/svg': {
+        ready() {
+          /*** workaround SVG renderer issue with inline breaks (code provided by Davide P. Cervone) ***/
+          if (MathJax.version === '4.0.0') {
+            const { SvgSemantics } = MathJax._.output.svg.Wrappers.semantics;
+            SvgSemantics.prototype.getBreakNode = function (bbox) {
+              if (!bbox.start) return [this, null];
+              const [i, j] = bbox.start;
+              const childNodes = this.childNodes[0].childNodes;
+              if (!childNodes[i]) return [this, null];
+              return childNodes[i].getBreakNode(childNodes[i].getLineBBox(j));
+            }
+          }
+        }
+      }
+    },
     mml: {
       allowHtmlInTokenNodes: true,
       mmlFilters: [

@@ -39,9 +39,16 @@
     </xsl:choose>
   </xsl:template>
 
-  <!-- add BookML resources at the end of the head -->
+  <!-- add BookML resources and preamble raw HTML at the end of the head -->
   <xsl:template match="/" mode="head-end">
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=head')]" mode="bml-resource"/>
+    <xsl:apply-templates select="//ltx:preamblerawhtml" mode="bml-preamble"/>
+  </xsl:template>
+
+  <xsl:template match="ltx:preamblerawhtml"/>
+
+  <xsl:template match="ltx:preamblerawhtml" mode="bml-preamble">
+    <xsl:apply-templates mode="copy-foreign"/>
   </xsl:template>
 
   <!-- add BookML resources at the end of the body, including MathJax -->

@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-24 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,12 +41,15 @@ $(if $(filter-out %.tex,$(wildcard *.tex)),$(warning Some .tex files have spaces
 SOURCES ?= $(foreach f,$(filter %.tex,$(wildcard *.tex)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
 endif
 endif
+# formats: possible values are pdf, scorm, zip
+FORMATS ?= scorm zip
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
 TARGETS.PDF   ?= $(SOURCES:.tex=.pdf)
 TARGETS.XML   ?= $(patsubst %.pdf,$(AUX_DIR)/xml/%.xml,$(TARGETS.PDF))
 TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
+TARGETS ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
 # (9) texfot (optional, disable with TEXFOT=)
 TEXFOT      ?= $(if $(call bml.which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
@@ -210,7 +213,7 @@ all:
 	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
 .PHONY: all
 
-all:   TARGETS=$(TARGETS.ZIP) $(TARGETS.SCORM)
+all:
 html:  TARGETS=$(TARGETS.HTML)
 pdf:   TARGETS=$(TARGETS.PDF)
 scorm: TARGETS=$(TARGETS.SCORM)
@@ -338,8 +341,9 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
 # typo LATEKMKFLAGS preserved for backwards compatibility
 $(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps
 	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) $(LATEKMKFLAGS) $(LATEXMKFLAGS) $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
-	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" -pdf -dvi- -ps- "$<")
+	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
+	  $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
+	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" "$<")
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
 
 # build XML files

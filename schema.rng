@@ -40,14 +40,21 @@
       </zeroOrMore>
     </element>
   </define>
+  <define name="preamblerawhtml">
+    <element name="preamblerawhtml">
+      <a:documentation>A container for arbitrary markup in the xhtml namespace emitted in the preamble (not currently validated against any particular html schema)</a:documentation>
+      <zeroOrMore>
+        <ref name="htmlElement"/>
+      </zeroOrMore>
+    </element>
+  </define>
   <define name="Block.class" combine="choice">
-    <zeroOrMore>
-      <ref name="xmlelem"/>
-    </zeroOrMore>
+    <ref name="xmlelem"/>
   </define>
   <define name="Misc.class" combine="choice">
-    <zeroOrMore>
-      <ref name="xmlinlineelem"/>
-    </zeroOrMore>
+    <ref name="xmlinlineelem"/>
+  </define>
+  <define name="Meta.class" combine="choice">
+    <ref name="preamblerawhtml"/>
   </define>
 </grammar>

@@ -33,6 +33,7 @@
       const n = nodes.snapshotItem(i);
       const repl = replacements[n.innerHTML];
       if (repl !== undefined) {
+        n.removeAttribute('mathvariant');
         const text = repl['text'];
         for (attribute in repl) {
           if (attribute !== 'text') { n.setAttribute('data-mjx-' + attribute, repl[attribute]); }

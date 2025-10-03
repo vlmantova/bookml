@@ -4,7 +4,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-23  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -736,19 +736,24 @@ if ($bml_htmlsyn) {
 my $parser = XML::LibXML->new();
 
 DefConstructor('\bmlRawHTML Digested', sub {
-    my ($document, $arg) = @_;
+    my ($document, $arg, %options) = @_;
 
     # wrap in <span> to set the XHTML namespace
     my $html = $parser->parse_balanced_chunk('<span xmlns="http://www.w3.org/1999/xhtml">'
         . ToString($arg) . '</span>');
     my @elems = $html->firstChild->findnodes('*');
 
-    my $node = $document->openElement('ltx:rawhtml');
+    my $inpreamble = $options{inPreamble};
+
+    my $node = $document->openElement($inpreamble ? 'ltx:preamblerawhtml' : 'ltx:rawhtml');
     map { $document->appendClone($node, $_) } @elems;
-    $document->closeElement('ltx:rawhtml');
+    $document->closeElement($inpreamble ? 'ltx:preamblerawhtml' : 'ltx:rawhtml');
   },
   beforeDigest => \&BMLStartHTMLFontEncoding,
-  afterDigest  => \&BMLEndHTMLFontEncoding
+  afterDigest  => \&BMLEndHTMLFontEncoding,
+  properties => {
+    inPreamble => sub { LookupValue('inPreamble'); }
+  }
 );
 
 # Image generation via LaTeX

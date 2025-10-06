@@ -41,13 +41,12 @@
 
   <!-- add BookML resources and preamble raw HTML at the end of the head -->
   <xsl:template match="/" mode="head-end">
+    <xsl:apply-templates select="//ltx:resource[@type='text/html']" mode="bml-resource"/>
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=head')]" mode="bml-resource"/>
-    <xsl:apply-templates select="//ltx:preamblerawhtml" mode="bml-preamble"/>
   </xsl:template>
 
-  <xsl:template match="ltx:preamblerawhtml"/>
-
-  <xsl:template match="ltx:preamblerawhtml" mode="bml-preamble">
+  <xsl:template match="ltx:resource[@type='text/html']" mode="bml-resource">
+    <xsl:text>&#x0A;</xsl:text>
     <xsl:apply-templates mode="copy-foreign"/>
   </xsl:template>
 

@@ -744,10 +744,14 @@ DefConstructor('\bmlRawHTML Digested', sub {
     my @elems = $html->firstChild->findnodes('*');
 
     my $inpreamble = $options{inPreamble};
+    my $savenode = $document->floatToElement('ltx:resource') if $inpreamble;
 
-    my $node = $document->openElement($inpreamble ? 'ltx:preamblerawhtml' : 'ltx:rawhtml');
+    my $tag = $inpreamble ? 'ltx:resource' : 'ltx:rawhtml';
+    my $node = $document->openElement($tag, ($inpreamble ? (type => 'text/html') : ()));
     map { $document->appendClone($node, $_) } @elems;
-    $document->closeElement($inpreamble ? 'ltx:preamblerawhtml' : 'ltx:rawhtml');
+    $document->closeElement($tag);
+
+    $document->setNode($savenode) if $savenode;
   },
   beforeDigest => \&BMLStartHTMLFontEncoding,
   afterDigest  => \&BMLEndHTMLFontEncoding,

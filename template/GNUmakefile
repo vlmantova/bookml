@@ -1,6 +1,5 @@
-### CONFIGURATION
+### GLOBAL CONFIGURATION
 # Remove the initial '#' and change the value to customise the build process
-# See CONFIGURATION in bookml/bookml.mk for all the options
 #
 # Options can also be customized on the command line, for instance
 #   make SPLITAT= singlepage.zip
@@ -10,12 +9,16 @@
 
 #SPLITAT = chapter
 
-# Remove '#' below to stop BookML from generating backups
-#BACKUP_DIR =
-
-### END CONFIGURATION
+### END GLOBAL CONFIGURATION
 
 include bookml/bookml.mk
 
-# You may also override SPLITAT and other options for a single file, as follows:
-#singlepage.zip: SPLITAT=
+### LOCAL CONFIGURATION
+# Remove the initial '#' and change file names and values to customise the build
+# for a particular output file
+#
+# For example: remove '#' below to split template.zip, SCORM.template.zip by chapter
+
+#template.zip SCORM.template.zip: SPLITAT=
+
+### END LOCAL CONFIGURATION

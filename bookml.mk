@@ -26,22 +26,19 @@ SYNCTEX      ?= 5 # must produce *.synctex.gz
 LATEXML          ?= latexml
 LATEXMLPOST      ?= latexmlpost
 LATEXMLFLAGS     ?=
-LATEXMLPOSTFLAGS ?= --urlstyle=file
-# (4) for *adding* options without changing the default ones
-LATEXMLEXTRAFLAGS     ?=
-LATEXMLPOSTEXTRAFLAGS ?= --pmml --mathtex
-# (5) perl command
+LATEXMLPOSTFLAGS ?=
+# (4) perl command
 PERL ?= perl
-# (6) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
+# (5) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
 SPLITAT ?= section
-# (7) source files: by default, all .tex files containing a \documentclass, unless this is a recursive call
+# (6) source files: by default, all .tex files containing a \documentclass, unless this is a recursive call
 ifndef SOURCES
 ifndef BMLGOALS
 $(if $(filter-out %.tex,$(wildcard *.tex)),$(warning Some .tex files have spaces in their names, which is not supported!))
 SOURCES ?= $(foreach f,$(filter %.tex,$(wildcard *.tex)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
 endif
 endif
-# formats: possible values are pdf, scorm, zip
+# (7) formats: possible values are pdf, scorm, zip
 FORMATS ?= scorm zip
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
 TARGETS.PDF   ?= $(SOURCES:.tex=.pdf)
@@ -290,7 +287,7 @@ detect-perl:
 detect-latexml:
 	@$(eval latexml_ver:=$(subst $(bml.closedp),,$(filter %$(bml.closedp), \
 	  $(shell $(LATEXML) --VERSION 2>&1))))
-	@$(call bml.testver,      LaTeXML,0.8.5,0.8.8,$(latexml_ver))
+	@$(call bml.testver,      LaTeXML,0.8.7,0.8.8,$(latexml_ver))
 detect-imagemagick:
 	@$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
 	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(bml.null)))))
@@ -341,8 +338,8 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
 # typo LATEKMKFLAGS preserved for backwards compatibility
 $(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps
 	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
-	  $(if $(SYNCTEX),-synctex=$(SYNCTEX),) -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
+	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
+	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" "$<")
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
 
@@ -382,7 +379,8 @@ $(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.preprocessed-xml bookml/search
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html))
 	-@$(if $(_recurse),,$(call bml.cmd,$(RMDIR) $(call bml.ospath,$(AUX_DIR)/html/$*)))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
-	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) $(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) \
+	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --urlstyle=file --pmml --mathtex \
+		$(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
 	  --dbfile=$(AUX_DIR)/latexmlaux/"$*".LaTeXML.db --log="$(AUX_DIR)/latexmlaux/$*.latexmlpost.log" --destination="$@" "$<"))
 	@$(if $(_recurse),,$(call bml.cmd,$(PERL) bookml/search_index.pl "$(AUX_DIR)/html/$*"))
 

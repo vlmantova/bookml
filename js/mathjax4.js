@@ -68,6 +68,11 @@
         filterUnicodeVariationSequences,
       ],
     },
+    output: {
+      linebreaks: {
+        inline: false, // temporarily disabled due to incompatibility with LaTeXML's equation groups via tables
+      },
+    },
     startup: {
       ready: () => {
         /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/

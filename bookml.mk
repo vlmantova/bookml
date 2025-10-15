@@ -46,14 +46,16 @@ TARGETS.XML   ?= $(patsubst %.pdf,$(AUX_DIR)/xml/%.xml,$(TARGETS.PDF))
 TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
-TARGETS ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
+TARGETS       ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
 # (9) texfot (optional, disable with TEXFOT=)
 TEXFOT      ?= $(if $(call bml.which,texfot),texfot)
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
 # (10) various terminal commands: by default, use typical Windows or Unix version
 bml.is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
 ifeq ($(bml.is.win),true)
-  ZIP         ?= $(if $(shell where zip 2>NUL),zip,miktex-zip)
+  ifndef ZIP
+    ZIP       := $(if $(shell where zip 2>NUL),zip,miktex-zip)
+  endif
   CP          := copy
   RMDIR       := rd /s /q
   RM          := del /f /s /q
@@ -263,60 +265,66 @@ aux-zip: | $(AUX_DIR)
 
 # version detection targets
 detect: detect-sources detect-bookml detect-make detect-tex detect-perl \
-  detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \
-	detect-latexmk detect-texfot detect-preview detect-zip
+  detect-latexml detect-imagemagick detect-ghostscript detect-mutool \
+  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip
 .PHONY: detect
 .PHONY: detect-sources detect-bookml detect-make detect-tex detect-perl \
-  detect-latexml detect-imagemagick detect-ghostscript detect-dvisvgm \
-	detect-latexmk detect-texfot detect-preview detect-zip
+  detect-latexml detect-imagemagick detect-ghostscript detect-mutool \
+  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip
 detect-sources:
-	@$(call bml.echo,$(bml.cyan)   Main files:$(if $(SOURCES) \
+	@$(call bml.echo,$(bml.cyan)    Main files:$(if $(SOURCES) \
 	  ,$(bml.green) $(SOURCES),$(bml.red) no .tex files with \documentclass found in this directory))
 detect-bookml:
-	@$(call bml.testver,       BookML,,,@VERSION@)
+	@$(call bml.testver,        BookML,,,@VERSION@)
 detect-tex:
 	@$(eval tex_ver:=$(subst  , ,$(patsubst $(bml.openp)%,%,$(filter $(bml.openp)%,$(subst $(bml.closedp), , \
 	  $(subst $(bml.openp), $(bml.openp),$(subst $(bml.spc), ,$(shell tex -version $(bml.null)))))))))
-	@$(call bml.testver,          TeX,,,$(tex_ver))
+	@$(call bml.testver,           TeX,,,$(tex_ver))
 detect-make:
-	@$(call bml.testver,     GNU Make,3.81,,$(MAKE_VERSION))
+	@$(call bml.testver,      GNU Make,3.81,,$(MAKE_VERSION))
 detect-perl:
 	@$(eval perl_ver:=$(subst $(bml.closedp),,$(subst $(bml.openp),,$(firstword \
 	  $(filter $(bml.openp)%,$(shell perl --version $(bml.null)))))))
-	@$(call bml.testver,         perl,5.8.1,,$(perl_ver), (optional))
+	@$(call bml.testver,          perl,5.8.1,,$(perl_ver),)
 detect-latexml:
 	@$(eval latexml_ver:=$(subst $(bml.closedp),,$(filter %$(bml.closedp), \
 	  $(shell $(LATEXML) --VERSION 2>&1))))
-	@$(call bml.testver,      LaTeXML,0.8.7,0.8.8,$(latexml_ver))
+	@$(call bml.testver,       LaTeXML,0.8.7,0.8.8,$(latexml_ver))
 detect-imagemagick:
 	@$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
 	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(bml.null)))))
-	@$(call bml.testver,Image::Magick,,,$(magick_ver), (required for any image handling))
+	@$(call bml.testver, Image::Magick,,,$(magick_ver), (required for any image handling))
 detect-ghostscript:
 	@$(foreach a, \
-	  $(if $(bml.is.win),gswin64c gswin64 gswin32c gswin32,gs), \
-	  $(if $(gs_ver),,$(eval gs_ver:=$(shell $a -v $(bml.null)))))
-	@$(call bml.testver,  Ghostscript,,,$(wordlist 3,3,$(gs_ver)), (required for EPS, PDF, BookML images))
+	  $(if $(bml.is.win),gswin64c gswin64 gswin32c gswin32 mgs,gs), \
+	  $(if $(gs_info),,$(eval gs_info:=$(shell $a -v $(bml.null)))))
+	$(eval gs_ver:=$(firstword $(subst Ghostscript_,,$(filter Ghostscript_%,$(subst Ghostscript ,Ghostscript_,$(gs_info))))))
+	$(eval gs_ver:=$(firstword $(subst Ghostscript_,,$(filter Ghostscript_%,$(subst Ghostscript ,Ghostscript_,$(gs_info))))))
+	@$(call bml.testver,   Ghostscript,,,$(gs_ver), (required for BookML images, EPS to SVG; may be required for PDF to SVG))
 detect-dvisvgm:
 	@$(eval dvisvgm_info:=$(shell dvisvgm -V1 $(bml.null)))
 	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst dvisvgm ,dvisvgm_,$(dvisvgm_info))))))
 	@$(eval gs_ver:=$(wordlist 2,2,$(subst &, ,$(filter Ghostscript:%,$(subst &Ghostscript:, Ghostscript:,$(subst $() ,&,$(dvisvgm_info)))))))
-	@$(call bml.testver,      dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for SVG, BookML images))
-	@$(call bml.testver,dvisvgm/libgs,,,$(gs_ver), (required for SVG, BookML images))
+	@$(eval mutool_ver:=$(wordlist 2,2,$(subst &, ,$(filter mutool:%,$(subst &mutool:, mutool:,$(subst $() ,&,$(dvisvgm_info)))))))
+	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for BookML images, EPS/PDF to SVG))
+	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (required for BookML images, EPS to SVG; may be required for PDF to SVG))
+	@$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), (may be required for PDF to SVG))
 detect-latexmk:
-	@$(call bml.testver,      latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
+	@$(call bml.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
+detect-mutool:
+	@$(call bml.testver,        mutool,,,$(lastword $(shell mutool -v 2>&1)), (may be required for PDF to SVG))
 detect-texfot:
-	@$(call bml.testver,       texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional))
+	@$(call bml.testver,        texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional))
 detect-preview:
 	@$(eval preview_loc:=$(shell kpsewhich preview.sty $(bml.null)))
 	@$(eval preview_ver:=$(if $(preview_loc),$(subst },,$(subst _,., \
 	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst \def\pr@version{,RELEASE_,$(subst $$Name: release_,RELEASE_,$(call bml.file,$(preview_loc))))))))))
-	@$(call bml.testver,  preview.sty,11.81,,$(preview_ver), (required for BookML images))
+	@$(call bml.testver,   preview.sty,11.81,,$(preview_ver), (required for BookML images))
 # } syntax highlighting gets confused by the open curly bracket!
 detect-zip:
 	@$(eval zip_ver := $(firstword $(subst Zip_,,\
 	  $(filter Zip_%,$(subst Zip ,Zip_,$(shell $(ZIP) -v $(bml.null)))))))
-	@$(call bml.testver,          zip,,,$(zip_ver))
+	@$(call bml.testver,           zip,,,$(zip_ver))
 
 # create directories
 $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml): | $(AUX_DIR)

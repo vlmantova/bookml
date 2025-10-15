@@ -25,10 +25,62 @@
 use warnings;
 use strict;
 use XML::LibXSLT;
+use Term::ANSIColor qw(colored);
+use IO::Handle;
 
 my @files = ();
 my %params;
 my ($stylefile, $input, $output);
+
+# Pretty print messages like LaTeXML (adapted from LaTeXML::Common::Error)
+BEGIN {
+  require Win32::Console if $^O eq 'MSWin32';
+}
+
+binmode(STDERR, ":encoding(UTF-8)");
+*STDERR->autoflush();
+
+my $IS_TERMINAL = -t STDERR;
+
+if ($IS_TERMINAL && $^O eq 'MSWin32') {
+  # set utf-8 codepage
+  # CP_UTF8 = 65001
+  Win32::Console::OutputCP(65001);
+
+  # get standard error console
+  our $W32_STDERR = Win32::Console->new(&Win32::Console::STD_ERROR_HANDLE());
+
+  # enable VT100 emulation or fall back to ANSI emulation if unsuccessful
+  # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004 (not exported by Win32::Console)
+  my $mode = $W32_STDERR->Mode();
+  unless ($W32_STDERR->Mode($mode | 0x0004) && $W32_STDERR->Mode() & 0x0004) {
+    require Win32::Console::ANSI; } }
+
+my %color_scheme = (
+  details => 'bold',
+  success => 'green',
+  info    => 'bright_blue',
+  warning => 'yellow',
+  error   => 'bold red',
+  fatal   => 'bold red underline',
+);
+
+sub Error {
+  my ($severity, $category, $object, $summary) = @_;
+  my $prefix = "$severity:$category:$object";
+  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{lc($severity)}) : $prefix) . " $summary\n");
+  exit 1 if $severity eq 'Fatal';
+}
+
+$SIG{__WARN__} = sub {
+  my ($msg) = @_;
+  my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
+  $severity = $severity // 'Error';
+  $object = $object // 'unknown';
+  $category = $category // 'internal';
+  $summary = $summary // $msg;
+  Error($severity, $object, $category, $summary . ($input ? " at $input;" : ''));
+};
 
 while (@ARGV) {
   my $arg = shift @ARGV;
@@ -40,8 +92,7 @@ while (@ARGV) {
   } elsif ($arg eq '--output' || $arg eq '-o') {
     $output = shift @ARGV;
   } elsif ($arg =~ /^-/) {
-    print STDERR 'this minimal script only supports --stringparam, --output, -o';
-    die 1;
+    Error('Fatal', 'unexpected', '$arg', 'this minimal script only supports --stringparam, --output, -o');
   } else {
     if (defined $stylefile) {
       $input = $arg;
@@ -51,9 +102,12 @@ while (@ARGV) {
   }
 }
 
-die 'must specify an input file' unless defined $input;
-die 'must specify a stylesheet' unless defined $stylefile;
-die 'must specify an output file' unless defined $output;
+Error('Fatal', 'expected', 'input', 'must specify an input file') unless defined $input;
+Error('Fatal', 'expected', 'stylesheet', 'must specify a stylesheet') unless defined $stylefile;
+Error('Fatal', 'expected', 'output', 'must specify an output file') unless defined $output;
+
+Error('Fatal', 'missing', 'input', 'cannot open input file') unless -f $input;
+Error('Fatal', 'missing', 'stylesheet', 'cannot open stylesheet') unless -f $stylefile;
 
 my $xslt = XML::LibXSLT->new();
 my $stylesheet = $xslt->parse_stylesheet_file($stylefile);

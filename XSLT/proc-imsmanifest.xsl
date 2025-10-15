@@ -45,7 +45,6 @@
       <!-- xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd
                           http://ltsc.ieee.org/xsd/LOM lom.xsd
                           http://www.adlnet.org/xsd/adlcp_v1p3 adlcp_v1p3.xsd" -->
-      <xsl:copy-of select="@xml:lang" />
       <xsl:if test="ltx:date[@role='creation']">
         <xsl:attribute name="version">
           <xsl:value-of select="ltx:date[@role='creation']" />
@@ -54,25 +53,34 @@
       <metadata>
         <schema>ADL SCORM</schema>
         <schemaversion>2004 3rd Edition</schemaversion>
-        <lom:lom>
-          <lom:general>
-            <xsl:apply-templates select="ltx:title" mode="lom" />
-            <xsl:if test="not(ltx:rdf[@property='dcterms:subject'])">
-              <xsl:apply-templates select="ltx:abstract" />
+        <xsl:if test="ltx:title | @xml:lang | ltx:rdf[@property='dcterms:subject'] | ltx:abstract | ltx:creator[ltx:personname] | ltx:date[@role='creation']">
+          <lom:lom>
+            <xsl:if test="ltx:title | @xml:lang | ltx:rdf[@property='dcterms:subject'] | ltx:abstract">
+              <lom:general>
+                <xsl:apply-templates select="ltx:title" mode="lom" />
+                <xsl:apply-templates select="@xml:lang" mode="lom" />
+                <xsl:if test="not(ltx:rdf[@property='dcterms:subject'])">
+                  <xsl:apply-templates select="ltx:abstract" />
+                </xsl:if>
+                <xsl:apply-templates select="ltx:rdf" />
+              </lom:general>
             </xsl:if>
-            <xsl:apply-templates select="ltx:rdf" />
-          </lom:general>
-          <lom:lifeCycle>
-            <xsl:apply-templates select="ltx:creator[ltx:personname]" />
-            <xsl:apply-templates select="ltx:date[@role='creation']" />
-          </lom:lifeCycle>
-        </lom:lom>
+            <xsl:if test="ltx:creator[ltx:personname] | ltx:date[@role='creation']">
+              <lom:lifeCycle>
+                <xsl:apply-templates select="ltx:creator[ltx:personname]" />
+                <xsl:apply-templates select="ltx:date[@role='creation']" />
+              </lom:lifeCycle>
+            </xsl:if>
+          </lom:lom>
+        </xsl:if>
       </metadata>
       <organizations>
         <organization identifier="org1">
           <xsl:apply-templates select="ltx:title" />
+          <xsl:if test="not(ltx:title)"><title>No Title</title><xsl:message>Error:expected:\title SCORM packages require a title</xsl:message></xsl:if>
           <item identifier="item1" identifierref="resource1">
             <xsl:apply-templates select="ltx:title" />
+            <xsl:if test="not(ltx:title)"><title>No Title</title></xsl:if>
           </item>
         </organization>
       </organizations>
@@ -101,15 +109,21 @@
   <xsl:template match="ltx:title" mode="lom">
     <lom:title>
       <lom:string>
+        <xsl:if test="../@xml:lang"><xsl:attribute name="language"><xsl:value-of select="../@xml:lang"/></xsl:attribute></xsl:if>
         <xsl:apply-templates />
       </lom:string>
     </lom:title>
+  </xsl:template>
+
+  <xsl:template match="@xml:lang" mode="lom">
+    <lom:language><xsl:value-of select="." /></lom:language>
   </xsl:template>
 
   <xsl:template match="ltx:rdf" />
   <xsl:template match="ltx:rdf[@property='dcterms:subject']">
     <lom:description>
       <lom:string>
+        <xsl:if test="../@xml:lang"><xsl:attribute name="language"><xsl:value-of select="../@xml:lang"/></xsl:attribute></xsl:if>
         <xsl:value-of select="@content" />
       </lom:string>
     </lom:description>
@@ -118,6 +132,7 @@
   <xsl:template match="ltx:abstract">
     <lom:description>
       <lom:string>
+        <xsl:if test="../@xml:lang"><xsl:attribute name="language"><xsl:value-of select="../@xml:lang"/></xsl:attribute></xsl:if>
         <xsl:apply-templates />
       </lom:string>
     </lom:description>
@@ -133,6 +148,7 @@
       <lom:entity>
         <xsl:text>BEGIN:VCARD VERSION:2.1&#x0A;FN:</xsl:text>
         <xsl:apply-templates select="ltx:personname" />
+        <xsl:if test="../@xml:lang">&#x0A;LANG:<xsl:value-of select="../@xml:lang"/></xsl:if>
         <xsl:text>&#x0A;END:VCARD</xsl:text>
       </lom:entity>
     </lom:contribute>

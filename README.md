@@ -6,15 +6,15 @@ Automated LaTeX to [bookdown](https://bookdown.org/yihui/bookdown/html.html#gitb
 ![](https://img.shields.io/github/license/vlmantova/bookml?logo=github)
 
 BookML is a small wrapper around [LaTeXML](https://dlmf.nist.gov/LaTeXML/) for the production of accessible HTML content straight from LaTeX files, and for packaging it as SCORM. Created by and maintained for maths lecturers at the University of Leeds. Its main features:
-- simple installation: simply drop the `bookml` directory next to the files to be compiled and copy `GNUmakefile` in the same place (well, uhm, that is a bit of a lie: you need to install LaTeXML first!)
+- simple installation: simply drop the <samp>bookml/</samp> directory next to the files to be compiled and copy <samp>GNUmakefile</samp> in the same place (well, uhm, that is a bit of a lie: you need to install LaTeXML first!)
 - accessible and mobile friendly output: virtually identical to the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org), including font selection and dark mode, tweaked to meet the [Web Content Accessibility Guidelines 2.1](https://www.w3.org/TR/WCAG21/) level AA
 - fully automated (re-)compilation based on which files have changed on disk, powered by [GNU make](https://www.gnu.org/software/make/): just run
   ```shell
   make
   ```
-  to zip together all PDF and HTML outputs from all the main `.tex` files in the directory (one package per main `.tex` file)
+  to zip together all PDF and HTML outputs from all the main <samp>.tex</samp> files in the directory (one package per main <samp>.tex</samp> file)
 - high quality conversion of external EPS and PDF figures to SVG via [dvisvgm](https://dvisvgm.de), rather than ImageMagick used by LaTeXML
-- transparent generation of SVG images from [Ti*k*Z](https://tikz.net/) pictures, [`animate`](https://ctan.org/pkg/animate) animations, Xy-matrices, and virtually any other picture-like environment: just add a few lines of code in the preamble
+- transparent generation of SVG images from [Ti*k*Z](https://tikz.net/) pictures, [animate](https://ctan.org/pkg/animate) animations, Xy-matrices, and virtually any other picture-like environment: just add a few lines of code in the preamble
   ```latex
   \usepackage{bookml/bookml}
   \bmlImageEnvironment{tikzpicture,animate}
@@ -46,44 +46,48 @@ BookML is a small wrapper around [LaTeXML](https://dlmf.nist.gov/LaTeXML/) for t
   % you must provide notes-large-print.tex
   ```
   the files will be automatically compiled and included in the 'Download' menu of bookdown (see the [example](https://github.com/vlmantova/bookml/releases/latest/download/example.zip) for more info)
-- [SCORM](https://scorm.com/) support: running `make` creates valid `SCORM.*.zip` packages supported by most Learning Management Systems (if not, please submit an issue!)
+- [SCORM](https://scorm.com/) support: running `make` creates valid <samp>SCORM.*.zip</samp> packages supported by most Learning Management Systems (if not, please submit an issue!)
 
 ## Examples
 
 - [The Leeds BookML guide](https://vlmantova.github.io/bookmlleeds/)
 - [forall $`x`$: Calgary](https://forallx.openlogicproject.org/html/) by Richard Zach
 - [Representation Theory. A Categorical Approach](https://www.maths.lancs.ac.uk/~grabowsj/rtaca/) by Jan E. Grabowski
+- [Probabilidade](https://www.ime.usp.br/~leorolla/probabilidade/) by Leonardo T. Rolla and Bernando N.B. de Lima
+- Some resources of [REA-MECC](https://rea-mecc.github.io/acervo.html)
 
 ## Getting started
 
 ### Running locally on your device (via make)
 
 1. Install the [prerequisites](#prerequisites).
-2. **Install/upgrade:** unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) and put the `bookml` directory next to your `.tex` files.
-3. **First time only:** copy `bookml/GNUmakefile` next to your `.tex` files.
+2. **Install/upgrade:** unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) and put the <samp>bookml/</samp> directory next to your <samp>.tex</samp> files.
+3. **First time only:** copy <samp>bookml/GNUmakefile</samp> next to your <samp>.tex</samp> files.
 4. Run `make` (or `gmake`).
 
 Or you can unpack the [template](https://github.com/vlmantova/bookml/releases/latest/download/template.zip) to start with a working minimal example.
 
 #### Prerequisites
+- [Perl](https://www.perl.org/)
 - [LaTeXML](https://dlmf.nist.gov/LaTeXML/get.html) (minimum 0.8.7, recommended 0.8.8 or later)
-- for any image handling: the Perl module [`Image::Magick`](https://metacpan.org/pod/Image::Magick)
-- for handling EPS, PDF images: [Ghostscript](https://www.ghostscript.com/)
-- for BookML images (for Ti*k*Z and similar packages): [Ghostscript](https://www.ghostscript.com/), [latexmk](https://ctan.org/pkg/latexmk), [preview.sty](https://ctan.org/pkg/preview), [dvisvgm](https://ctan.org/pkg/dvisvgm) (minimum 1.6, recommended 2.7 or later)
-- for automatic PDF, HTML, zip, SCORM packaging: [GNU make](https://www.gnu.org/software/make/), [latexmk](https://ctan.org/pkg/latexmk), [zip](https://sourceforge.net/projects/infozip/), optionally [texfot](https://ctan.org/pkg/texfot)
+- for any image handling: the Perl module [Image::Magick](https://metacpan.org/pod/Image::Magick)
+- for BookML images (see <code>bmlimage</code> below): [Ghostscript](https://www.ghostscript.com/), [latexmk](https://ctan.org/pkg/latexmk), [preview.sty](https://ctan.org/pkg/preview), [dvisvgm](https://ctan.org/pkg/dvisvgm) (minimum 1.6, recommended 2.7 or later)
+- for automatic PDF, HTML, zip, SCORM packaging, EPS/PDF to SVG automatic conversion: [GNU make](https://www.gnu.org/software/make/), [latexmk](https://ctan.org/pkg/latexmk), [zip](https://sourceforge.net/projects/infozip/), optionally [texfot](https://ctan.org/pkg/texfot)
+- for autoconverting EPS images to SVG, when using GNU make: [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/)
+- for autoconverting PDF images to SVG, when using GNU make: any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html)
 
 ### Running locally on your device (calling latexml, latexmlpost, latexmlc directly)
 You can also run BookML as a simple addition to LaTeXML. You will lose some functionality, such as conversion of EPS and PDF figures to SVG and SCORM packaging.
 
 1. Install the [prerequisites](#prerequisites).
-2. **Install/upgrade:** unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) and put the `bookml` directory next to your `.tex` files.
-3. **First time only:** copy `bookml/LaTeXML-html5.xsl` next to your `.tex` files.
-4. Add `\usepackage{bookml/bookml}` to each `.tex` file.
+2. **Install/upgrade:** unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) and put the <samp>bookml/</samp> directory next to your <samp>.tex</samp> files.
+3. **First time only:** copy <samp>bookml/LaTeXML-html5.xsl</samp> next to your <samp>.tex</samp> files.
+4. Add `\usepackage{bookml/bookml}` to each <samp>.tex</samp> file.
 5. Run latexml, latexmlpost, or latexmlc as you normally would without BookML. You are responsible for recompiling PDF files and other alternative formats before running latexmlpost.
 
 ### GitHub and Overleaf
 
-BookML is also available as a [GitHub action](https://github.com/marketplace/actions/compile-with-bookml). Simply add the file `.github/workflows/bookml.yaml` to the GitHub repository, or to your Overleaf project, containing the LaTeX files to be compiled.
+BookML is also available as a [GitHub action](https://github.com/marketplace/actions/compile-with-bookml). Simply add the file <samp>.github/workflows/bookml.yaml</samp> to the GitHub repository, or to your Overleaf project, containing the LaTeX files to be compiled.
 ```yaml
 on: push
 jobs:
@@ -97,7 +101,7 @@ jobs:
 ```
 When using Overleaf, you must also synchcronize your project with a GitHub repository (requires an Overleaf Pro account).
 
-On every push, GitHub will compile every `.tex` file containing the string `\documentclass`, then create a GitHub release containing all outputs generated by BookML. You will receive an email from GitHub on completion, unless you have changed your notification settings.
+On every push, GitHub will compile every <samp>.tex</samp> file containing the string `\documentclass`, then create a GitHub release containing all outputs generated by BookML. You will receive an email from GitHub on completion, unless you have changed your notification settings.
 
 Read the [BookML action page](https://github.com/marketplace/actions/compile-with-bookml) for its configuration options.
 
@@ -171,9 +175,9 @@ The following options are available.
 
 <dl>
 <dt>AUX_DIR</dt>
-<dd>Location of the directory containing all intermediate files generated during compilation, such as <code>.aux</code> and <code>.bbl</code> files. This option is ignored by the BookML GitHub action. Default <i>auxdir</i>.</dd>
+<dd>Location of the directory containing all intermediate files generated during compilation, such as <samp>.aux</samp> and <samp>.bbl</samp> files. This option is ignored by the BookML GitHub action. Default <i>auxdir</i>.</dd>
 <dt>SOURCES</dt>
-<dd>Space-separated list of <code>.tex</code> files to be compiled. File names with spaces are <i>not</i> supported. Default is the list of <code>.tex</code> files in the current directory that contain the string <code>\documentclass</code> (even if appearing in a comment!).</dd>
+<dd>Space-separated list of <samp>.tex</samp> files to be compiled. File names with spaces are <i>not</i> supported. Default is the list of <samp>.tex</samp> files in the current directory that contain the string <code>\documentclass</code> (even if appearing in a comment!).</dd>
 <dt>FORMATS</dt>
 <dd>Spaces-separated list of formats to be generated from SOURCES. Recognised formats are pdf, scorm, zip. Default <i>scorm zip</i>.</dd>
 <dt>SPLITAT</dt>
@@ -210,18 +214,22 @@ The following targets can be used as arguments when calling `make`, for instance
 <dl>
 <dt>all</dt>
 <dd>Compile all targets, based on the content of SOURCES, FORMATS, and TARGETS. This is the default target.</dd>
+<dt>check-for-update</dt>
+<dd>Check if there is a new release of BookML available.</dd>
 <dt>clean</dt>
 <dd>Delete all compilation products, based on SOURCES, FORMATS, and TARGETS.</dd>
 <dt>detect</dt>
 <dd>Detect the versions of all the software required to run BookML and print them.</dd>
 <dt>html</dt>
-<dd>Compile all SOURCES to HTML. The outputs will be in the <code>$(AUX_DIR)/html</code> directory.</dd>
+<dd>Compile all SOURCES to HTML. The outputs will be in the <samp>$(AUX_DIR)/html</samp> directory.</dd>
 <dt>pdf</dt>
 <dd>Compile all SOURCES to PDF. The outputs will be in the current directory, including the SyncTeX files.</dd>
 <dt>scorm</dt>
 <dd>Compile all SOURCES to SCORM. The outputs will be in the current directory.</dd>
+<dt>update</dt>
+<dd><strong>Experimental:</strong> update the <samp>bookml/</samp> directory. If BookML is being run from a Docker image, it will use the version bundled in the image, otherwise it will download the latest release. This operation is destructive, not well tested, and behaviour may change in the future; be prepared to download BookML manually if it breaks.</dd>
 <dt>xml</dt>
-<dd>Compile all SOURCES to XML. The outputs will be in the <code>$(AUX_DIR)/xml</code> directory.</dd>
+<dd>Compile all SOURCES to XML. The outputs will be in the <samp>$(AUX_DIR)/xml</samp> directory.</dd>
 <dt>zip</dt>
 <dd>Compile all SOURCES to zip. The outputs will be in the current directory.</dd>
 </dl>

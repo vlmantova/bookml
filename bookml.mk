@@ -54,20 +54,29 @@ TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
 bml.is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
 ifeq ($(bml.is.win),true)
   ifndef ZIP
-    ZIP       := $(if $(shell where zip 2>NUL),zip,miktex-zip)
+    ZIP        := $(if $(shell where zip 2>NUL),zip,miktex-zip)
   endif
-  CP          := copy
-  RMDIR       := rd /s /q
-  RM          := del /f /s /q
-  MKDIR       := mkdir
+  ifndef UNZIP
+    UNZIP      := $(if $(shell where tar 2>NUL),tar)
+    UNZIPFLAGS := -x -f
+  endif
+  CP           := copy
+  RMDIR        := rd /s /q
+  RM           := del /f /s /q
+  MKDIR        := mkdir
 else
-  ZIP         ?= zip
-  CP          := cp
-  RMDIR       := rm -fr --
-  RM          := rm -f --
-  MKDIR       := mkdir -p --
+  ZIP          ?= zip
+  ifndef UNZIP
+    UNZIP      := $(if $(shell command -v unzip),unzip)
+    UNZIPFLAGS := -o
+  endif
+  CP           := cp
+  RMDIR        := rm -fr --
+  RM           := rm -f --
+  MKDIR        := mkdir -p --
 endif
 ZIP_EXCLUDE ?= -x
+CURL        ?= $(if $(call bml.which,curl),curl)
 # (11) dvisvgm
 DVISVGM      ?= dvisvgm
 DVISVGMFLAGS ?= --no-fonts --optimize
@@ -250,11 +259,31 @@ clean-xml:
 clean-zip:
 	-$(RM) $(call bml.ospath,$(TARGETS.ZIP))
 
-# check for updates (initially, Docker only)
+# check for updates
+.PHONY: check-for-update update
+# if running from a Docker image
 ifdef BOOKML_VERSION
 check-for-update:
-	@$(if $(call ver.lt,@VERSION@,$(BOOKML_VERSION)),$(call bml.echo,$(bml.yellow)BookML update $(BOOKML_VERSION) available$(bml.comma) run `update` to install it))
-.PHONY: check-for-update
+	@$(if $(call ver.lt,@VERSION@,$(BOOKML_VERSION)),$(call bml.echo,$(bml.yellow)BookML update $(BOOKML_VERSION) available$(bml.comma) run `update` to install it.))
+update:
+	@$(call bml.echo,$(bml.yellow)Replacing BookML @VERSION@ with $(BOOKML_VERSION).)
+	@$(call bml.cmd,$(UNZIP) $(UNZIPFLAGS) /release.zip)
+else
+check-for-update:
+	@$(if $(CURL),,$(call bml.echo,$(bml.red)Checking for updates requires curl, aborting. Visit https://github.com/vlmantova/bookml/releases to find the latest release.)exit 1)
+	@$(eval bookml_release:=$(if $(CURL),$(shell $(CURL) -s https://api.github.com/repos/vlmantova/bookml/releases/latest)))
+	@$(eval bookml_version:=$(if $(CURL),$(word 3,$(subst ", ,$(filter "tag_name":_%,$(subst "tag_name": ,"tag_name":_,$(bookml_release)))))))
+	@$(if $(CURL),$(call bml.echo,$(bml.yellow)$(if $(call ver.lt,@VERSION@,$(bookml_version)),BookML $(bookml_version) is newer than @VERSION@. Run `update` to install it.,BookML @VERSION@ is already up to date.)))
+
+update: | $(AUX_DIR)
+	@$(if $(CURL),,$(call bml.echo,$(bml.red)Updating requires curl, aborting. Visit https://github.com/vlmantova/bookml/releases to find the latest release.)exit 1)
+	@$(if $(CURL),$(if $(UNZIP),,$(call bml.echo,$(bml.red)Updating requires $(if $(bml.is.win),tar.exe,unzip), aborting.)exit 1))
+	@$(eval bookml_release:=$(if $(CURL),$(if $(UNZIP),$(shell $(CURL) -s https://api.github.com/repos/vlmantova/bookml/releases/latest))))
+	@$(eval bookml_version:=$(if $(CURL),$(if $(UNZIP),$(word 3,$(subst ", ,$(filter "tag_name":_%,$(subst "tag_name": ,"tag_name":_,$(bookml_release))))))))
+	@$(eval bookml_update:=$(if $(CURL),$(if $(UNZIP),$(call ver.lt,@VERSION@,$(bookml_version)))))
+	@$(if $(bookml_update),$(call bml.echo,$(bml.yellow)BookML $(bookml_version) is newer than @VERSION@$(bml.comma) updating.,BookML @VERSION@ is already up to date.))
+	@$(if $(bookml_update),$(call bml.cmd,$(CURL) -L https://github.com/vlmantova/bookml/releases/download/$(bookml_version)/release.zip -o "$(AUX_DIR)/release.zip"))
+	@$(if $(bookml_update),$(call bml.cmd,$(UNZIP) $(UNZIPFLAGS) "$(AUX_DIR)/release.zip"))
 endif
 
 # dump auxdir into zip file
@@ -306,9 +335,11 @@ detect-dvisvgm:
 	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst dvisvgm ,dvisvgm_,$(dvisvgm_info))))))
 	@$(eval gs_ver:=$(wordlist 2,2,$(subst &, ,$(filter Ghostscript:%,$(subst &Ghostscript:, Ghostscript:,$(subst $() ,&,$(dvisvgm_info)))))))
 	@$(eval mutool_ver:=$(wordlist 2,2,$(subst &, ,$(filter mutool:%,$(subst &mutool:, mutool:,$(subst $() ,&,$(dvisvgm_info)))))))
-	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for BookML images, EPS/PDF to SVG))
-	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (required for BookML images, EPS to SVG; may be required for PDF to SVG))
-	@$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), (may be required for PDF to SVG))
+	@$(eval needs_mutool:=$(if $(call ver.leq,10.01.0,$(gs_ver)),true))
+	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for BookML images, EPS$(if $(needs_mutool),,/PDF) to SVG))
+	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (required for BookML images, EPS$(if $(needs_mutool),,/PDF) to SVG))
+	@$(if $(needs_mutool),$(call bml.testver,       dvisvgm,3.0,,$(dvisvgm_ver), (required for PDF to SVG)))
+	@$(if $(needs_mutool),$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), ($(if $(needs_mutool),required for PDF to SVG,optional))))
 detect-latexmk:
 	@$(call bml.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
 detect-mutool:

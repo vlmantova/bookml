@@ -127,3 +127,18 @@ jobs:
           version: ${{ github.ref_name }}
         run: |
           make BOOKML_VERSION="$version" docker-manifest-basic docker-manifest-small docker-manifest-medium docker-manifest-mediumextra docker-manifest-full docker-manifest
+
+  delete-package-versions:
+    runs-on: ubuntu-latest
+    name: Delete Package Versions
+    needs: manifest
+    permissions:
+      packages: write
+    steps:
+      - name: Container cleanup
+        uses: jenskeiner/ghcr-container-repository-cleanup-action@v1
+        with:
+          exclude-tags: .+
+          keep-n-untagged: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: true

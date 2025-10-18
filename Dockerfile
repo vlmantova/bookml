@@ -114,6 +114,10 @@ ENV MAGICK_DISK_LIMIT=2GiB \
   MAGICK_MAP_LIMIT=1GiB \
   MAGICK_TIME_LIMIT=900
 
+# patch LaTeXML to report full paths and columns starting from 1
+RUN apt install -qy patch
+RUN --mount=target=/docker-ctx cat /docker-ctx/latexml-*.patch | patch -d /usr/share/perl5 -p2
+
 ### BookML
 FROM latexml AS bookml
 
@@ -133,17 +137,17 @@ COPY --chmod=755 <<EOF /run-bookml
 set -euo pipefail
 if [[ \${1-} == update ]] ; then
   [[ -d bookml ]] && rm -fr bookml
-  echo Updating BookML...
+  echo "Replacing BookML with version $BOOKML_VERSION."
   unzip /release.zip
   exit 0
 elif [[ -d bookml ]] ; then
-  make -q BOOKML_VERSION="$BOOKML_VERSION" -f bookml/bookml.mk check-for-update || echo 'BookML update available, run `update` to install it'
+  make -q BOOKML_VERSION="$BOOKML_VERSION" -f bookml/bookml.mk check-for-update || echo "BookML update $BOOKML_VERSION available, run "'`update` to install it.'
 else
-  echo Unpacking BookML...
+  echo "Unpacking BookML $BOOKML_VERSION."
   unzip -q /release.zip
 fi
 [[ -f GNUmakefile || -f Makefile ]] || cp bookml/GNUmakefile GNUmakefile
-exec make "\$@"
+exec make "\$@" BOOKML_VERSION="$BOOKML_VERSION"
 EOF
 
 WORKDIR /source

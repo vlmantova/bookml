@@ -1,0 +1,14 @@
+--- a/lib/LaTeXML/Common/Locator.pm
++++ b/lib/LaTeXML/Common/Locator.pm
+@@ -61,7 +61,10 @@
+ 
+ sub toString {
+   my ($self) = @_;
+-  my $loc = $self->getShortSource;
++  my ($path, $cwd) = ($$self{source}, pathname_cwd);
++  my $loc = ($path && ! pathname_is_url($path))
++    ? (pathname_is_contained($path, $cwd) ? pathname_relative($path, $cwd) : $path)
++    : $self->getShortSource;
+   $loc .= "; line $$self{fromLine}" if defined($$self{fromLine});
+   $loc .= " col $$self{fromCol}"    if defined($$self{fromLine}) && defined($$self{fromCol});
+   $loc .= " - line $$self{toLine}"  if defined($$self{toLine});

@@ -19,47 +19,26 @@
 
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:ltx="http://dlmf.nist.gov/LaTeXML"
+  xmlns:svg="http://www.w3.org/2000/svg"
   xmlns:b="https://vlmantova.github.io/bookml/functions"
-  xmlns:str="http://exslt.org/strings"
-  extension-element-prefixes="str">
+  exclude-result-prefixes="b svg">
 
-  <xsl:import href="utils.xsl" />
+  <xsl:import href="utils.xsl"/>
 
   <xsl:output
     method="xml"
     encoding="utf-8" />
 
-  <xsl:param name="AUX_DIR" />
-
-  <!-- make a copy of the XML file with selected alterations -->
   <xsl:template match="@*|node()">
     <xsl:copy>
-      <xsl:apply-templates select="@*|node()" />
+      <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
 
-  <xsl:template match="/">
-    <xsl:processing-instruction name="latexml">
-      <xsl:text>searchpaths="</xsl:text>
-      <xsl:value-of select="$AUX_DIR" />
-      <xsl:text>/images"</xsl:text>
-    </xsl:processing-instruction>
-    <xsl:apply-templates />
-  </xsl:template>
-
-  <!-- replace PDF, EPS images with auto-generated SVGs if no other candidates are available -->
-  <xsl:template match="ltx:graphics/@candidates">
-    <xsl:variable name="svg-candidate" select="b:auto-svg-candidate()"/>
-    <xsl:attribute name="candidates">
-      <xsl:choose>
-        <xsl:when test="$svg-candidate = ''">
-          <xsl:value-of select="."/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$svg-candidate" />
-        </xsl:otherwise>
-      </xsl:choose>
+  <!-- dvisvgm returns the size in TeX points (1in = 72.27pt), we want CSS pixels (1in = 96px) -->
+  <xsl:template match="/svg:svg/@width[b:ends-with(.,'pt')] | /svg:svg/@height[b:ends-with(.,'pt')]">
+    <xsl:attribute name="{local-name()}">
+      <xsl:value-of select="format-number(number(substring-before(.,'pt')) * 96 div 72.27, '#.###')"/>
     </xsl:attribute>
   </xsl:template>
 

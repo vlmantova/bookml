@@ -118,12 +118,13 @@ h1.title {
   .book-body, .book-header.fixed {
     left: 0;
   }
-}
-
-.book.bml-no-navtoc:not(.with-search) {
-  .book-summary, .book-header>a:first-of-type {
+  .book-summary {
     display: none;
   }
+}
+
+.book.bml-no-navtoc .book-header>.btn[title="Toggle Sidebar"] {
+  display: none;
 }
 
 /* Disable search bar if not active */
@@ -135,9 +136,40 @@ h1.title {
   display: unset;
 }
 
+/* Adjust info menu */
+.book-header>.info>.dropdown-menu {
+  padding: 1em 1em 1em 2.5em;
+
+  h1 {
+    opacity: initial;
+    margin-inline-start: -1.5em;
+    display: block;
+  }
+
+  dd {
+    display: inline;
+    margin-inline-start: 0.3em;
+    &::after {
+      content: "";
+      display: block;
+      margin-block-start: 1em;
+    }
+  }
+
+  dt {
+    display: inline-block;
+    margin-inline-start: -1em;
+    &::after {
+      content: ":";
+      display: inline;
+    }
+  }
+
+}
+
 /* Disable bottom border on titles below level 1 */
 .level1 {
-  .level2, h2, h3, h4, h5, h6 {
+  .ltx_theorem, .ltx_proof, .level2, h2, h3, h4, h5, h6 {
     .header-section-number {
       border-bottom: revert;
     }
@@ -181,7 +213,7 @@ h1.title {
 }
 
 /* Ensure the paragraphs are scrollable if necessary */
-:root:not(.bml_mathjax4) .ltx_para {
+#bml-main-content>:not(.bml_mathjax4) .ltx_para {
   overflow-x: auto;
   overflow-y: visible;
 }
@@ -285,8 +317,15 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 }
 
 .book .book-header .btn,
-.dropdown-menu .buttons .button {
+.dropdown-menu .buttons .button,
+.dropdown-menu {
   color: #717171;
+}
+
+/* replace <a> with <button> in toolbar, adjust style accordingly */
+.book .book-header .btn {
+  border: none;
+  background-color: transparent;
 }
 
 /* Force LaTeX table borders over GitBook */
@@ -338,7 +377,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 
   max-width: 100%;
   min-height: 2.75em;
-  :root:not(.bml_mathjax4) & {
+  #bml-main-content>:not(.bml_mathjax4) & {
     overflow-x: auto;
     overflow-y: visible;
   }

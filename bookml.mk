@@ -83,10 +83,14 @@ DVISVGMFLAGS ?= --no-fonts --optimize
 ### END CONFIGURATION
 
 ### INTERNAL VARIABLES
-BOOKML_DEPS_HTML = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl \
-  bookml/*.rng bookml/CSS/*.css bookml/gitbook/css/fontawesome/*.ttf \
-  bookml/gitbook/css/*.css bookml/js/*.js)
-BOOKML_DEPS_XML  = $(wildcard bookml/*.ltxml bookml/*.rng)
+BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/search_index.pl bookml/XSLT/proc-text.xsl)
+BOOKML_DEPS_XML         = $(wildcard bookml/*.ltxml bookml/*.rng) \
+  bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
+BOOKML_DEPS_PREPROCESS  = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
+BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
+BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
+BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
+
 
 BMLGOALS ?= $(MAKECMDGOALS)
 
@@ -391,14 +395,14 @@ $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf | $(AUX
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
 	  $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/latexmlaux/$*.latexml.log" --destination="$@" "$<")
 
-$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml bookml/XSLT/proc-preprocess-xml.xsl bookml/xsltproc.pl
+$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_PREPROCESS)
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$<" --output "$@" --stringparam AUX_DIR "$(AUX_DIR)")
 
 # build HTML and deps files
 
 # discover postprocessing dependencies (including bmluser/ files, alternative formats, images)
 # save in .htmldeps- to avoid rebuilding these files when not required
-$(AUX_DIR)/deps/%.htmldeps-: $(AUX_DIR)/xml/%.xml bookml/XSLT/proc-resources.xsl bookml/xsltproc.pl | $(AUX_DIR)/deps
+$(AUX_DIR)/deps/%.htmldeps-: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html")
 
 BMLGOALS.HTML := $(patsubst $(AUX_DIR)/html/%/index.html,%,$(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)))
@@ -412,7 +416,7 @@ endif
 -include $(filter-out $(BMLGOALS.HTMLDEPS),$(wildcard $(AUX_DIR)/deps/*.htmldeps))
 
 # build recursively to force inclusion of htmldeps files
-$(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.preprocessed-xml bookml/search_index.pl bookml/XSLT/proc-text.xsl $$(if $$(filter $$@,$$(BMLGOALS)),,FORCE) | $$(AUX_DIR)/html
+$(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.preprocessed-xml $$(BOOKML_DEPS_HTML) $$(if $$(filter $$@,$$(BMLGOALS)),,FORCE) | $$(AUX_DIR)/html
 	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
 	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html))
@@ -447,21 +451,26 @@ $(AUX_DIR)/latexmlaux/%.manifest: $$(AUX_DIR)/html/$$*/index.html bookml/manifes
 	@$(call bml.cmd,$(PERL) bookml/manifest.pl "$(AUX_DIR)/html/$*" "$@")
 
 # create SCORM manifest
-$(AUX_DIR)/html/%/imsmanifest.xml: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.manifest bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl | $(AUX_DIR)/html
+$(AUX_DIR)/html/%/imsmanifest.xml: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.manifest $(BOOKML_DEPS_IMSMANIFEST) | $(AUX_DIR)/html
 	@$(call bml.prog,SCORM manifest: $*.xml → $@)
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$<" --output "$@" \
 	   --stringparam BML_MANIFEST "../latexmlaux/$*.manifest")
 
 # image conversions
-bmlimages/svg/%.svg: %.pdf | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
-bmlimages/svg/%.svg: %.PDF | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
+# match EPS first, as dvisvgm is more reliable with it
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.eps $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.EPS $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
 
-bmlimages/svg/%.svg: %.eps | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
-bmlimages/svg/%.svg: %.EPS | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.pdf $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.PDF $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
 
 # /./ disambiguates between %.svg, %pdf targets and actual folders
 # a hack, but required to keep compatibility with GNU make 3.81

@@ -134,8 +134,8 @@ example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex) $(wildcard $*/.github)) GNUmakefile --output-file "../$@"
 
 clean:
-	-$(RMDIR) test-example test-template docker-ctx
-	-$(RMDIR) $(call ospath,$(call reverse,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip))
+	-$(RMDIR) test-example test-template
+	-$(RMDIR) docker-ctx/release.zip $(call ospath,$(call reverse,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip))
 
 $(GITBOOK_SOURCE):
 	git submodule update --init bookdown
@@ -161,7 +161,14 @@ $(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
-	perl -pe "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g" "$<" > "$@"
+	perl -p -e "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g;" \
+	        -e "s/result\.insertBefore\((.)title\)/toolbar.append(\1result)/;" \
+	        -e "s/<a>/<button>/;" -e "s/,href:.#.//;"\
+	        -e "s/(toggleDropdown\(e\){)/\1e.currentTarget.setAttribute('aria-expanded',e.currentTarget.getAttribute('aria-expanded')!=='true');/;" \
+	        -e "s/(.)(\(.\.dropdown-menu.\)\.removeClass\(.open.\))/\1\2;\1('.toggle-dropdown').attr('aria-expanded','false').attr('aria-haspopup','menu')/;" \
+	        -e "s/(addClass\(.toggle-dropdown.\))/\1.attr('aria-expanded','false')/;" \
+	        -e "s/(,closeDropdown\))/\1;gitbook.keyboard.bind('escape',closeDropdown)/;" \
+	        "$<" > "$@"
 
 # patch automatic TOC highlighting and scrolling
 gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)

@@ -513,7 +513,7 @@
   </xsl:template>
 
   <!-- recreate missing viewBox attribute -->
-  <xsl:template match="ltx:picture[svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
+  <xsl:template match="ltx:picture[b:max-version('0.8.8') and svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
     <svg:svg>
       <!-- copy id, class from parent ltx:picture, but do NOT derive css style from size -->
       <xsl:call-template name="add_id" />
@@ -557,6 +557,45 @@
       </xsl:if>
       <xsl:apply-templates select="svg:svg/*"/>
     </svg:svg>
+  </xsl:template>
+
+  <!-- replace <h6> with role="region" for theorems -->
+  <xsl:template match="ltx:theorem | ltx:proof" mode="begin">
+    <xsl:param name="context" />
+    <xsl:attribute name="role">region</xsl:attribute>
+    <xsl:if test="@fragid | ltx:title"></xsl:if>
+    <xsl:attribute name="aria-labelledby">
+      <xsl:choose>
+        <xsl:when test="ltx:title/@fragid"><xsl:value-of select="ltx:title/@fragid" /></xsl:when>
+        <xsl:when test="@fragid"><xsl:value-of select="@fragid" />-aria-label</xsl:when>
+        <xsl:otherwise>bml-auto-<xsl:value-of select="generate-id()" />-aria-label</xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
+    <xsl:apply-imports />
+  </xsl:template>
+
+  <xsl:template match="ltx:theorem/ltx:title | ltx:proof/ltx:title">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="div" namespace="{$html_ns}">
+      <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes" />
+      <xsl:choose>
+        <xsl:when test="@fragid" />
+        <xsl:when test="../@fragid"><xsl:attribute name="id"><xsl:value-of select="../@fragid" />-aria-label</xsl:attribute></xsl:when>
+        <xsl:otherwise><xsl:attribute name="id">bml-auto-<xsl:value-of select="generate-id(..)" />-aria-label</xsl:attribute></xsl:otherwise>
+      </xsl:choose>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext" />
+      </xsl:apply-templates>
+    </xsl:element>
   </xsl:template>
 
 </xsl:stylesheet>

@@ -68,7 +68,7 @@
   <xsl:template match="@color | @mathcolor | @backgroundcolor | @mathbackground | @framecolor" mode="bml-colors" />
 
   <!-- inject @color, @mathcolor into @class (may generate duplicate classes, but we do not care) -->
-  <xsl:template match="@class" mode="bml-colors" />
+  <xsl:template match="/*//*/@class" mode="bml-colors" />
   <xsl:template match="/*//*[@class | @color | @mathcolor]" mode="bml-colors">
     <xsl:variable name="class">
       <xsl:value-of select="@class" />
@@ -416,8 +416,9 @@
   <xsl:template match="/" mode="header">
     <xsl:choose>
       <xsl:when test="$GITBOOK">
-        <div class="book-header fixed" role="navigation">
-          <h1>
+        <header class="book-header fixed" aria-label="toolbar">
+          <!-- we purposefully omit the invisible title provided by GitBook; code left for reference -->
+          <!-- <h1>
             <xsl:choose>
               <xsl:when test="/ltx:*/ltx:tocticle">
                 <xsl:value-of select="/ltx:*/ltx:toctitle/text()"/>
@@ -426,8 +427,8 @@
                 <xsl:value-of select="/ltx:*/ltx:title/text()"/>
               </xsl:otherwise>
             </xsl:choose>
-          </h1>
-        </div>
+          </h1> -->
+        </header>
       </xsl:when>
       <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
     </xsl:choose>

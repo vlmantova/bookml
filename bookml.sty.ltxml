@@ -290,6 +290,7 @@ DefConstructorI('\bml@colors', undef, sub {
         $color_hex = substr($color->toHex, 1); }
 
       my $class = "bml_${attr}_$color_hex";
+      $attr = "--bml-${attr}";
 
       if (!$bml_colors{$attr}{$color_hex}) {
         $bml_colors{$attr}{$color_hex} = 1;

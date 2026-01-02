@@ -137,3 +137,16 @@ mtext {
     max-width: unset;
   }
 }
+
+/* MathML polyfills */
+@each $side in left center right {
+  mtd[columnalign="#{$side}"] {
+    text-align: #{$side};
+    text-align: -webkit-#{$side};
+  }
+}
+
+menclose[notation=box] {
+  border: solid 1px;
+  padding: 3px;
+}

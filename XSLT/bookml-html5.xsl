@@ -41,22 +41,46 @@
   <!-- include the GitBook style -->
   <xsl:import href="gitbook.xsl"/>
 
-  <!-- strip namespaces from XHTML5 output -->
   <xsl:template match="/">
-    <xsl:call-template name="bml-alter">
-      <xsl:with-param name="fragment">
+    <xsl:choose>
+      <!-- final tweaks have already been applied -->
+      <xsl:when test="/*[@bml-colors-done]">
         <xsl:apply-imports/>
-      </xsl:with-param>
-    </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="xhtml-to-html">
+          <!-- convert XHTML5 to HTML5 -->
+          <xsl:with-param name="fragment">
+            <!-- apply alterations -->
+            <xsl:call-template name="bml-alter">
+              <xsl:with-param name="fragment">
+                <xsl:apply-imports/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </xsl:with-param>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="*" mode="bml-alter">
+  <xsl:template name="xhtml-to-html">
+    <xsl:param name="fragment" />
+    <xsl:apply-templates select="exsl:node-set($fragment)" mode="xhtml-to-html" />
+  </xsl:template>
+
+  <xsl:template match="@*|node()" mode="xhtml-to-html">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|node()" mode="xhtml-to-html" />
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="*" mode="xhtml-to-html">
     <xsl:element name="{local-name()}">
-      <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
+      <xsl:apply-templates select="@*|node()" mode="xhtml-to-html" />
     </xsl:element>
   </xsl:template>
 
-  <xsl:template match="m:annotation-xml/@encoding[.='application/xhtml+xml']" mode="bml-alter">
+  <xsl:template match="m:annotation-xml/@encoding[.='application/xhtml+xml']" mode="xhtml-to-html">
     <xsl:attribute name="encoding">text/html</xsl:attribute>
   </xsl:template>
 

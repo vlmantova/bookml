@@ -27,8 +27,10 @@
     xmlns:svg = "http://www.w3.org/2000/svg"
     xmlns:xlink = "http://www.w3.org/1999/xlink"
     xmlns:xhtml = "http://www.w3.org/1999/xhtml"
+    xmlns:exsl = "http://exslt.org/common"
     xmlns:m   = "http://www.w3.org/1998/Math/MathML"
     xmlns     = "http://www.w3.org/1999/xhtml"
+    extension-element-prefixes = "exsl"
     exclude-result-prefixes = "ltx f b svg xlink m">
 
   <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
@@ -87,97 +89,95 @@
   </xsl:template>
 
   <!-- remove date from subpages, add 'hasAnchor' class for GitBook -->
-  <xsl:template match="ltx:title">
+  <xsl:template
+    match="ltx:title[not(parent::*/child::ltx:titlepage) and b:gitbook() and not(//ltx:navigation/ltx:ref[@rel='up']) and f:seclev-aux(local-name(..))='0']">
     <xsl:param name="context"/>
-    <xsl:if test="not(parent::*/child::ltx:titlepage)">
-      <xsl:text>&#x0A;</xsl:text>
-      <xsl:call-template name="bml-maketitle">
+    <xsl:text>&#x0A;</xsl:text>
+    <div class="header">
+      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <h1 class="title">
+        <xsl:apply-templates>
+          <xsl:with-param name="context" select="$innercontext"/>
+        </xsl:apply-templates>
+      </h1>
+      <xsl:if test="../ltx:creator[@role='author']">
+        <xsl:text>&#x0A;</xsl:text>
+        <p class="author">
+          <em>
+            <xsl:apply-templates select="../ltx:creator[@role='author']" mode="intitle">
+              <xsl:with-param name="context" select="$context"/>
+            </xsl:apply-templates>
+          </em>
+        </p>
+      </xsl:if>
+      <xsl:if test="../ltx:date and string(../ltx:date)">
+        <p class="date">
+          <em>
+            <xsl:apply-templates select="../ltx:date" mode="intitle">
+              <xsl:with-param name="context" select="$context"/>
+            </xsl:apply-templates>
+          </em>
+        </p>
+      </xsl:if>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </div>
+  </xsl:template>
+
+  <!-- remove date from subpages, add 'hasAnchor' class for GitBook -->
+  <xsl:template
+    match="ltx:title[parent::*/child::ltx:titlepage and b:gitbook() and not(//ltx:navigation/ltx:ref[@rel='up']) and f:seclev-aux(local-name(..))='0']" />
+
+  <xsl:template
+    match="ltx:title[not(parent::*/child::ltx:titlepage) and b:max-version('0.8.5') and (not(b:gitbook()) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')]">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{concat('h',f:section-head-level(parent::*))}" namespace="{$html_ns}">
+      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes"/>
+      <!-- avoid class styling when $GITBOOK -->
+      <xsl:if test="$GITBOOK"><xsl:attribute name="class"/></xsl:if>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+    </xsl:element>
+    <!-- include parent's subtitle, author & date (if any)-->
+    <xsl:apply-templates select="../ltx:subtitle" mode="intitle">
+      <xsl:with-param name="context" select="$context"/>
+    </xsl:apply-templates>
+    <xsl:if test="not(parent::ltx:sidebar)">
+      <xsl:call-template name="authors">
         <xsl:with-param name="context" select="$context"/>
       </xsl:call-template>
+      <!-- date on front page only (backported from v0.8.6) -->
+      <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='start'])">
+        <xsl:call-template name="dates">
+          <xsl:with-param name="context" select="$context"/>
+          <xsl:with-param name="dates" select="../ltx:date"/>
+        </xsl:call-template>
+      </xsl:if>
     </xsl:if>
+    <xsl:apply-templates select="." mode="end">
+      <xsl:with-param name="context" select="$context"/>
+    </xsl:apply-templates>
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:apply-templates select="parent::*" mode="auto-toc">
+      <xsl:with-param name="context" select="$context"/>
+    </xsl:apply-templates>
   </xsl:template>
+
+  <xsl:template
+    match="ltx:title[parent::*/child::ltx:titlepage and b:max-version('0.8.5') and (not(b:gitbook()) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')]" />
 
   <xsl:template match="ltx:TOC/ltx:title"/>
-
-  <xsl:template name="bml-maketitle">
-    <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="b:max-version('0.8.5') and (not($GITBOOK) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')">
-        <xsl:element name="{concat('h',f:section-head-level(parent::*))}" namespace="{$html_ns}">
-          <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes"/>
-          <!-- avoid class styling when $GITBOOK -->
-          <xsl:if test="$GITBOOK"><xsl:attribute name="class"/></xsl:if>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-        </xsl:element>
-        <!-- include parent's subtitle, author & date (if any)-->
-        <xsl:apply-templates select="../ltx:subtitle" mode="intitle">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-        <xsl:if test="not(parent::ltx:sidebar)">
-          <xsl:call-template name="authors">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:call-template>
-          <!-- date on front page only (backported from v0.8.6) -->
-          <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='start'])">
-            <xsl:call-template name="dates">
-              <xsl:with-param name="context" select="$context"/>
-              <xsl:with-param name="dates" select="../ltx:date"/>
-            </xsl:call-template>
-          </xsl:if>
-        </xsl:if>
-        <xsl:apply-templates select="." mode="end">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-        <xsl:text>&#x0A;</xsl:text>
-        <xsl:apply-templates select="parent::*" mode="auto-toc">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-      </xsl:when>
-      <xsl:when test="$GITBOOK and not(//ltx:navigation/ltx:ref[@rel='up']) and f:seclev-aux(local-name(..))='0'">
-        <div class="header">
-          <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <h1 class="title">
-            <xsl:apply-templates>
-              <xsl:with-param name="context" select="$innercontext"/>
-            </xsl:apply-templates>
-          </h1>
-          <xsl:if test="../ltx:creator[@role='author']">
-            <xsl:text>&#x0A;</xsl:text>
-            <p class="author">
-              <em>
-                <xsl:apply-templates select="../ltx:creator[@role='author']" mode="intitle">
-                  <xsl:with-param name="context" select="$context"/>
-                </xsl:apply-templates>
-              </em>
-            </p>
-          </xsl:if>
-          <xsl:if test="../ltx:date and string(../ltx:date)">
-            <p class="date">
-              <em>
-                <xsl:apply-templates select="../ltx:date" mode="intitle">
-                  <xsl:with-param name="context" select="$context"/>
-                </xsl:apply-templates>
-              </em>
-            </p>
-          </xsl:if>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </div>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
 
   <!-- improve ltx:rawliteral so that it can output valid HTML -->
   <xsl:template match="ltx:rawliteral">
@@ -361,31 +361,11 @@
     </img>
   </xsl:template>
 
-  <!-- do not use tables for simple equations -->
-  <xsl:template match="ltx:equation[f:countcolumns() &lt;= 1]">
-    <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK or $PLAIN">
-        <xsl:apply-templates select="." mode="unaligned">
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:apply-imports/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- ugly fix for backslashes in URLs on Windows -->
-  <xsl:template match="@href | @src" mode="bml-alter">
-    <xsl:choose>
-      <xsl:when test="b:max-version('0.8.6')">
-        <xsl:attribute name="{local-name()}">
-          <xsl:value-of select="b:fix-windows-paths(.)"/>
-        </xsl:attribute>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+  <xsl:template match="@href[b:max-version('0.8.6')] | @src[b:max-version('0.8.6')]" mode="bml-alter">
+    <xsl:attribute name="{local-name()}">
+      <xsl:value-of select="b:fix-windows-paths(.)"/>
+    </xsl:attribute>
   </xsl:template>
 
   <!-- remove parentheses around dates -->
@@ -414,9 +394,10 @@
   <!-- add default \FrameSep (=3\fboxsep=9pt) padding, if missing -->
   <xsl:template match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/@style"
     mode="bml-alter">
+    <xsl:variable name="attr"><span><xsl:apply-imports /></span></xsl:variable>
     <xsl:attribute name="style">
       <xsl:text>padding:9pt;</xsl:text>
-      <xsl:value-of select="." />
+      <xsl:copy-of select="exsl:node-set($attr)//@style" />
     </xsl:attribute>
   </xsl:template>
 
@@ -424,28 +405,24 @@
   <xsl:template
     match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/span[position()=1 and contains(./@style,'width:100%;')]/@style"
     mode="bml-alter">
+    <xsl:variable name="content"><xsl:apply-imports /></xsl:variable>
     <xsl:attribute name="style">
       <xsl:text>margin-left:-9pt;margin-right:-9pt;margin-top:-9pt;margin-bottom:9pt;padding-left:9pt;padding-right:9pt;</xsl:text>
-      <xsl:value-of select="substring-before(.,'width:100%;')" />
-      <xsl:value-of select="substring-after(.,'width:100%;')" />
+      <xsl:value-of select="substring-before($content,'width:100%;')" />
+      <xsl:value-of select="substring-after($content,'width:100%;')" />
     </xsl:attribute>
   </xsl:template>
 
   <!-- MathJax workaround for non-text content in <mtext> (not needed with MathJax v4) -->
-  <xsl:template match="m:math[not(b:in-list(@class,'bml_disable_mathjax',' '))]//m:mtext[*]">
-    <xsl:choose>
-      <xsl:when test="$MATHJAX3 or $MATHJAX2">
-        <m:semantics>
-          <xsl:for-each select="@*">
-            <xsl:apply-templates select="." mode="copy-attribute"/>
-          </xsl:for-each>
-          <m:annotation-xml encoding="application/xhtml+xml" style="display: block;">
-            <xsl:apply-templates/>
-          </m:annotation-xml>
-        </m:semantics>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+  <xsl:template match="m:math[not(b:in-list(@class,'bml_disable_mathjax',' ')) and (b:mathjax3() or b:mathjax2())]//m:mtext[*]">
+    <m:semantics>
+      <xsl:for-each select="@*">
+        <xsl:apply-templates select="." mode="copy-attribute"/>
+      </xsl:for-each>
+      <m:annotation-xml encoding="application/xhtml+xml" style="display: block;">
+        <xsl:apply-templates/>
+      </m:annotation-xml>
+    </m:semantics>
   </xsl:template>
 
   <!-- modify listings to use <pre>, <code> tags -->
@@ -545,13 +522,8 @@
         </xsl:when>
       </xsl:choose>
       <xsl:if test="@description">
-        <xsl:if test="@fragid">
-          <xsl:attribute name="aria-labelledby"><xsl:value-of select="@fragid"/>-title</xsl:attribute>
-        </xsl:if>
-        <svg:title>
-          <xsl:if test="@fragid">
-            <xsl:attribute name="id"><xsl:value-of select="@fragid"/>-title</xsl:attribute>
-          </xsl:if>
+        <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
+        <svg:title id="{b:generate-id()}">
           <xsl:value-of select="@description" />
         </svg:title>
       </xsl:if>
@@ -562,16 +534,22 @@
   <!-- replace <h6> with role="region" for theorems -->
   <xsl:template match="ltx:theorem | ltx:proof" mode="begin">
     <xsl:param name="context" />
-    <xsl:attribute name="role">region</xsl:attribute>
-    <xsl:if test="@fragid | ltx:title"></xsl:if>
-    <xsl:attribute name="aria-labelledby">
-      <xsl:choose>
-        <xsl:when test="ltx:title/@fragid"><xsl:value-of select="ltx:title/@fragid" /></xsl:when>
-        <xsl:when test="@fragid"><xsl:value-of select="@fragid" />-aria-label</xsl:when>
-        <xsl:otherwise>bml-auto-<xsl:value-of select="generate-id()" />-aria-label</xsl:otherwise>
-      </xsl:choose>
-    </xsl:attribute>
     <xsl:apply-imports />
+    <xsl:attribute name="role">region</xsl:attribute>
+    <xsl:choose>
+      <xsl:when test="ltx:title">
+        <xsl:attribute name="aria-labelledby">
+          <xsl:choose>
+            <xsl:when test="ltx:title/@fragid"><xsl:value-of select="ltx:title/@fragid" /></xsl:when>
+            <xsl:otherwise><xsl:value-of select="b:generate-id(ltx:title)" /></xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+        <!-- this should never happen -->
+        <xsl:attribute name="aria-label"><xsl:value-of select="local-name()" /></xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="ltx:theorem/ltx:title | ltx:proof/ltx:title">
@@ -581,11 +559,9 @@
       <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
       <xsl:call-template name="add_id" />
       <xsl:call-template name="add_attributes" />
-      <xsl:choose>
-        <xsl:when test="@fragid" />
-        <xsl:when test="../@fragid"><xsl:attribute name="id"><xsl:value-of select="../@fragid" />-aria-label</xsl:attribute></xsl:when>
-        <xsl:otherwise><xsl:attribute name="id">bml-auto-<xsl:value-of select="generate-id(..)" />-aria-label</xsl:attribute></xsl:otherwise>
-      </xsl:choose>
+      <xsl:if test="not(@fragid)">
+        <xsl:attribute name="id"><xsl:value-of select="b:generate-id()" /></xsl:attribute>
+      </xsl:if>
       <xsl:apply-templates select="." mode="begin">
         <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
@@ -597,5 +573,227 @@
       </xsl:apply-templates>
     </xsl:element>
   </xsl:template>
+
+  <!-- improve table layout of equation groups using CSS grids -->
+  <!-- part 1: save row/colspans into CSS custom properties -->
+  <xsl:template name="bml-table-span-to-css">
+    <xsl:param name="cell" select="." />
+    <xsl:if test="$cell/@colspan">
+      <xsl:text>--bml-eqn-colspan:</xsl:text>
+      <xsl:value-of select="$cell/@colspan" />
+      <xsl:text>;</xsl:text>
+    </xsl:if>
+    <xsl:if test="$cell/@rowspan">
+      <xsl:text>--bml-eqn-rowspan:</xsl:text>
+      <xsl:value-of select="$cell/@rowspan" />
+      <xsl:text>;</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="td[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_cell') and not(@style) and (@rowspan | @colspan)] | span[b:has-class('ltx_eqn_cell') and not(@style) and (@rowspan | @colspan)]" mode="bml-alter-begin">
+    <xsl:attribute name="style">
+      <xsl:call-template name="bml-table-span-to-css" />
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="td[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_cell')]/@style | span[b:has-class('ltx_eqn_cell')]/@style" mode="bml-alter">
+    <xsl:variable name="attr"><span><xsl:apply-imports /></span></xsl:variable>
+    <xsl:variable name="style" select="exsl:node-set($attr)//@style" />
+    <xsl:attribute name="style">
+      <xsl:value-of select="$style" />
+      <xsl:call-template name="bml-table-span-to-css">
+        <xsl:with-param name="cell" select=".." />
+      </xsl:call-template>
+    </xsl:attribute>
+  </xsl:template>
+
+  <!-- part 2: save number of columns into a CSS column property -->
+  <xsl:template match="ltx:equationgroup" mode="aligned">
+    <!-- this is identical to LaTeXML, but with the begin/aligned-begin moved *before* the newline -->
+    <xsl:param name="context"/>
+    <xsl:param name="ncolumns"
+               select="f:maxcolumns(ltx:equation | ltx:equationgroup/ltx:equation)"/>
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'table')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'ltx_eqn_table'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="aligned-begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:apply-templates select="." mode="inalignment">
+        <xsl:with-param name="ncolumns" select="$ncolumns"/>
+        <xsl:with-param name="spanned" select="false()"/>
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="aligned-end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:equationgroup[b:gitbook() or b:plain()]" mode="aligned-begin">
+    <xsl:param name="context" />
+    <xsl:param name="ncolumns"
+               select="f:maxcolumns(ltx:equation | ltx:equationgroup/ltx:equation)"/>
+    <xsl:call-template name="add_attributes">
+      <!-- BookML: remember if equation numbers are present and number of columns -->
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_table',f:if(ltx:tags | .//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))"/>
+      <xsl:with-param name="extra_style" select="concat('--bml-eqn-columns:',$ncolumns,';')"/>
+    </xsl:call-template>
+  </xsl:template>
+
+  <xsl:template match="ltx:equation[b:gitbook() or b:plain()]" mode="aligned-begin">
+    <xsl:param name="context" />
+    <xsl:param name="ncolumns" select="f:countcolumns(.)" />
+    <xsl:call-template name="add_attributes">
+      <!-- BookML: remember if equation numbers are present and number of columns -->
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_table',f:if(ltx:tags,' bml_eqn_has_eqno',''))"/>
+      <xsl:with-param name="extra_style" select="concat('--bml-eqn-columns:',$ncolumns,';')"/>
+    </xsl:call-template>
+  </xsl:template>
+
+  <!-- part 3: always emit equation number to the left, remove padding -->
+  <xsl:template name="eq-left">
+    <xsl:param name="context"/>
+    <xsl:param name="eqpos"
+               select="f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center')"/>
+    <xsl:call-template name="eqnumtd">                         <!--Place left number, if any -->
+      <xsl:with-param name="context" select="$context"/>
+      <xsl:with-param name='side' select="f:if($GITBOOK or $PLAIN,f:if(ancestor-or-self::*[contains(@class,'ltx_leqno')],'left','right'),f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center'))"/>
+    </xsl:call-template>
+    <xsl:if test="not($GITBOOK or $PLAIN)">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:element name="{f:blockelement($context,'td')}" namespace="{$html_ns}">
+        <xsl:attribute name="class">
+          <xsl:value-of select="concat('ltx_eqn_cell ltx_eqn_',$eqpos,'_padleft')"/>
+        </xsl:attribute>
+      </xsl:element>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template name="eq-right">
+    <xsl:param name="context"/>
+    <xsl:param name="eqpos"
+               select="f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center')"/>
+    <xsl:param name="extrapad" select="0"/>
+    <xsl:if test="not($GITBOOK or $PLAIN)">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:element name="{f:blockelement($context,'td')}" namespace="{$html_ns}">
+        <xsl:attribute name="class">
+        <xsl:value-of select="concat('ltx_eqn_cell ltx_eqn_',$eqpos,'_padright')"/></xsl:attribute>
+        <xsl:if test="$extrapad > 0">
+          <xsl:attribute name="colspan">
+            <xsl:value-of select="$extrapad+1"/>
+          </xsl:attribute>
+        </xsl:if>
+      </xsl:element>
+      <xsl:call-template name="eqnumtd">
+        <xsl:with-param name="context" select="$context"/>
+        <xsl:with-param name='side' select="'right'"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- part 4: mark non-equation rows, adjust for removal of padding columns -->
+  <xsl:template match="ltx:p[b:gitbook() or b:plain()]" mode="ininalignment">
+    <xsl:param name="context"/>
+    <xsl:param name="ncolumns"/>
+    <xsl:param name="spanned"/>
+    <xsl:element name="{f:blockelement($context,'tr')}" namespace="{$html_ns}">
+      <!-- BookML: restore lost ltx_intertext class -->
+      <xsl:attribute name="class">ltx_eqn_row ltx_align_baseline ltx_intertext</xsl:attribute>
+      <xsl:element name="{f:blockelement($context,'td')}" namespace="{$html_ns}">
+        <xsl:attribute name="class">ltx_eqn_cell ltx_align_left</xsl:attribute>
+        <xsl:attribute name="style">white-space:normal;</xsl:attribute>
+        <xsl:attribute name="colspan">
+          <xsl:value-of select="f:if(ancestor::ltx:equationgroup[last()][descendant-or-self::equationgroup[ltx:tags] | descendant::equation[ltx:tags]],1,0)+$ncolumns"/>
+        </xsl:attribute>
+        <xsl:apply-templates select="." mode="begin">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="inalignment-begin">
+          <xsl:with-param name="ncolumns" select="$ncolumns"/>
+          <xsl:with-param name="context" select="$context"/>
+          <xsl:with-param name="spanned" select="$spanned"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates>
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="inalignment-end">
+          <xsl:with-param name="ncolumns" select="$ncolumns"/>
+          <xsl:with-param name="context" select="$context"/>
+          <xsl:with-param name="spanned" select="$spanned"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="end">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:element>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:equationgroup[b:gitbook() or b:plain()] | ltx:equation[b:gitbook() or b:plain()]" mode="aligned-constraints">
+    <xsl:param name="context"/>
+    <xsl:param name="ncolumns"/>
+    <xsl:param name="eqpos"
+               select="f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center')"/>
+    <xsl:if test="ltx:constraint[not(@hidden='true')]">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:element name="{f:blockelement($context,'tr')}" namespace="{$html_ns}">
+        <xsl:attribute name="class">ltx_eqn_row bml_eqn_row_constraint</xsl:attribute>
+        <xsl:element name="{f:blockelement($context,'td')}" namespace="{$html_ns}">
+          <xsl:attribute name="class">ltx_eqn_cell ltx_align_right</xsl:attribute>
+          <!-- the $ncolumns of math, plus whatever endpadding, but NOT the number-->
+          <xsl:attribute name="colspan">
+            <xsl:value-of select="$ncolumns + f:if(ancestor-or-self::ltx:equation[ltx:tags/ltx:tag],1,0)"/>
+            <!--<xsl:value-of select="$ncolumns+2"/>-->
+          </xsl:attribute>
+          <xsl:apply-templates select="." mode="constraints">
+            <xsl:with-param name="context" select="$context"/>
+          </xsl:apply-templates>
+        </xsl:element>
+      </xsl:element>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- part 5: do not use tables for simple equations -->
+  <xsl:template match="ltx:equationgroup[(b:gitbook() or b:plain()) and f:maxcolumns(ltx:equation | ltx:equationgroup/ltx:equation) &lt;= 1] | ltx:equation[(b:gitbook() or b:plain()) and f:countcolumns() &lt;= 1]">
+    <xsl:param name="context"/>
+    <xsl:apply-templates select="." mode="unaligned">
+      <xsl:with-param name="context" select="$context"/>
+      <xsl:with-param name="eqnopos" select="'left'"/>
+    </xsl:apply-templates>
+  </xsl:template>
+
+  <xsl:template match="ltx:equation[b:gitbook() or b:plain()]" mode="unaligned-begin">
+    <xsl:param name="context" />
+    <xsl:call-template name="add_attributes">
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_div',f:if(ltx:tags,' bml_eqn_has_eqno',''))" />
+    </xsl:call-template>
+  </xsl:template>
+
+  <xsl:template match="ltx:equationgroup[b:gitbook() or b:plain()]" mode="unaligned-begin">
+    <xsl:param name="context" />
+    <xsl:call-template name="add_attributes">
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_div',f:if(ltx:tags | .//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))" />
+    </xsl:call-template>
+  </xsl:template>
+
+  <!-- add BookML styling hook -->
+  <xsl:template match="*" mode="styling">
+    <xsl:apply-imports />
+    <xsl:apply-templates select="." mode="bml-styling" />
+  </xsl:template>
+
+  <xsl:template match="*" mode="bml-styling" />
 
 </xsl:stylesheet>

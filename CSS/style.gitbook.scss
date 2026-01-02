@@ -84,6 +84,8 @@ h1.title {
   &, &:visited, &:active {
     background-color: #fff;
     color: #3B78B5;
+    --bml-background-color: #fff;
+    --bml-color: #3B78B5;
   }
 
   .book.color-theme-1 & {
@@ -91,6 +93,9 @@ h1.title {
       background-color: #f3eacb;
       border-color: #7e888b;
       color: #704214;
+      --bml-background-color: #f3eacb;
+      --bml-border-color: #7e888b;
+      --bml-color: #704214;
     }
   }
 
@@ -99,6 +104,9 @@ h1.title {
       background-color: #2d3143;
       border-color: #272a3a;
       color: #c1c6d7;
+      --bml-background-color: #2d3143;
+      --bml-border-color: #272a3a;
+      --bml-color: #c1c6d7;
     }
   }
 
@@ -199,6 +207,7 @@ h1.title {
   }
   .book.color-theme-2 & {
     color: #fffffa;
+    --bml-color: #fffffa;
   }
 }
 
@@ -213,9 +222,9 @@ h1.title {
 }
 
 /* Ensure the paragraphs are scrollable if necessary */
-#bml-main-content>:not(.bml_mathjax4) .ltx_para {
+.ltx_para {
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
 }
 
 /* ...except in a few places */
@@ -261,16 +270,19 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 /* Tweak listings */
 .ltx_listing {
   background-color: #f7f7f7;
+  --bml-background-color: #f7f7f7;
   margin: 0 0 1.275em;
   padding: .85em 1em;
 }
 
 .book.color-theme-1 .ltx_listing {
   background-color: #fdf6e3;
+  --bml-background-color: #fdf6e3;
 }
 
 .book.color-theme-2 .ltx_listing {
   background-color: #2d3143;
+  --bml-background-color: #2d3143;
 }
 
 /* Remove indentation on paragraphs */
@@ -282,10 +294,12 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 .book .book-body .page-wrapper .page-inner section.normal a,
 .ltx_note_mark {
   color: #3B78B5;
+  --bml-color: #3B78B5;
 }
 
 .book .book-summary ul.summary li a:hover, .book .book-summary ul.summary li.active>a {
   color: #0073D1;
+  --bml-color: #0073D1;
 }
 
 /* make focus visible */
@@ -299,18 +313,24 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 .book-body .navigation {
   .book & {
     color: #333;
+    --bml-color: #333;
   }
   .book.color-theme-1 & {
     color: #704214;
+    --bml-color: #704214;
   }
   .book.color-theme-2 & {
     color: #bdcadb;
+    --bml-color: #bdcadb;
   }
 }
 
 .book .book-body .page-wrapper .page-inner section.normal {
   color: #292929;
+  --bml-color: #292929;
+  --bml-background-color: #fff;
 }
+
 .book .book-summary ul.summary li span {
   opacity: 0.8;
   filter: revert;
@@ -353,45 +373,132 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
     padding: 0.85em 0;
     line-height: normal;
   }
-  tr>td:first-child.ltx_eqn_eqno {
-    padding-left: 0.85em;
-    line-height: normal;
-  }
-  tr>td:last-child.ltx_eqn_eqno {
-    padding-right: 0.85em;
-    line-height: normal;
-  }
 }
 
-.ltx_equation.ltx_eqn_div {
+.ltx_eqn_div {
+  margin-bottom: 0.85em;
   border-top: solid 1px #ddd;
   border-bottom: solid 1px #ddd;
-  & + .ltx_equation.ltx_eqn_div {
+
+  &>.ltx_eqn_div {
+    margin-bottom: 0;
     border-top: none;
+    &:last-child {
+      border-bottom: none;
+    }
   }
 
-  margin-bottom: 0.85em;
   .ltx_runin + .ltx_para &, .ltx_runin + .ltx_para p &, .ltx_runin + p & {
     margin-top: 0.85em;
   }
 
   max-width: 100%;
   min-height: 2.75em;
-  #bml-main-content>:not(.bml_mathjax4) & {
-    overflow-x: auto;
-    overflow-y: visible;
-  }
 
-  padding: 0.85em;
+  &.ltx_equation {
+    padding: 0.85em;
+  }
 
   .book.color-theme-1 & {
     background-color: #fdf6e3;
+    --bml-background-color: #fdf6e3;
     border-color: #f5d06c;
+    --bml-border-color: #f5d06c;
   }
 
   .book.color-theme-2 & {
     background-color: #2d3143;
+    --bml-background-color: #2d3143;
     border-color: #3b3f54;
+    --bml-border-color: #3b3f54;
+  }
+}
+
+/* use CSS grid for equations */
+.ltx_eqn_div {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.ltx_eqn_div.bml_eqn_has_eqno {
+  &>span>mjx-container[display] {
+    padding: 0;
+  }
+  &>span.ltx_tag {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background-color: var(--bml-background-color);
+    .ltx_leqno & {
+      left: 0;
+      right: initial;
+    }
+  }
+}
+
+.ltx_eqn_table {
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  .ltx_fleqn & {
+    --bml-eqn-left-eqno-size: 2.85em;
+  }
+
+  &.bml_eqn_has_eqno {
+    --bml-eqn-left-eqno-size: 2.85em;
+    --bml-eqn-right-eqno-size: auto;
+
+    .ltx_leqno & {
+      --bml-eqn-right-eqno-size: 2.85em;
+      --bml-eqn-left-eqno-size: auto;
+    }
+  }
+}
+
+.ltx_eqn_cell.ltx_eqn_eqno {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background-color: var(--bml-background-color);
+  .ltx_leqno & {
+    left: 0;
+    right: initial;
+  }
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table {
+  display: grid;
+}
+
+.ltx_eqn_cell.ltx_eqn_eqno {
+  min-width: 2.85em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_intertext .ltx_eqn_cell {
+  padding-left: 0.85em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell:not(.ltx_eqn_eqno).ltx_align_left + .ltx_eqn_cell.ltx_align_right {
+  padding-left: 3em;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell.ltx_eqn_eqno.ltx_align_right {
+  padding-right: 0.85em;
+  padding-left: 0;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell.ltx_eqn_eqno.ltx_align_left {
+  padding-left: 0.85em;
+  padding-right: 0;
+}
+
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table {
+  & th, & td {
+    border: none;
+  }
+
+  &>tr:last-child, &>tbody:last-child>tr:last-child {
+    border-bottom: 1px solid #ccc;
   }
 }
 
@@ -484,12 +591,16 @@ mjx-container[jax="SVG"][display="true"] {
 
   .book.color-theme-1 & {
     background-color: #fdf6e3;
+    --bml-background-color: #fdf6e3;
     border-color: #f5d06c;
+    --bml-border-color: #f5d06c;
   }
 
   .book.color-theme-2 & {
     background-color: #2d3143;
+    --bml-background-color: #2d3143;
     border-color: #3b3f54;
+    --bml-border-color: #3b3f54;
     box-shadow: 5px 5px 10px black;
   }
 
@@ -529,4 +640,23 @@ svg foreignObject {
 
 .book.font-size-4 {
   --bml-font-size: 30;
+}
+
+/* Automatic colors */
+.book-body .page-wrapper .page-inner section.normal table tr {
+  .book.color-theme-1 & {
+    --bml-background-color: #fdf6e3;
+    --bml-border-color: #f5d06c;
+  }
+  .book.color-theme-2 & {
+    --bml-color: #b6c2d2;
+    --bml-background-color: #2d3143;
+    --bml-border-color: #3b3f54;
+  }
+}
+
+@each $i in color border-color background-color fill stroke stop-color flood-color lighting-color text-decoration-color {
+  *[class*="bml_#{$i}"] {
+    #{$i}: var(--bml-#{$i}) !important;
+  }
 }

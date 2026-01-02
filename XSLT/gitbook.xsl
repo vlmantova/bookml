@@ -213,49 +213,39 @@
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="/ltx:*" mode="end">
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <xsl:if test="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer'] | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']">
-          <xsl:text>&#x0A;</xsl:text>
-          <footer class="bml_footer">
-            <xsl:apply-templates select="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']/* | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']/*"/>
-          </footer>
-        </xsl:if>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+  <xsl:template match="/ltx:*[b:gitbook()]" mode="end">
+    <xsl:if test="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer'] | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']">
+      <xsl:text>&#x0A;</xsl:text>
+      <footer class="bml_footer">
+        <xsl:apply-templates select="//ltx:navigation/ltx:inline-para[@class='ltx_page_footer']/* | //ltx:navigation/ltx:inline-logical-block[@class='ltx_page_footer']/*"/>
+      </footer>
+    </xsl:if>
   </xsl:template>
 
   <!-- add 'levelN' class where N is the sectioning level -->
-  <xsl:template match="ltx:document | ltx:part | ltx:chapter | ltx:section | ltx:subsection | ltx:subsubsection | ltx:paragraph | ltx:subparagraph | ltx:bibliography | ltx:appendix | ltx:index | ltx:glossary | ltx:slide">
+  <xsl:template match="ltx:document[b:gitbook()] | ltx:part[b:gitbook()] | ltx:chapter[b:gitbook()] | ltx:section[b:gitbook()] | ltx:subsection[b:gitbook()] | ltx:subsubsection[b:gitbook()] | ltx:paragraph[b:gitbook()] | ltx:subparagraph[b:gitbook()] | ltx:bibliography[b:gitbook()] | ltx:appendix[b:gitbook()] | ltx:index[b:gitbook()] | ltx:glossary[b:gitbook()] | ltx:slide[b:gitbook()]">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
+    <xsl:text>&#x0A;</xsl:text>
+    <section>
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes">normal</xsl:with-param>
+      </xsl:call-template>
+      <xsl:text>&#x0A;</xsl:text>
+      <div class="section level{f:seclev-aux(local-name())}">
+        <xsl:apply-templates select="." mode="begin">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates>
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="end">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
         <xsl:text>&#x0A;</xsl:text>
-        <section>
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes">
-            <xsl:with-param name="extra_classes">normal</xsl:with-param>
-          </xsl:call-template>
-          <xsl:text>&#x0A;</xsl:text>
-          <div class="section level{f:seclev-aux(local-name())}">
-            <xsl:apply-templates select="." mode="begin">
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-            <xsl:apply-templates>
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-            <xsl:apply-templates select="." mode="end">
-              <xsl:with-param name="context" select="$context"/>
-            </xsl:apply-templates>
-            <xsl:text>&#x0A;</xsl:text>
-          </div>
-          <xsl:text>&#x0A;</xsl:text>
-        </section>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+      </div>
+      <xsl:text>&#x0A;</xsl:text>
+    </section>
   </xsl:template>
 
   <!-- add navigation role to navbar -->
@@ -272,144 +262,115 @@
   </xsl:template>
 
   <!-- remove wrappers around navigation TOC -->
-  <xsl:template match="ltx:navigation/ltx:TOC">
+  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <xsl:if test="ltx:toclist/descendant::ltx:tocentry">
-          <xsl:text>&#x0A;</xsl:text>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </xsl:if>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <xsl:if test="ltx:toclist/descendant::ltx:tocentry">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </xsl:if>
   </xsl:template>
 
   <!-- add class summary and link to the front page to top navigation TOC -->
-  <xsl:template match="ltx:navigation/ltx:TOC/ltx:toclist">
+  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC/ltx:toclist">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <ul>
-          <xsl:call-template name='add_id'/>
-          <xsl:call-template name='add_attributes'>
-            <xsl:with-param name="extra_classes">summary</xsl:with-param>
-          </xsl:call-template>
-          <li>
-            <xsl:text>&#x0A;</xsl:text>
-            <xsl:choose>
-              <!-- link to the front page -->
-              <xsl:when test="//ltx:navigation/ltx:ref[@rel='start']">
-                <xsl:for-each select="//ltx:navigation/ltx:ref[@rel='start']">
-                  <a href="{f:url(@href)}" title="{@title}">
-                    <xsl:variable name="innercontext" select="'inline'"/>
-                    <xsl:call-template name="add_id"/>
-                    <xsl:call-template name="add_attributes"/>
-                    <xsl:apply-templates select="." mode="begin">
-                      <xsl:with-param name="context" select="$innercontext"/>
-                    </xsl:apply-templates>
-                    <xsl:apply-templates select="node()">
-                      <xsl:with-param name="context" select="$innercontext"/>
-                    </xsl:apply-templates>
-                    <xsl:apply-templates select="." mode="end">
-                      <xsl:with-param name="context" select="$innercontext"/>
-                    </xsl:apply-templates>
-                  </a>
-                </xsl:for-each>
-              </xsl:when>
-              <!-- unless we *are* the front page -->
-              <xsl:otherwise>
-                <xsl:variable name="title" select="f:if(/ltx:document/ltx:toctitle!='',/ltx:document/ltx:toctitle,/ltx:document/ltx:title)"/>
-                <a href="" title="{$title}" class="ltx_ref">
-                  <xsl:value-of select="$title"/>
-                </a>
-              </xsl:otherwise>
-            </xsl:choose>
-          </li>
-          <li class="divider"/>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </ul>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <ul>
+      <xsl:call-template name='add_id'/>
+      <xsl:call-template name='add_attributes'>
+        <xsl:with-param name="extra_classes">summary</xsl:with-param>
+      </xsl:call-template>
+      <li>
+        <xsl:text>&#x0A;</xsl:text>
+        <xsl:choose>
+          <!-- link to the front page -->
+          <xsl:when test="//ltx:navigation/ltx:ref[@rel='start']">
+            <xsl:for-each select="//ltx:navigation/ltx:ref[@rel='start']">
+              <a href="{f:url(@href)}" title="{@title}">
+                <xsl:variable name="innercontext" select="'inline'"/>
+                <xsl:call-template name="add_id"/>
+                <xsl:call-template name="add_attributes"/>
+                <xsl:apply-templates select="." mode="begin">
+                  <xsl:with-param name="context" select="$innercontext"/>
+                </xsl:apply-templates>
+                <xsl:apply-templates select="node()">
+                  <xsl:with-param name="context" select="$innercontext"/>
+                </xsl:apply-templates>
+                <xsl:apply-templates select="." mode="end">
+                  <xsl:with-param name="context" select="$innercontext"/>
+                </xsl:apply-templates>
+              </a>
+            </xsl:for-each>
+          </xsl:when>
+          <!-- unless we *are* the front page -->
+          <xsl:otherwise>
+            <xsl:variable name="title" select="f:if(/ltx:document/ltx:toctitle!='',/ltx:document/ltx:toctitle,/ltx:document/ltx:title)"/>
+            <a href="" title="{$title}" class="ltx_ref">
+              <xsl:value-of select="$title"/>
+            </a>
+          </xsl:otherwise>
+        </xsl:choose>
+      </li>
+      <li class="divider"/>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </ul>
   </xsl:template>
 
   <!-- add appendix/chapter class to navigation TOC entries and 'Appendix' divider -->
-  <xsl:template match="ltx:navigation//ltx:tocentry">
+  <xsl:template match="ltx:navigation[b:gitbook()]//ltx:tocentry">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <xsl:text>&#x0A;</xsl:text>
-        <!-- TODO: figure out what data-level, data-path are for -->
-        <li data-level="{ltx:ref//ltx:tag[1]/text()}"
-            data-path="{b:url-without-fragment(ltx:ref/@href)}">
-          <xsl:call-template name='add_id'/>
-          <xsl:call-template name='add_attributes'>
-            <xsl:with-param name="extra_classes">
-              <xsl:value-of select="f:if(b:has-class('ltx_toc_appendix'),' appendix ',' chapter ')"/>
-              <xsl:if test="b:has-class('ltx_ref_self')">active</xsl:if>
-            </xsl:with-param>
-          </xsl:call-template>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$context"/>
-          </xsl:apply-templates>
-        </li>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <xsl:text>&#x0A;</xsl:text>
+    <!-- TODO: figure out what data-level, data-path are for -->
+    <li data-level="{ltx:ref//ltx:tag[1]/text()}"
+        data-path="{b:url-without-fragment(ltx:ref/@href)}">
+      <xsl:call-template name='add_id'/>
+      <xsl:call-template name='add_attributes'>
+        <xsl:with-param name="extra_classes">
+          <xsl:value-of select="f:if(b:has-class('ltx_toc_appendix'),' appendix ',' chapter ')"/>
+          <xsl:if test="b:has-class('ltx_ref_self')">active</xsl:if>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+    </li>
   </xsl:template>
 
   <!-- insert <a href=""> for navigation TOC entries without href (i.e., the page itself) -->
-  <xsl:template match="ltx:navigation/ltx:TOC//ltx:ref[not(@href)]">
+  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC//ltx:ref[not(@href)]">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <!-- TODO: is there *any* way to get the current filename? it may be impossible -->
-        <a href="" title="{@title}">
-          <xsl:variable name="innercontext" select="'inline'"/>
-          <xsl:call-template name="add_id"/>
-          <xsl:call-template name="add_attributes"/>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-        </a>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <!-- TODO: is there *any* way to get the current filename? it may be impossible -->
+    <a href="" title="{@title}" aria-current="page">
+      <xsl:variable name="innercontext" select="'inline'"/>
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes"/>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+    </a>
   </xsl:template>
 
   <!-- do not wrap titles -->
-  <xsl:template match="ltx:navigation//ltx:text[@class='ltx_ref_title']">
+  <xsl:template match="ltx:navigation[b:gitbook()]//ltx:text[@class='ltx_ref_title']">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <xsl:apply-templates>
-          <xsl:with-param name="context" select="$context"/>
-        </xsl:apply-templates>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <xsl:apply-templates>
+      <xsl:with-param name="context" select="$context"/>
+    </xsl:apply-templates>
   </xsl:template>
 
   <!-- wrap section number with <b> -->
-  <xsl:template match="ltx:navigation/ltx:TOC//ltx:tag">
+  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC//ltx:tag">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <b><xsl:apply-imports/></b>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <!-- possible BUG: context is not passed through -->
+    <b><xsl:apply-imports/></b>
   </xsl:template>
 
   <!-- the header becomes the gitbook toolbar -->
@@ -443,30 +404,25 @@
   </xsl:template>
 
   <!-- add header-section-number and move trailing characters (period, space) outside of the tag -->
-  <xsl:template match="ltx:title/ltx:tag">
+  <xsl:template match="ltx:title[b:gitbook()]/ltx:tag">
     <xsl:param name="context"/>
-    <xsl:choose>
-      <xsl:when test="$GITBOOK">
-        <span>
-          <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-          <xsl:call-template name="add_attributes">
-            <xsl:with-param name="extra_classes">header-section-number</xsl:with-param>
-          </xsl:call-template>
-          <xsl:apply-templates select="." mode="begin">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:value-of select="@open"/>
-          <xsl:apply-templates>
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-          <xsl:apply-templates select="." mode="end">
-            <xsl:with-param name="context" select="$innercontext"/>
-          </xsl:apply-templates>
-        </span>
-        <xsl:value-of select="@close"/>
-      </xsl:when>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
+    <span>
+      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes">header-section-number</xsl:with-param>
+      </xsl:call-template>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:value-of select="@open"/>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+    </span>
+    <xsl:value-of select="@close"/>
   </xsl:template>
 
   <!-- ensure that block elements wider than the page can be scrolled -->
@@ -479,6 +435,7 @@
           <xsl:apply-imports/>
         </div>
       </xsl:when>
+      <!-- BUG: inline context is not passed through branch -->
       <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -491,7 +448,7 @@
         <xsl:when test="$name = 'document' and $GITBOOK">0</xsl:when>
         <xsl:when test="$name = 'document' and not($GITBOOK)">1</xsl:when>
         <xsl:when test="$name = 'part'"><!-- The logic: 1+doc level, if there IS a ltx:document-->
-<!--          <xsl:value-of select="f:seclev-aux('document')+number(boolean(//ltx:document/ltx:title))"/>-->
+          <!--          <xsl:value-of select="f:seclev-aux('document')+number(boolean(//ltx:document/ltx:title))"/>-->
           <!-- but if we are $GITBOOK, shift back up by one -->
           <xsl:value-of select="f:seclev-aux('document')+number(boolean(//ltx:document) or $GITBOOK)"/>
         </xsl:when>

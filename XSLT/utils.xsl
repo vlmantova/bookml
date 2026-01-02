@@ -42,12 +42,42 @@
     </xsl:choose>
   </xsl:param>
 
+  <xsl:param name="BMLAUTOIDPREFIX" select="'bml-auto-'"/>
+
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
   <xsl:variable name="MATHJAX4" select="b:if-option('mathjax=4')"/>
   <xsl:variable name="MATHJAX3"
     select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX4)"/>
+
+  <!-- utility functions to check variables in template matches -->
+  <func:function name="b:gitbook">
+    <func:result select="$GITBOOK" />
+  </func:function>
+
+  <func:function name="b:plain">
+    <func:result select="$PLAIN" />
+  </func:function>
+
+  <func:function name="b:mathjax2">
+    <func:result select="$MATHJAX2" />
+  </func:function>
+
+  <func:function name="b:mathjax3">
+    <func:result select="$MATHJAX3" />
+  </func:function>
+
+  <func:function name="b:mathjax4">
+    <func:result select="$MATHJAX4" />
+  </func:function>
+
+  <!-- generate IDs -->
+  <func:function name="b:generate-id">
+    <xsl:param name="node" select="." />
+    <xsl:param name="prefix" select="$BMLAUTOIDPREFIX" />
+    <func:result select="concat($prefix,generate-id($node))" />
+  </func:function>
 
   <!-- alter $fragment by overriding mode="bml-alter" -->
   <xsl:template name="bml-alter">
@@ -57,9 +87,12 @@
 
   <xsl:template match="@*|node()" mode="bml-alter">
     <xsl:copy>
+      <xsl:apply-templates select="." mode="bml-alter-begin"/>
       <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
     </xsl:copy>
   </xsl:template>
+
+  <xsl:template match="@*|node()" mode="bml-alter-begin"/>
 
   <!-- check if $elem is in the $sep-separated $list -->
   <func:function name="b:in-list">

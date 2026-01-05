@@ -139,14 +139,25 @@ mtext {
 }
 
 /* MathML polyfills */
-@each $side in left center right {
-  mtd[columnalign="#{$side}"] {
-    text-align: #{$side};
-    text-align: -webkit-#{$side};
-  }
-}
 
-menclose[notation=box] {
-  border: solid 1px;
-  padding: 3px;
+/* not needed on Firefox */
+@supports (zoom: initial) and (not (-moz-appearance: none)) {
+  @each $side in left center right {
+    mtd[columnalign="#{$side}"] {
+      text-align: #{$side};
+      text-align: -webkit-#{$side};
+    }
+  }
+
+  menclose[notation=box] {
+    border: solid 1px;
+    padding: 3px;
+  }
+
+  @media (-webkit-transform-2d) {
+    menclose[notation=box] {
+      border-style: none;
+      padding: initial;
+    }
+  }
 }

@@ -107,85 +107,89 @@ th > .ltx_p:last-child {
 }
 
 /* use CSS grids for equations */
-/* columns: <left-eqno> <leftpad> <eqn columns> <rightpad> <right-eqno> */
-:root {
-  --bml-eqn-leftpad-size: 1fr;
-  --bml-eqn-rightpad-size: 1fr;
-  --bml-eqn-leftpad-start: 1;
-  --bml-eqn-leftpad-end: span 1;
-  --bml-eqn-leftpad-display: block;
-  --bml-eqn-left-eqno-size: ;
-  --bml-eqn-right-eqno-size: ;
-}
+.ltx_eqn_div, .ltx_eqn_table {
+  width: 100%;
+  max-width: 100%;
 
-.ltx_fleqn {
-  --bml-eqn-leftpad-size: ;
-  --bml-eqn-left-eqno-size: 2em;
-}
+  --bml-eqn-eqno: 0;
 
-.bml_eqn_has_eqno {
-  --bml-eqn-leftpad-end: span 2;
-  --bml-eqn-left-eqno-size: 2em;
-  --bml-eqn-right-eqno-size: auto;
-  --bml-eqn-leftpad-display: block;
+  display: grid;
+  align-items: baseline;
+  justify-items: stretch;
+  grid-auto-flow: dense;
 
-  .ltx_leqno & {
-    --bml-eqn-leftpad-start: 2;
-    --bml-eqn-leftpad-end: span 1;
-    --bml-eqn-left-eqno-size: auto;
-    --bml-eqn-right-eqno-size: 2em;
+  grid-template-columns: [leqno] var(--bml-eqn-eqno) [leftpad] var(--bml-eqn-leftpad) [eqn] var(--bml-eqn-columns) [rightpad] var(--bml-eqn-rightpad) [reqno] var(--bml-eqn-eqno);
+
+  &.bml_eqn_has_eqno {
+    --bml-eqn-eqno: auto;
   }
 
   .ltx_fleqn & {
-    --bml-eqn-leftpad-display: none;
+    --bml-eqn-leftpad: 0;
+    --bml-eqn-eqno: minmax(2em,auto);
   }
 }
 
 .ltx_eqn_div {
-  width: 100%;
-  max-width: 100%;
-  --bml-eqn-columns-size: 1fr;
-  grid-template-columns: var(--bml-eqn-left-eqno-size) var(--bml-eqn-columns-size) var(--bml-eqn-right-eqno-size);
-  grid-auto-flow: dense;
-  align-items: baseline;
-  justify-items: stretch;
-  .ltx_fleqn & {
-    display: grid;
-    --bml-eqn-columns-size: auto 1fr;
-    &>span:not(.ltx_tag) {
-      grid-column-start: 2;
+  --bml-eqn-leftpad: 0;
+  --bml-eqn-rightpad: 0;
+  --bml-eqn-columns: 1fr;
+
+  & .ltx_eqn_div {
+    grid-template-columns: subgrid;
+    grid-column-start: leftpad;
+    grid-column-end: reqno;
+    &.bml_eqn_has_eqno {
+      grid-column-start: 1;
+      grid-column-end: -1;
     }
   }
-}
 
-.ltx_eqn_div.bml_eqn_has_eqno {
-  display: grid;
+  .ltx_fleqn & {
+    --bml-eqn-rightpad: 1fr;
+    --bml-eqn-columns: auto;
+    /* TODO: offload left alignment to MathJax if possible */
+  }
 
-  &>span:not(.ltx_tag) {
-    grid-column-start: 2;
+  &>span {
+    grid-column-start: eqn;
   }
 
   &>span.ltx_tag {
-    grid-column-start: -1;
-    min-width: 2em;
+    justify-self: end;
+    text-align: right;
+    justify-self: stretch;
+
+    grid-column-start: leqno;
+    visibility: hidden;
+
+    .ltx_fleqn & {
+      display: none;
+    }
+
+    &:first-child {
+      grid-column-start: reqno;
+      visibility: initial;
+      display: initial;
+    }
+
     .ltx_leqno & {
-      grid-column-start: 1;
+      justify-self: start;
+      text-align: left;
+      grid-column-start: reqno;
+      &:first-child {
+        grid-column-start: leqno;
+      }
     }
   }
 }
 
-.ltx_eqn_div .ltx_eqn_div {
-  grid-template-columns: subgrid;
-  grid-column-start: 1;
-  grid-column-end: -1;
-}
-
 .ltx_eqn_table {
-  display: grid;
-  grid-template-columns: var(--bml-eqn-left-eqno-size) var(--bml-eqn-leftpad-size) repeat(var(--bml-eqn-columns, 1), auto) var(--bml-eqn-rightpad-size) var(--bml-eqn-right-eqno-size);
-  max-width: 100%;
+  --bml-eqn-leftpad: 1fr;
+  --bml-eqn-rightpad: 1fr;
+  --bml-eqn-columns: repeat(100, auto); /* unsure what is the maximum number of columns supported by LaTeX, but surely 100 is enough */
 
-  &>tbody, &>span {
+  &>tbody, &>span, .ltx_eqn_row {
     display: grid;
     grid-template-columns: subgrid;
     grid-column-start: 1;
@@ -194,20 +198,26 @@ th > .ltx_p:last-child {
 }
 
 .ltx_eqn_row {
-  display: grid;
-  grid-template-columns: subgrid;
   grid-auto-flow: dense;
   align-items: baseline;
 
-  grid-column-start: 1;
-  grid-column-end: -1;
-
   &::before {
     content: "";
-    display: var(--bml-eqn-leftpad-display);
-    grid-column-start: var(--bml-eqn-leftpad-start);
-    grid-column-end: var(--bml-eqn-leftpad-end);
+    display: flex; /* Chrome complains otherwise, not sure why */
+    grid-column-start: leqno;
+    grid-column-end: eqn;
+
+    .ltx_eqn_table.bml_eqn_has_eqno & {
+      grid-column-start: leftpad;
+      .ltx_fleqn & {
+        grid-column-start: leqno;
+      }
+      .ltx_fleqn.ltx_leqno & {
+        grid-column-start: leftpad;
+      }
+    }
   }
+
 
   &.ltx_intertext {
     &::before {
@@ -221,29 +231,52 @@ th > .ltx_p:last-child {
   }
 
   &.bml_eqn_row_constraint {
-    &:before {
+    &::before {
       display: none;
+    }
+
+    &>.ltx_eqn_cell {
+      grid-column-start: leftpad;
+      grid-column-end: reqno;
     }
   }
 }
 
 .ltx_eqn_cell {
-  display: block;
-}
+  &.ltx_eqn_eqno {
+    max-width: initial;
+    justify-self: end;
+    text-align: right;
 
-.ltx_eqn_cell.ltx_eqn_eqno {
-  max-width: initial;
-  grid-column-start: -1;
-  justify-self: end;
-  min-width: 2em;
+    grid-column-start: leqno;
+    visibility: hidden;
 
-  .ltx_leqno & {
-    grid-column-start: 1;
-    justify-self: start;
+    .ltx_fleqn & {
+      display: none; /* covered by .ltx_eqn_row::before or, if .ltx_leqno, by &:first-child */
+    }
+
+    &:first-child {
+      grid-column-start: reqno;
+      visibility: visible;
+      display: initial;
+    }
+
+    .ltx_leqno & {
+      grid-column-start: reqno;
+      justify-self: start;
+      text-align: left;
+      &:first-child {
+        grid-column-start: leqno;
+      }
+    }
+
+    & .ltx_tag {
+      float: initial;
+    }
   }
 
-  &.ltx_align_right .ltx_tag {
-    float: initial;
+  &:not(.ltx_eqn_eqno).ltx_align_left + .ltx_eqn_cell.ltx_align_right {
+    padding-left: 3em;
   }
 }
 
@@ -255,12 +288,4 @@ th > .ltx_p:last-child {
   &[rowspan] {
     grid-row-end: span var(--bml-eqn-rowspan, 1);
   }
-
-  &.ltx_eqn_left_padright {
-    display: none;
-  }
-}
-
-.ltx_eqn_cell:not(.ltx_eqn_eqno).ltx_align_left + .ltx_eqn_cell.ltx_align_right {
-  padding-left: 3em;
 }

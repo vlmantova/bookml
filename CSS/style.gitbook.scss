@@ -370,7 +370,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 /* Adjust and uniformise equation styling */
 .book .book-body .page-wrapper .page-inner section.normal table {
   td.ltx_eqn_cell, th.ltx_eqn_cell {
-    padding: 0.85em 0;
+    padding: 0;
     line-height: normal;
   }
 }
@@ -395,10 +395,6 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   max-width: 100%;
   min-height: 2.75em;
 
-  &.ltx_equation {
-    padding: 0.85em;
-  }
-
   .book.color-theme-1 & {
     background-color: #fdf6e3;
     --bml-background-color: #fdf6e3;
@@ -414,43 +410,40 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
 }
 
-/* use CSS grid for equations */
-.ltx_eqn_div {
+/* adjust CSS grid for equations */
+.ltx_eqn_div, .ltx_eqn_table {
   overflow-x: auto;
   overflow-y: hidden;
+
+  .ltx_fleqn & {
+    --bml-eqn-eqno: minmax(2.85em,auto);
+  }
+
+  &>span, .ltx_eqn_cell {
+    &>mjx-container[display] {
+      padding: 0;
+    }
+    line-height: normal;
+  }
+}
+
+.ltx_eqn_div.ltx_equation, .ltx_eqn_row {
+  padding-top: 0.85em;
+  padding-bottom: 0.85em;
 }
 
 .ltx_eqn_div.bml_eqn_has_eqno {
-  &>span>mjx-container[display] {
-    padding: 0;
-  }
   &>span.ltx_tag {
     position: sticky;
     right: 0;
     z-index: 1;
     background-color: var(--bml-background-color);
+    padding-right: 0.85em;
     .ltx_leqno & {
       left: 0;
       right: initial;
-    }
-  }
-}
-
-.ltx_eqn_table {
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  .ltx_fleqn & {
-    --bml-eqn-left-eqno-size: 2.85em;
-  }
-
-  &.bml_eqn_has_eqno {
-    --bml-eqn-left-eqno-size: 2.85em;
-    --bml-eqn-right-eqno-size: auto;
-
-    .ltx_leqno & {
-      --bml-eqn-right-eqno-size: 2.85em;
-      --bml-eqn-left-eqno-size: auto;
+      padding-right: initial;
+      padding-left: 0.85em;
     }
   }
 }
@@ -464,32 +457,27 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
     left: 0;
     right: initial;
   }
+  .book .book-body .page-wrapper .page-inner section.normal table & {
+    padding-left: 0em;
+    padding-right: 0.85em;
+  }
+  .book .book-body .page-wrapper .page-inner section.normal.ltx_leqno table & {
+    padding-left: 0.85em;
+    padding-right: 0em;
+  }
 }
 
 .book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table {
   display: grid;
 }
 
-.ltx_eqn_cell.ltx_eqn_eqno {
-  min-width: 2.85em;
-}
-
-.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_intertext .ltx_eqn_cell {
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_intertext>.ltx_eqn_cell {
   padding-left: 0.85em;
+  padding-right: 0.85em;
 }
 
 .book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell:not(.ltx_eqn_eqno).ltx_align_left + .ltx_eqn_cell.ltx_align_right {
   padding-left: 3em;
-}
-
-.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell.ltx_eqn_eqno.ltx_align_right {
-  padding-right: 0.85em;
-  padding-left: 0;
-}
-
-.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_eqn_cell.ltx_eqn_eqno.ltx_align_left {
-  padding-left: 0.85em;
-  padding-right: 0;
 }
 
 .book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table {

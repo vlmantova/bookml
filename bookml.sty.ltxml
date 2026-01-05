@@ -39,7 +39,6 @@ use XML::LibXML;
 use DB_File;
 
 RequirePackage('bookml/bookml-init');
-RawTeX('\bml@process@pt@size');
 
 my $bmlVersion = '@VERSION@';
 
@@ -204,11 +203,11 @@ DefConstructorI('\bml@css', undef, sub {
 });
 
 # Include alternative format
-DefPrimitive('\bmlAltFormat {} {}', sub {
-    my ($stomach, $path, $name) = @_;
+DefPrimitive('\bmlAltFormat OptionalKeyVals {} {}', sub {
+    my ($stomach, $kv, $path, $name) = @_;
     $path = ToString(Expand($path));
     $name = ToString(Expand($name));
-    BMLRequireResource($path, location => 'download', name => $name) if $name;
+    BMLRequireResource($path, location => 'download', name => $name, $kv ? $kv->getHash : ()) if $name;
     @bml_download = grep { !$_ eq $path } @bml_download;
     return;
 });

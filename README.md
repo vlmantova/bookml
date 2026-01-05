@@ -139,8 +139,8 @@ Loading `\usepackage{bookml/bookml}` makes the following commands available. It 
 <dl>
 <dt>\BookMLversion</dt>
 <dd>The currently running version of BookML.</dd>
-<dt>\bmlAltFormat{&lt;<i>file</i>&gt;}{&lt;<i>label</i>&gt;}</dt>
-<dd>Compile (if necessary) and include &lt;<i>file</i>&gt; in the download menu with label &lt;<i>label</i>&gt;. An empty label removes the file from the download menu. Only available in the <i>gitbook</i> style.</dd>
+<dt>\bmlAltFormat[&lt;<i>opts</i>&gt;]{&lt;<i>file</i>&gt;}{&lt;<i>label</i>&gt;}</dt>
+<dd>Compile (if necessary) and include &lt;<i>file</i>&gt; in the download menu with label &lt;<i>label</i>&gt;. An empty label removes the file from the download menu. The optional argument &lt;<i>opts</i>&gt; is a key-value list passed internally to <code>\lxRequireResource</code> (for instance, use <code>type=application/octet-stream</code> if LaTeXML is not able to recognise the MIME type of the file). Only available in the <i>gitbook</i> style.</dd>
 <dt>\&lt;</dt>
 <dd>Open or close an HTML tag, as in <code>\&lt;span class="example"&gt;some \LaTeX{} code\&lt;/span&gt;</code>. The content between the tags is normal LaTeX code. Tags will normally generate an additional <code>&lt;p&gt;...&lt;/p&gt;</code> tag, unless they can only contain 'phrasing content'. If necessary, the behaviour of each tag can be changed with the <code>\bmlHTML*Environment</code> commands.</dd>
 <dt>\bmlHTMLEnvironment{&lt;<i>tag</i>&gt;}</dt>

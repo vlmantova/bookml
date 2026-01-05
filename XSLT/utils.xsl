@@ -87,8 +87,9 @@
 
   <xsl:template match="@*|node()" mode="bml-alter">
     <xsl:copy>
+      <xsl:apply-templates select="@*" mode="bml-alter"/>
       <xsl:apply-templates select="." mode="bml-alter-begin"/>
-      <xsl:apply-templates select="@*|node()" mode="bml-alter"/>
+      <xsl:apply-templates select="node()" mode="bml-alter"/>
     </xsl:copy>
   </xsl:template>
 

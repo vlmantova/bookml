@@ -607,7 +607,7 @@
     </xsl:attribute>
   </xsl:template>
 
-  <!-- part 2: save number of columns into a CSS column property -->
+  <!-- part 2: remember if a descendant contains an equation number (will eventually be replaced by :has()) -->
   <xsl:template match="ltx:equationgroup" mode="aligned">
     <!-- this is identical to LaTeXML, but with the begin/aligned-begin moved *before* the newline -->
     <xsl:param name="context"/>
@@ -646,9 +646,7 @@
     <xsl:param name="ncolumns"
                select="f:maxcolumns(ltx:equation | ltx:equationgroup/ltx:equation)"/>
     <xsl:call-template name="add_attributes">
-      <!-- BookML: remember if equation numbers are present and number of columns -->
-      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_table',f:if(ltx:tags | .//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))"/>
-      <xsl:with-param name="extra_style" select="concat('--bml-eqn-columns:',$ncolumns,';')"/>
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_table',f:if(descendant-or-self::ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))"/>
     </xsl:call-template>
   </xsl:template>
 
@@ -656,13 +654,11 @@
     <xsl:param name="context" />
     <xsl:param name="ncolumns" select="f:countcolumns(.)" />
     <xsl:call-template name="add_attributes">
-      <!-- BookML: remember if equation numbers are present and number of columns -->
       <xsl:with-param name="extra_classes" select="concat('ltx_eqn_table',f:if(ltx:tags,' bml_eqn_has_eqno',''))"/>
-      <xsl:with-param name="extra_style" select="concat('--bml-eqn-columns:',$ncolumns,';')"/>
     </xsl:call-template>
   </xsl:template>
 
-  <!-- part 3: always emit equation number to the left, remove padding -->
+  <!-- part 3: always emit *both* equations numbers, remove padding -->
   <xsl:template name="eq-left">
     <xsl:param name="context"/>
     <xsl:param name="eqpos"
@@ -671,6 +667,13 @@
       <xsl:with-param name="context" select="$context"/>
       <xsl:with-param name='side' select="f:if($GITBOOK or $PLAIN,f:if(ancestor-or-self::*[contains(@class,'ltx_leqno')],'left','right'),f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center'))"/>
     </xsl:call-template>
+    <!-- create duplicate to keep equations centred regardless of the label size -->
+    <xsl:if test="$GITBOOK or $PLAIN">
+      <xsl:call-template name="eqnumtd">                         <!--Place left number, if any -->
+        <xsl:with-param name="context" select="$context"/>
+        <xsl:with-param name='side' select="f:if($GITBOOK or $PLAIN,f:if(ancestor-or-self::*[contains(@class,'ltx_leqno')],'left','right'),f:if(ancestor-or-self::*[contains(@class,'ltx_fleqn')],'left','center'))"/>
+      </xsl:call-template>
+    </xsl:if>
     <xsl:if test="not($GITBOOK or $PLAIN)">
       <xsl:text>&#x0A;</xsl:text>
       <xsl:element name="{f:blockelement($context,'td')}" namespace="{$html_ns}">
@@ -680,6 +683,10 @@
       </xsl:element>
     </xsl:if>
   </xsl:template>
+
+  <!-- precaution: remove id attributes from second copy of equation number -->
+  <xsl:template match="tr[b:gitbook() or b:plain()]/td[b:has-class('ltx_eqn_eqno')][position() &gt; 1]//@id
+    | span[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_row')]/span[b:has-class('ltx_eqn_eqno')][position() &gt; 1]//@id" mode="bml-alter" />
 
   <xsl:template name="eq-right">
     <xsl:param name="context"/>
@@ -784,9 +791,114 @@
   <xsl:template match="ltx:equationgroup[b:gitbook() or b:plain()]" mode="unaligned-begin">
     <xsl:param name="context" />
     <xsl:call-template name="add_attributes">
-      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_div',f:if(ltx:tags | .//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))" />
+      <xsl:with-param name="extra_classes" select="concat('ltx_eqn_div',f:if(descendant-or-self::ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags,' bml_eqn_has_eqno',''))" />
     </xsl:call-template>
   </xsl:template>
+
+  <!-- part 6: duplicate the equation numbers for simple equations -->
+  <xsl:template match="ltx:equationgroup[b:gitbook() or b:plain()]" mode="unaligned">
+    <xsl:param name="context"/>
+    <xsl:param name="eqnopos"
+               select="f:if($GITBOOK or $PLAIN or ancestor-or-self::*[contains(@class,'ltx_leqno')],'left','right')"/>
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'ltx_eqn_div'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="unaligned-begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:if test="ltx:tags and not(descendant::ltx:equation[ltx:tags]) and $eqnopos='left'">
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <!-- create duplicate to keep equations centred regardless of the label size -->
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:if>
+      <xsl:apply-templates select="ltx:equationgroup | ltx:equation | ltx:p">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:if test="ltx:tags and not(descendant::ltx:equation[ltx:tags]) and $eqnopos='right'">
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:if>
+      <xsl:apply-templates select="." mode="constraints">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="unaligned-end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:equation[b:gitbook() or b:plain()]" mode="unaligned">
+    <xsl:param name="context"/>
+    <xsl:param name="eqnopos"
+               select="f:if(ancestor-or-self::*[contains(@class,'ltx_leqno')],'left','right')"/>
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'ltx_eqn_div'"/>
+      </xsl:call-template>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="unaligned-begin">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:if test="ltx:tags and $eqnopos='left'">
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+        <!-- create duplicate to keep equations centred regardless of the label size -->
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:if>
+      <xsl:element name="span" namespace="{$html_ns}">
+        <xsl:variable name="context" select="'inline'"/><!-- override -->
+        <!-- This should cover: ltx:Math, ltx:MathFork, ltx:text & Misc
+             (ie. all of equation_model EXCEPT Meta & EquationMeta) -->
+        <xsl:apply-templates select="ltx:Math | ltx:MathFork | ltx:text
+                                     | ltx:inline-block | ltx:verbatim | ltx:break
+                                     | ltx:graphics | ltx:svg | ltx:rawhtml | ltx:inline-logical-block
+                                     | ltx:tabular | ltx:picture" >
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:element>
+      <xsl:if test="ltx:tags and $eqnopos='right'">
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:if>
+      <xsl:apply-templates select="." mode="constraints">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="unaligned-end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$context"/>
+      </xsl:apply-templates>
+      <xsl:text>&#x0A;</xsl:text>
+      </xsl:element>
+  </xsl:template>
+
+  <!-- precaution: remove id attributes from second copy of equation number -->
+  <xsl:template match="div[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_div')]/span[b:has-class('ltx_tag')][position() &gt; 1]//@id
+    | span[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_div')]/span[b:has-class('ltx_tag')][position() &gt; 1]//@id" mode="bml-alter" />
 
   <!-- add BookML styling hook -->
   <xsl:template match="*" mode="styling">
@@ -795,5 +907,14 @@
   </xsl:template>
 
   <xsl:template match="*" mode="bml-styling" />
+
+  <!-- improve MathML vertical alignment -->
+  <xsl:template match="mtable/@align[string()='bottom1']" mode="bml-alter">
+    <xsl:attribute name="align">baseline 1</xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="mtable/@align[string()='bottom']" mode="bml-alter">
+    <xsl:attribute name="align">baseline -1</xsl:attribute>
+  </xsl:template>
 
 </xsl:stylesheet>

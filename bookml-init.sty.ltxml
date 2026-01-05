@@ -32,17 +32,23 @@ use warnings;
 PushValue('@document@preamble@atend', Tokenize('\usepackage{bookml/bookml}'));
 
 # LaTeXML currently does not support the class options 10pt, 11pt, etc so we have to do the work ourselves
-# we do this immediately after \document class, so that the correct size is set before \title, \author, etc
+# we try to do this immediately after \document class, so that the correct size is set before \title, \author, etc
 DefPrimitiveI('\bml@process@pt@size', undef, sub {
+    # ensure we do not run this twice
     return if defined LookupValue('BML_PT_SIZE');
 
     my ($stomach) = @_;
-    my $pt = 10;
+    my ($class, $pt);
 
-    for my $opt (grep(/^\d+pt$/, @{ LookupValue('class_options') || [] })) {
-      $pt = $opt =~ s/pt//r;
-      last; }
-    AssignValue('BML_PT_SIZE', $pt);
+    my @classoptions = @{ LookupValue('class_options') || [] };
+
+    # check 'aa', 'elsart' etc first since they load 'article', 'amsart' etc internally
+    for my $cls ('a0poster', 'aastex', 'acmart', 'beamer', 'elsart', 'IEEEtran', 'iopart', 'JHEP', 'JHEP2', 'JHEP3', 'minimal', 'slides', 'amsart', 'amsbook', 'amsproc', 'article', 'report', 'book') {
+      if (LookupValue("$cls.cls.ltxml_loaded")) {
+        $class = $cls; last; } }
+
+    for my $opt (grep(/^\d+pt$/, @classoptions)) {
+      $pt = $opt =~ s/pt//r; }
 
     my %bml_font_sizes = (
       # article
@@ -246,7 +252,7 @@ DefPrimitiveI('\bml@process@pt@size', undef, sub {
         huge         => [14.4,  17],
         Huge         => [17.28, 20]
       },
-      # aa
+      # aa (which version? 9.0 on arXiv does not have *pt options)
       'aa10.clo' => {
         normalsize   => [10,    11],
         small        => [9,     10],
@@ -295,32 +301,158 @@ DefPrimitiveI('\bml@process@pt@size', undef, sub {
         LARGE        => [20.74, 22],
         huge         => [20.74, 27],
         Huge         => [20.74, 27]
-      }
+      },
+      # a0poster
+      'a0poster.cls' => {
+        tiny         => [12,    14],
+        scriptsize   => [14.4,  18],
+        footnotesize => [17.28, 22],
+        small        => [20.74, 24],
+        normalsize   => [24.88, 30],
+        large        => [29.86, 37],
+        Large        => [35.83, 45],
+        LARGE        => [43,    54],
+        huge         => [51.6,  64],
+        Huge         => [61.92, 77],
+        veryHuge     => [74.3,  93],
+        VeryHuge     => [89.16, 112],
+        VERYHuge     => [107,   134]
+      },
+      # minimal
+      'minimal.cls' => {
+        normalsize => [10, 12]
+      },
+      # slides
+      'slides.cls' => {
+        normalsize   => [19.907, 28],
+        small        => [16.59,  19],
+        footnotesize => [16.59,  19],
+        scriptsize   => [16.59,  19],
+        tiny         => [13.82,  16],
+        large        => [23.89,  42],
+        Large        => [28.66,  48],
+        LARGE        => [34.4,   52],
+        huge         => [41.28,  60],
+        Huge         => [41.28,  60]
+      },
+      # IEEEtran
+      'IEEEtran9.cls' => {
+        normalsize   => [9,   11.0476],
+        small        => [8.5, 10],
+        footnotesize => [8,   9],
+        scriptsize   => [7,   8],
+        tiny         => [5,   6],
+        sublargesize => [10,  12],
+        large        => [10,  12],
+        Large        => [12,  14],
+        LARGE        => [14,  17],
+        huge         => [17,  20],
+        Huge         => [20,  24]
+      },
+      'IEEEtran10.cls' => {
+        normalsize   => [10, 12],
+        small        => [9,  10],
+        footnotesize => [8,  9],
+        scriptsize   => [7,  8],
+        tiny         => [5,  6],
+        sublargesize => [11, 13.4],
+        large        => [12, 14],
+        Large        => [14, 17],
+        LARGE        => [17, 20],
+        huge         => [20, 24],
+        Huge         => [24, 28]
+      },
+      'IEEEtran11.cls' => {
+        normalsize   => [11, 13.3846],
+        small        => [10, 12],
+        footnotesize => [9,  10.5],
+        scriptsize   => [8,  9],
+        tiny         => [6,  7],
+        sublargesize => [12, 14],
+        large        => [12, 14],
+        Large        => [14, 17],
+        LARGE        => [17, 20],
+        huge         => [20, 24],
+        Huge         => [24, 28]
+      },
+      'IEEEtran12.cls' => {
+        normalsize   => [12, 13.92],
+        small        => [10, 12],
+        footnotesize => [9,  10.5],
+        scriptsize   => [8,  9],
+        tiny         => [6,  7],
+        sublargesize => [14, 17],
+        large        => [14, 17],
+        Large        => [17, 20],
+        LARGE        => [20, 24],
+        huge         => [22, 26],
+        Huge         => [24, 28]
+      },
     );
 
-    my $sizes;
+    my $file;
 
-    for my $class ('aa') {
-      if (LookupValue($class . '.cls.ltxml_loaded') || LookupValue($class . '.cls_loaded')) {
-        $sizes = $bml_font_sizes{"aa$pt.clo"}; } }
+    if ($class eq 'a0poster') {
+      $file = 'a0poster.cls'; }
+    elsif ($class eq 'aastex') {
+      if (!defined $pt) {
+        $pt = 10;
+        for (@classoptions) {
+          if    (m/^(?:manuscript|aasms4)$/)             { $pt = 12; }
+          elsif (m/^(?:preprint|aaspp4|aj_pt4|apjpt4)$/) { $pt = 11; }
+          elsif (m/^(?:preprint2|aas2pp4)$/)             { $pt = 10; } } }
+      $file = "size$pt.clo"; }
+    elsif ($class eq 'acmart') {
+      if (!defined $pt) {
+        $pt = 10;
+        for (@classoptions) {
+          if    (m/^(?:manuscript|acmtog|sigconf|siggraph|sigchi|acmp)$/) { $pt = 9; }
+          elsif (m/^(?:acmsall|acmlarge|sigplan|sigchi-a|acmengage)$/)    { $pt = 10; } } }
+      $file = "amscls$pt.clo"; }
+    elsif ($class =~ m/^(amsart|amsbook|amsproc)$/) {
+      $pt //= 10;
+      $file = "amscls$pt.clo"; }
+    elsif ($class =~ m/^(article|report)$/) {
+      $pt //= 10;
+      $file = "size$pt.clo"; }
+    elsif ($class eq 'beamer') {
+      if (!defined $pt) {
+        $pt = 11;
+        for (@classoptions) {
+          if    (m/^smaller$/) { $pt = 10; }
+          elsif (m/^bigger$/)  { $pt = 12; } } }
+      $file = "size$pt.clo"; }
+    elsif ($class eq 'book') {
+      $pt //= 10;
+      $file = ((10 <= $pt && $pt <= 12) ? 'bk' : 'size') . "$pt.clo"; }
+    elsif ($class eq 'elsart') {
+      $file = 'elsart.clo'; }
+    elsif ($class eq 'IEEEtran') {
+      $pt //= 10;
+      $file = "IEEEtran$pt.clo"; }
+    elsif ($class eq 'iopart') {
+      $file = ($pt == 10) ? 'size10.clo' : 'size12.clo'; }
+    elsif ($class =~ m/^JHEP/) {
+      $pt //= 11;
+      for (@classoptions) {
+        if    (m/^proceedings$/) { $pt = 10; }
+        elsif (m/^published$/)   { $pt = 11; } }
+      $file = "size$pt.clo"; }
+    elsif ($class eq 'minimal') {
+      $file = 'minimal.cls'; }
+    elsif ($class eq 'slides') {
+      $file = 'slides.cls'; }
 
-    for my $class ('amsart', 'amsbook', 'amsproc', 'IEEEtran') {
-      if (LookupValue($class . '.cls.ltxml_loaded') || LookupValue($class . '.cls_loaded')) {
-        $sizes = $bml_font_sizes{"amscls$pt.clo"}; } }
+    # Remaining classes currently supported by LaTeXML:
+    # aa, elsarticle, ieeeconf, llcns, moderncv, quantumarticle covered by defaults
+    # aipproc OMITTED, font sizes are picked in the preamble by \layoutstyle
+    # standalone, subfiles not true classes
+    # TODO gen-j-l, gen-m-l, gen-p-l, mn, mn2e, mnras, PoS, revtex, revtex4-1, revtex4, svjour, svjour3, svmult
 
-    for my $class ('elsart') {
-      if (LookupValue($class . '.cls.ltxml_loaded') || LookupValue($class . '.cls_loaded')) {
-        return unless 10 <= $pt && $pt <= 12;
-        $sizes = $bml_font_sizes{'elsart.clo'}; } }
+    my $sizes = $bml_font_sizes{$file};
+    $pt //= 10;
 
-    for my $class ('article', 'report') {
-      if (LookupValue($class . '.cls.ltxml_loaded') || LookupValue($class . '.cls_loaded')) {
-        $sizes = $bml_font_sizes{"size$pt.clo"}; } }
-
-    for my $class ('book') {
-      if (LookupValue($class . '.cls.ltxml_loaded') || LookupValue($class . '.cls_loaded')) {
-        my $prefix = (10 <= $pt && $pt <= 12) ? 'bk' : 'size';
-        $sizes = $bml_font_sizes{"$prefix$pt.clo"}; } }
+    AssignValue(BML_PT_SIZE => $pt, 'global');
 
     if (!$sizes) {
       # fall back to standard (ext)article sizes
@@ -370,11 +502,16 @@ DefPrimitiveI('\bml@process@pt@size', undef, sub {
     return;
 });
 
-Let('\bml@orig@documentclass', '\documentclass');
-
-DefMacro('\documentclass OptionalSemiverbatim SkipSpaces Semiverbatim []', sub {
-    my ($gullet, $options, $class, $postoptions) = @_;
-    Tokens(T_CS('\bml@orig@documentclass'), $options ? (T_OTHER('['), $options, T_OTHER(']')) : (), T_BEGIN, $class, T_END, $postoptions ? (T_OTHER('['), $postoptions, T_OTHER(']')) : (), T_CS('\bml@process@pt@size'));
-});
+if (grep { m/\.cls\.ltxml_loaded$|\.cls_loaded$/ } keys %{ $STATE->{value} }) {
+  # called after \documentclass
+  Info('bookml', 'init', $STATE->getStomach, 'for best results, add \RequirePackage{bookml-init} or \RequirePackage{bookml/bookml} before \documentclass');
+  RawTeX('\bml@process@pt@size'); }
+else {
+  # patch \documentclass to run \bml@process@pt@size
+  Let('\bml@orig@documentclass', '\documentclass');
+  DefMacro('\documentclass OptionalSemiverbatim SkipSpaces Semiverbatim []', sub {
+      my ($gullet, $options, $class, $postoptions) = @_;
+      Tokens(T_CS('\bml@orig@documentclass'), $options ? (T_OTHER('['), $options, T_OTHER(']')) : (), T_BEGIN, $class, T_END, $postoptions ? (T_OTHER('['), $postoptions, T_OTHER(']')) : (), T_CS('\bml@process@pt@size'));
+  }); }
 
 1;

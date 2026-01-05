@@ -1,11 +1,9 @@
 \documentclass[a4paper,british]{article}
 
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
 
 \usepackage[british]{babel}
 \usepackage{bookml/bookml}
-\usepackage{latexml}
 
 % Google Search Console verification file
 \iflatexml
@@ -30,63 +28,109 @@
 \pdftrailerid{}
 \pdfsuppressptexinfo=-1
 \hypersetup{pdfinfo={Creator={},Producer={}}}
+\hyperbaseurl{https://vlmantova.github.io/bookml/}
 \fi
+
+\hypersetup{pdfsubject={BookML is a fully automated solution for the production of accessible HTML content straight from LaTeX, based on LaTeXML for the widest LaTeX compatibility and bookdown for a modern and accessible look. Integration with Overleaf is provided via a GitHub action. Outputs are also packaged as SCORM for ease of use in higher education. Created by and maintained for maths lecturers at the University of Leeds.}}
 
 \usepackage[dvipsnames]{xcolor}
 \usepackage{geometry}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0.3em}
+\setlength{\parskip}{0.6em}
+
+\usepackage{tabularx}
+% \renewcommand\tabularxcolumn[1]{m{#1}}% for vertical centering text in X columns
+\renewcommand\tabularxcolumn[1]{>{\raggedright\arraybackslash}p{#1}}% for vertical centering text in X columns
+
+\usepackage[all]{xy}
 
 \iflatexml
-\def\Xy{Xy}
 \else
-\usepackage[all]{xy}
 \usepackage{tikz}
 \usetikzlibrary{ducks}
+\usetikzlibrary{animations}
 \usepackage{animate}
 \fi
 \def\tikzname{Ti\emph{k}Z}
 
 \bmlImageEnvironment{animateinline}
+\bmlImageEnvironment{tikzpicture}
+
+\usepackage{amssymb} % framed needs \blacktriangleright
+\usepackage{framed}
+\iflatexml
+  \newenvironment{foldedframe}[2][]{%
+    \subsection*[#2]{}\addcontentsline{toc}{subsection}{#2}\<DETAILS #1>\<SUMMARY>\textbf{#2}\</SUMMARY>}%
+  {\</DETAILS>}
+\else
+  % if compiling to PDF, emit {titled-frame} using the framed package
+  \newenvironment{foldedframe}[2][]{\addcontentsline{toc}{subsection}{#2}\bgroup\colorlet{TFFrameColor}{SpringGreen}\colorlet{TFTitleColor}{black}\begin{titled-frame}{#2}}{\end{titled-frame}\egroup}
+\fi
+
+\newcommand{\youtube}[2]{\bmlRawHTML{<iframe src="https://www.youtube-nocookie.com/embed/#1" title="#2" frameborder="0" allow="picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="" style="width:100\%;max-width:1920px;aspect-ratio:16/9"></iframe>}}
 
 \usepackage{listings}
 \colorlet{WCAGGreen}{OliveGreen!80!black} % a bit darker to get sufficient contrast
-\lstset{basicstyle={\small\ttfamily},%
-  keywordstyle={\color{blue}\bfseries},%
-  keywordstyle=[2]{\color{MidnightBlue}\bfseries},%
-  stringstyle={\color{red}},%
-  commentstyle={\color{WCAGGreen}},%
-  frame=none,
-  xleftmargin=1em,xrightmargin=1em%
+
+\usepackage{listings}
+\lstset{basicstyle={\small\ttfamily},
+  keywordstyle={\color{blue}\bfseries},
+  keywordstyle=[2]{\color{MidnightBlue}\bfseries},
+  stringstyle={\color{red}},
+  commentstyle={\color{OliveGreen}},
+  frame={single},frameround={tttt},rulecolor={\color{SpringGreen}},
+  upquote=true
 }
 
-\lstdefinestyle{bookml}{language=[LaTeX]TeX,%
-  texcsstyle=*{\color{blue}\bfseries},%
-  texcsstyle=*[2]{\color{MidnightBlue}\bfseries},%
-  moretexcs={xymatrix,ltxinline,href,RequirePackage},%
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat}%
-  }
+\lstdefinelanguage{LaTeX}[LaTeX]{TeX}{
+  moretexcs={chapter,text,RequirePackage,includegraphics,bf}
+}
 
-\def\ltxinline{\lstinline[style=bookml]}
-\def\htmlinline{\lstinline[language=html]}
+\lstdefinestyle{latexml}{language=LaTeX,
+  texcsstyle=*{\color{blue}\bfseries},
+  texcsstyle=*[2]{\color{MidnightBlue}\bfseries},
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,
+    lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,ldsHTML,bmlRawHTML,
+    bmlImageEnvironment,bmlDescription,bmlHTMLEnvironment,bmlHTMLInlineEnvironment,bmlDisableMathJax,<,}
+}
+
+\lstdefinestyle{bookml}{language=[LaTeX]TeX,
+  texcsstyle=*{\color{blue}\bfseries},
+  texcsstyle=*[2]{\color{MidnightBlue}\bfseries},
+  moretexcs={xymatrix,ltxinline,href,RequirePackage},
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat}
+}
+
+\lstdefinestyle{yaml}{
+  basicstyle={\small\ttfamily\color{blue}},
+  comment=[l]{:},
+  commentstyle={\color{blue!50!black}},
+}
+
+\def\ltxinline{\lstinline[style=bookml,frame=none]}
+\def\htmlinline{\lstinline[language=html,frame=none]}
+\def\cmdinline{\lstinline[language=bash,frame=none]}
+\def\makeinline{\lstinline[language=make,frame=none]}
+\def\yamlinline{\lstinline[style=yaml,frame=none]}
 
 \usepackage{amsmath}
+\usepackage{cleveref}
 
-\title{BookML\@: automated LaTeX to \href{https://bookdown.org/yihui/bookdown/html.html\#gitbook-style}{bookdown}-style HTML and SCORM, powered by \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML}}
+\title{\texorpdfstring{BookML\@: \LaTeX{} to \HTML, made easy(ish). \\ Powered by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML}.}{BookML: LaTeX to HTML, made easy(ish). Powered by LaTeXML.}}
 \author{Vincenzo Mantova}
 
-\date{3\textsuperscript{rd} October 2024}
+\date{6\textsuperscript{th} January 2026}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-  BookML is a small wrapper around \href{https://dlmf.nist.gov/LaTeXML/}{LaTeXML} for the production of accessible HTML content straight from LaTeX files, and for packaging it as SCORM\@. Created by and maintained for maths lecturers at the University of Leeds.
+  BookML is a fully automated solution for the production of accessible \HTML{} content straight from \LaTeX{}, based on \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML} for the widest \LaTeX{} compatibility and \href{https://bookdown.org/home/}{bookdown} for a modern and accessible look. Integration with \href{https://www.overleaf.com/}{Overleaf} is provided via a \href{https://github.com/marketplace/actions/compile-with-bookml}{GitHub action}. Outputs are also packaged as \href{https://scorm.com/}{SCORM} for ease of use in higher education. Created by and maintained for maths lecturers at the \href{https://eps.leeds.ac.uk/maths}{University of Leeds}.
 \end{abstract}
 
 \begin{center}
-  Sources available on \href{https://github.com/vlmantova/bookml/}{GitHub}.
+  Downloads and sources available on \href{https://github.com/vlmantova/bookml/}{GitHub}.
   \bmlRawHTML{
     <br/>
     <a href="https://github.com/vlmantova/bookml/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/vlmantova/bookml?logo=github\&amp;display\_name=release"/></a>
@@ -96,321 +140,512 @@
 
   Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{index.plain.html}{plain} with Latin Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
 
-  For a more beginner friendly guide see the \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide}.
+  For Leeds-specific instructions see the \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide}.
 \end{center}
+
+BookML is a small package to help you convert \LaTeX{} documents into accessible \HTML{} very similar to the one produced by \href{https://bookdown.org/home/}{bookdown}. The conversion is done by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML{}}, which understands a wide collection of \LaTeX{} packages and can deal with all sorts weird constructs. To see plain(ish) \LaTeXML{} in action, just open any \href{https://info.arxiv.org/about/accessible_HTML.html}{arXiv \HTML} preprint. For examples of BookML documents, see:
+
+\begin{itemize}
+  \item \href{https://vlmantova.github.io/bookml/}{This manual}!
+  \item \href{https://vlmantova.github.io/bookmlleeds/}{The Leeds BookML guide}.
+  \item \href{https://forallx.openlogicproject.org/html/}{forall $x$: Calgary} by Richard Zach.
+  \item \href{https://www.maths.lancs.ac.uk/~grabowsj/rtaca/}{Representation Theory. A Categorical Approach} by Jan E.\ Grabowski.
+  \item \href{https://www.ime.usp.br/~leorolla/probabilidade/}{Probabilidade} by Leonardo T.\ Rolla and Bernando N.B.\ de Lima.
+  \item Some resources of \href{https://rea-mecc.github.io/acervo.html}{REA-MECC}.
+\end{itemize}
+
+BookML key features are:
+\begin{itemize}
+  \item simple installation: BookML is just a zip file you unpack in the folder containing your \texttt{.tex} files (admittedly a lie: you must install \LaTeXML{} first, see \hyperref[get-started-on-your-device]{Getting started on your device});
+  \item accessible and mobile friendly output based on the popular \href{https://bookdown.org/home/}{bookdown} project, including font selection and dark mode, tweaked to meet the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA;
+  \item fully automated (re-)compilation based on which files have changed on disk, powered by \href{https://www.gnu.org/software/make/}{GNU Make}: running a single \cmdinline{make} will recompile the files which need updating;
+  \item high quality conversion of external EPS and PDF figures to SVG via \href{https://dvisvgm.de}{dvisvgm}, rather than ImageMagick used by LaTeXML;
+  \item transparent generation of SVG images from \href{https://tikz.net/}{\tikzname} pictures, \href{https://ctan.org/pkg/animate}{animate} animations, \Xy-matrices, and virtually any other picture-like environment, for when \LaTeXML{} struggles with them;
+  \item easy insertion of alternative text for images;
+  \item arbitrary \HTML{} content in \LaTeX{}, for instance to create foldable paragraphs;
+  \item declare and include alternative PDF versions, which are also recompiled automatically (for instance sans serif, large print);
+  \item outputs are automatically packaged into zip files and \href{https://scorm.com/}{SCORM packages}, which are supported natively by most Learning Management Systems.
+\end{itemize}
 
 \tableofcontents
 
-\section{Getting started}
+\section{Getting started}\label{get-started}
 
-\subsection{Prerequisites}\label{prerequisites}
-\begin{itemize}
-\item \href{https://dlmf.nist.gov/LaTeXML/get.html}{LaTeXML} (minimum 0.8.5, recommended 0.8.6 or later)
-\item for any image handling: the Perl module \href{https://metacpan.org/pod/Image::Magick}{\texttt{Image::Magick}}
-\item for handling EPS, PDF images: \href{https://www.ghostscript.com/}{Ghostscript}
-\item for BookML images (for \tikzname{} and similar packages): \href{https://www.ghostscript.com/}{Ghostscript}, \href{https://ctan.org/pkg/latexmk}{latexmk}, \href{https://ctan.org/pkg/preview}{\texttt{preview.sty}}, \href{https://ctan.org/pkg/dvisvgm}{dvisvgm} (minimum 1.6, recommended 2.7 or later)
-\item for automatic PDF, HTML, zip, SCORM packaging: \href{https://www.gnu.org/software/make/}{GNU make}, \href{https://ctan.org/pkg/latexmk}{latexmk}, \href{https://sourceforge.net/projects/infozip/}{zip}, optionally \href{https://ctan.org/pkg/texfot}{texfot}
-\end{itemize}
+\subsection{On your device}\label{get-started-on-your-device}
 
-\subsection{Installing BookML}
 \begin{enumerate}
-  \item Install the \hyperref[prerequisites]{prerequisites}.
-  \item \textbf{Install/upgrade:} unpack the latest \href{https://github.com/vlmantova/bookml/releases}{BookML release} and put the \texttt{bookml} folder next to your \texttt{.tex} files.
-  \item \textbf{First install only:} copy \texttt{bookml/GNUmakefile} next to your \texttt{.tex} files.
+  \item Install the bare minimum prerequisites: \href{https://dlmf.nist.gov/LaTeXML/get.html}{LaTeXML} (minimum 0.8.7, recommended 0.8.8 or later) and \href{https://www.gnu.org/software/make/}{GNU Make} (minimum 3.81, but later versions are considerably faster), on top of a working \TeX{} installation, such as \TeX{} Live or MiK\TeX{}.
+  \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases/latest/download/release.zip}{BookML release} and put the \texttt{bookml} folder next to your \texttt{.tex} files. You can also start with a \href{https://github.com/vlmantova/bookml/releases/latest/download/template.zip}{minimal template}.
+  \item \textbf{First time only:} move \texttt{bookml/GNUmakefile} one folder up. It must be in the same folder as your main \texttt{.tex} files.
+  \item Now open a terminal in the folder containing \texttt{GNUmakefile} and run \cmdinline{make detect} (use \cmdinline{gmake detect} on Windows).
 \end{enumerate}
 
-Or you can unpack the \href{https://github.com/vlmantova/bookml/releases/latest/download/template.zip}{template} to start with a working minimal example.
+When all goes well, you should see an output like the following:
 
-The \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide} has further examples and tips for lecturers and detailed installation instructions (some specific to the University of Leeds), including for instance how to compile exercises with and without solutions, or how to produce various alternative PDFs from the same file.
+\begin{tabularx}{\textwidth}[h]{>{\color{MidnightBlue}\tt}r@{\texttt{\ }}>{\tt}X}
+  Main files:    & \textcolor{OliveGreen}{template.tex}                                          \\
+  BookML:        & \textcolor{OliveGreen}{\BookMLversion{} OK}                                   \\
+  GNU Make:      & \textcolor{OliveGreen}{4.4.1 OK}                                              \\
+  TeX:           & \textcolor{OliveGreen}{MiKTeX 25.4 OK}                                        \\
+  perl:          & \textcolor{OliveGreen}{v5.42.0 OK}                                            \\
+  LaTeXML:       & \textcolor{OliveGreen}{0.8.8 OK}                                              \\
+  Image::Magick: & \textcolor{red}{NOT FOUND} (required for any image handling)                  \\
+  Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS to SVG; may be required for PDF to SVG) \\
+  mutool:        & \textcolor{red}{NOT FOUND} (may be required for PDF to SVG)                   \\
+  dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (required for BookML images, EPS/PDF to SVG) \\
+  dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS/PDF to SVG)  \\
+  latexmk:       & \textcolor{OliveGreen}{4.87 OK}                                               \\
+  texfot:        & \textcolor{OliveGreen}{1.48 OK} (optional, for hiding some LaTeX messages)    \\
+  preview.sty:   & \textcolor{OliveGreen}{14.0.6 OK} (required for BookML images)                \\
+  zip:           & \textcolor{OliveGreen}{3.1b OK}                                               \\
+  curl:          & \textcolor{OliveGreen}{8.13.0 OK} (required for updating with `make update')
+\end{tabularx}
 
-\subsection{Compilation}
+The first line shows which files BookML will try to compile: each \texttt{.tex} file in the current folder that contains the string \ltxinline|\documentclass| (even if commented out!). The rest informs you on which software you may need to install or update. \textbf{Not everything is necessary:} the output of \cmdinline{make detect} will tell you what functionality requires a particular program. The \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide} has detailed installation instructions for various platforms, many specific to the University of Leeds.
 
-Run \ltxinline|make| in the folder containing \texttt{GNUmakefile} and the \texttt{.tex} files. Each \texttt{.tex} file containing the string \ltxinline|\documentclass| will be compiled to PDF, \HTML{}, then a zip package and a SCORM package.
+Finally, run \cmdinline{make} (or \cmdinline{gmake} on Windows). BookML will compile each `main file' to a zip file and a SCORM package. You can inspect the result by directly opening the folder \texttt{auxdir/html}.
 
-If compilation does not succeed, you may have to run \ltxinline|make| a second time. If it still fails, run \ltxinline|make clean-aux| or delete the \texttt{auxdir} folder to reset the state.
+\textbf{Tip:} the first time you run BookML against a new document, add an early \ltxinline|\end{document}|, say after one or two pages, to check whether \LaTeXML{} is handling well your selection of packages and macros.
 
-\section{Options}
+\subsection{Overleaf}\label{get-started-on-overleaf}
+If you have a paid Overleaf plan, you can also compile your Overleaf project on GitHub's servers.
+\begin{enumerate}
+  \item Open your Overleaf \href{https://www.overleaf.com/user/settings}{account settings} and \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#linking-your-overleaf-account-to-your-github-account}{link your GitHub account} from the `GitHub Sync' entry.
+  \item Open an existing or new Overleaf project and start \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#creating-a-new-github-repository-from-an-overleaf-project}{synchronizing it with a new GitHub repository}. The process is smoother when \textbf{the project name has no spaces}. \textbf{Note:} I recommend you immediately visit the new repository and click the `Watch' icon (next to `Edit Pins', `Fork', `Star').
+  \item Finally, add the file \texttt{.github/workflows/bookml.yaml} to the project with the following content:
+    \begin{lstlisting}[style=yaml]
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Compile with BookML
+        uses: vlmantova/bookml-action@v1
+    \end{lstlisting}
+    Now synchronize the project with GitHub. \textbf{First time only:} GitHub will ask you to grant permissions to Overleaf to run workflows. Say yes!
+  \item GitHub should start compiling all \texttt{.tex} files at the top folder of your Overleaf project that contain the string \ltxinline|\documentclass| (even if commented out!). The work is done by the BookML Docker image, which at the moment contains a full copy of \TeX{} Live 2021.
+  \item If you `watched' the repository as recommended in the previous steps, you should receive an email in 2-3 minutes with the download links of all the outputs compiled by BookML and any relevant error messages. If you do not watch the repository, you must visit the repository page yourself and look for new entries under `Releases' (below `About') or open the latest workflow run under the `Action' tab.
+  \item Every time you want to compile a new version of your Overleaf project, just push the new changes to GitHub.
+\end{enumerate}
 
-The \ltxinline|bookml| package accepts a few options (for instance use \ltxinline|\usepackage[nomathjax]{bookml/bookml}| to avoid including MathJax). The options have no effect on the PDF output.
+\subsection{GitHub}\label{get-started-on-github}
+\begin{enumerate}
+  \item Simply add the file \texttt{.github/workflows/bookml.yaml} to your repositories with the following content:
+    \begin{lstlisting}[style=yaml]
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Compile with BookML
+        uses: vlmantova/bookml-action@v1
+    \end{lstlisting}
+    I also recommend that you watch the repository (this is typically already happening for your own repository; see the `Watch' icon on the repository page, next to `Edit Pins', `Fork', `Star').
+  \item GitHub should start compiling all \texttt{.tex} files at the top folder of your repository that contain the string \ltxinline|\documentclass| (even if commented out!). The work is done by the BookML Docker image, which at the moment contains a full copy of \TeX{} Live 2021.
+  \item If you are watching the repository as recommended in the previous steps, you should receive an email in 2-3 minutes with the download links of all the outputs compiled by BookML and any relevant error messages. If you do not watch the repository, you must visit the repository page yourself and look for new entries under `Releases' (below `About') or open the latest workflow run under the `Action' tab.
+  \item Every push will start a new compile. If you push frequently, consider tweaking the action to run only when pushing to \href{https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#running-your-workflow-only-when-a-push-to-specific-branches-occurs}{specific branches} or \href{https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#running-your-workflow-only-when-a-push-of-specific-tags-occurs}{tags}.
+\end{enumerate}
 
-\begin{description}
-  \item[\texttt{style=gitbook}] Use the GitBook style (the default behaviour). When using the GitBook style, you must call \ltxinline|latexmlc| (or \ltxinline|latexmlpost|) with the option \ltxinline|--navigationtoc=context|. Any PDF or EPUB file with the same name as the source will be detected and added to the download menu.
-  \item[\texttt{style=plain}] Use the \LaTeXML{} style with a few slightly opinionated tweaks.
-  \item[\texttt{style=none}] Use the \LaTeXML{} style with no tweaks (except for backported styles and some fixes).
-  \item[\texttt{nomathjax}] Do not include MathJax in the output.
-  \item[\texttt{mathjax=2}] Use MathJax version 2 instead of version 3.
-  \item[\texttt{imagescale=X.XXX}] \textbf{(DEPRECATED)} Rescale the images generated via \LaTeX{} (\S~\ref{sec:external-image}) by the desired factor. The scaling factor is adjusted internally based on the options \ltxinline|8pt|, \ltxinline|9pt|, \dots, \ltxinline|12pt| being passed to the document class.
-  \item[\texttt{nohtmlsyntax}] Disable the \HTML{} syntax that makes \ltxinline|\<| into the BookML command for introducing \HTML{} tags. Required if you already define \ltxinline|\<| for something else.
-\end{description}
+If you `watched' the repository as recommended in the previous steps, you should receive an email in 2-3 minutes with the download links of all the outputs compiled by BookML and any relevant error messages. If you do not watch the repository, you must visit the repository page yourself and look for new entries under `Releases' (below `About') or open the latest workflow run under the `Action' tab.
 
-\section{Customisation}
+\subsection{Docker/Podman}\label{get-started-on-docker-podman}
+BookML is also available as a Docker image, which automatically compile all \texttt{.tex} files at the top of the \texttt{/source} folder containing the string \ltxinline|\documentclass| (even if commented out!). The image is identical to the one used for Overleaf, and so it contains a full copy of \TeX{} Live 2021.
 
-\subsection{\CSS{} and fonts}
-The \CSS{} files in the folder \lstinline|bmluser|, if one exists, are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles.
-
-If the file name ends with \lstinline|.style1,style2-jobname.css|, then that file will be used only when \lstinline|style=style1| is passed, or when \lstinline|style=style2| is passed and the file is called \lstinline|jobname.tex|. You can use \lstinline|._all.css| to ensure that the file is included in every style.
-
-The \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this manual has been compiled with \href{https://vlmantova.github.io/bookml/bmluser/latin-modern.plain.css}{\texttt{latin-modern.plain.css}} that sets the font to Latin Modern.
-
-\subsection{\HTML{} output}
-
-You can copy the file \texttt{bookml/LaTeXML-html5.xsl} one level up and modify it to customise the \HTML{} output. Knowledge of XSLT is required!
-
-\subsection{Splitting}
-
-By default, files are split into separate pages for each section. You can change this by running \lstinline|make SPLITAT=chapter| or \lstinline|make SPLITAT=|.
-
-To make the change permanent, add the line \lstinline|SPLITAT=chapter| to \texttt{GNUmakefile}. You can also specify different values per file, for instance \lstinline|docs.zip: SPLITAT=| (or better yet, \lstinline|auxdir/html/docs/index.html: SPLITAT=|).
-
-The \lstinline|latexml| command line can be further customize by setting the variables \lstinline|LATEXMLEXTRAFLAGS| and \lstinline|LATEXMLPOSTEXTRAFLAGS|. See the file \texttt{bookml/bookml.mk} for all the options and the default values.
-
-\section{Commands}
-
-\subsection{Conditional execution}
-Call \ltxinline|\iflatexml ... \else ... \fi| to write code that is executed only by \LaTeXML{}, or only (pdf)\LaTeX{} respectively. \lstinline|bookml| will try to use the \lstinline|latexml| package, if available, or use its own embedded copy. See Figure~\ref{fig:iflatexml}.
-
-\begin{figure}[hb]
-  \begin{lstlisting}[style=bookml]
-\caption{Example of
-  \iflatexml\ltxinline|\xymatrix|\else\ltxinline|\\xymatrix|\fi{}
-  from the \ltxinline|xypic| documentation.}
-  \end{lstlisting}
-  \caption{Example of \texttt{\textbackslash{}iflatexml}, used in Figure~\ref{fig:xymatrix} to work around a subtle difference between \LaTeXML{} and \LaTeX{}.}
-  \label{fig:iflatexml}
-\end{figure}
-
-\subsection{Alternative text for images}
-Call \ltxinline|\bmlDescription{textual description}| \emph{right after} an image to populate its \htmlinline|alt| attribute (or \ltxinline|aria-label| if appropriate). Inspect the \HTML{} source of Figure~\ref{fig:duck} or use a screen reader to check its text description.
-
-\LaTeXML{} version 0.8.7 and later support the new \LaTeX{} syntax which (eventually) will also embed the alternative text in the PDF output: \ltxinline|\includegraphics[alt={textual description}]|.
-
-\subsection{Disable MathJax for some equations}
-Call \ltxinline|\bmlDisableMathJax{}| inside an equation to stop MathJax from processing the equation. Useful if you want to use MathJax, but you have equations that are better handled by the browser (you may need to include a suitable font, such as Latin Modern Math or STIX Two Math). When used inside an environment creating multiple equations, it applies only to the ones containing the command. See Figure~\ref{fig:disable-mathjax}.
-
-\begin{figure}
-  \begin{lstlisting}[style=bookml]
-\begin{align*}
-  \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \href{https://www.mathjax.org/}{MathJax}} \\
-  \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \emph{the browser}}
-\end{align*}
-  \end{lstlisting}
-  \begin{align*}
-    \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \href{https://www.mathjax.org/}{MathJax}} \\
-    \bmlDisableMathJax \int_0^{+\infty} x^2 \mathrm{d}x \quad \text{rendered by \emph{the browser}}
-  \end{align*}
-  \caption{How to disable MathJax for a single equation.}
-  \label{fig:disable-mathjax}
-\end{figure}
-
-\subsection{Add custom CSS classes}
-Call \ltxinline|\bmlPlusClass{class}| \emph{right after} some piece of content to add a CSS class. If done within text, its effect may be unpredictable. Its main use is to call \ltxinline|\bmlPlusClass{bml_no_invert}| after an image to prevent the picture from getting inverted in night mode. Compare how Figure~\ref{fig:duck} (with \ltxinline|bml_no_invert|) and Figure~\ref{fig:xymatrix} (no additional classes) change in night mode to see the difference.
-
-Note that the package \ltxinline|latexml| also offers \ltxinline|\lxAddClass| and \ltxinline|\lxWithClass| for the same effect but different behaviour regarding which element gets the class.
-
-\subsection{Generate pictures with \LaTeX{}}
-\label{sec:external-image}
-
-\LaTeXML{} supports the \ltxinline|picture| environment as well as \tikzname{} pictures and some \Xy-matrices. In some situations, especially with \Xy-matrices, the output is can be mangled. Some common packages are not supported altogether (for instance \ltxinline|animate|).
-
-BookML offers a simple automated way of generating SVG images using \LaTeX{}, bypassing \LaTeXML{} entirely. In your preamble, after \ltxinline|\usepackage{bookml/bookml}|, write
-\begin{lstlisting}[style=bookml]
-\bmlImageEnvironment{animateinline}
-
-\usepackage{tikz}
-\usepackage{tikzcd}
-% optional, but speeds up compilation:
-% do not load animate when running in LaTeXML
-\iflatexml\else
-\usepackage{animate}
-\fi
+You can run the Docker image by opening a terminal in the folder containing the \texttt{.tex} files and running
+\begin{lstlisting}[language=bash]
+docker run --rm -i -t -v.:/source ghcr.io/vlmantova/bookml
 \end{lstlisting}
+Additional arguments are passed to \texttt{make}, for instance
+\begin{lstlisting}[language=bash]
+docker run --rm -i -t -v.:/source ghcr.io/vlmantova/bookml detect
+\end{lstlisting}
+will show an output similar to the one described in \hyperref[get-started-on-your-device]{Getting started on your device}.
 
-All environments passed to \ltxinline|\bmlImageEnvironment|, in this case \ltxinline|animate|, will be compiled with \LaTeX{} using \lstinline[frame=none]|latexmk| and converted to SVG images via \lstinline[frame=none]|dvisvgm|. Figure~\ref{fig:duck} demonstrates this approach.
+\section{Examples and tips}\label{examples-and-tips}
 
-\begin{figure}
+While many \texttt{.tex} files will be fine with no changes, you may want to tweak the output further by invoking the \ltxinline|\usepackage{bookml/bookml}| or by adding settings to \texttt{GNUmakefile}. Below are some notable examples. For the full list of options and commands, see the \hyperref[reference-manual]{Reference manual}.
+
+\begin{foldedframe}[open=""]{Alternative text}\label{alternative-text}
+  For \ltxinline|\includegraphics|, just add the option \ltxinline|alt={description of the image}|, as in
   \begin{lstlisting}[style=bookml]
-\begin{animateinline}[
-  alttext=none,loop,controls,nomouse,poster=20,autopause,
-  begin={\begin{tikzpicture}
-    \useasboundingbox (0,0) rectangle (5,3);},
-    end={\end{tikzpicture}}]{30}
-  \multiframe{160}{dShift=50mm+-0.5mm}
-    {\duck[tophat,xshift=\dShift]}
-\end{animateinline}
-\bmlDescription{A stylised rubber duck, yellow
-  and wearing a black top hat, enters from the right
-  and slides until it exits from the left. The animation
-  repeats every six seconds.}
-\bmlPlusClass{bml_no_invert} % preserve colours in night mode
+\includegraphics[alt={Computation of ...}]{figure1}
   \end{lstlisting}
-  \begin{center}
-    \begin{animateinline}[
-      alttext=none,loop,controls,nomouse,poster=20,autopause,
-      poster=20,autopause,
-      begin={\begin{tikzpicture}%
-        \useasboundingbox (0,0) rectangle (5,3);},
-        end={\end{tikzpicture}}]{30}
-      \multiframe{160}{dShift=50mm+-0.5mm}
-        {\duck[tophat,xshift=\dShift]}
-    \end{animateinline}
-  \end{center}
-  \bmlDescription{A stylised rubber duck, yellow
-    and wearing a black top hat, enters from the right
-    and slides until it exits from the left. The animation
-    repeats this every six seconds.}
-  \bmlPlusClass{bml_no_invert} % preserve colours in night mode
-  \caption{A fancy duck. Click on the play button to start the animation (for the PDF, it requires a compatible software such as Acrobat Reader).}
-  \label{fig:duck}
-\end{figure}
 
-If you only need this mechanism in a pinch, you can simply wrap the desired content between \ltxinline|\begin{bmlimage}| and \ltxinline|\end{bmlimage}| as exemplified in Figure~\ref{fig:xymatrix}.
-\begin{figure}
+For other images such as \tikzname{} pictures, add \ltxinline|\bmlDescription{text}| \textbf{right after} the image. \textbf{Do not leave any space between the picture and }\ltxinline|\bmlDescription|\textbf{!} Please remember that sighted users can also benefit from descriptions. Consider using \ltxinline|\begin{figure}| and \ltxinline|\caption{}| instead.
+\end{foldedframe}
+
+\begin{foldedframe}[open=""]{Animations}\label{animations}
+  Both \texttt{animate} and \tikzname{} can produce animations, but \LaTeXML{} does not support this at the moment. BookML can transparently convert the animations to SVG using \ltxinline|\bmlImageEnvironment|. For instance, add the following to the preamble:
   \begin{lstlisting}[style=bookml]
-\[ \begin{bmlimage}
+\bmlImageEnvironment{animateinline}
+  \end{lstlisting}
+
+  Then all animations created with \ltxinline|animateinline| from the \texttt{animate} package will be converted faithfully.
+
+  \begin{animateinline}[
+    alttext=none,loop,controls,nomouse,poster=first,autopause,
+    begin={\begin{tikzpicture}
+      \useasboundingbox (0,0) rectangle (5,3);},
+      end={\end{tikzpicture}}]{2}
+    \multiframe{3}{nTime=.3+.3}
+      {\duck[tophat,scale=\nTime,xshift=\nTime*2]}
+  \end{animateinline}
+
+  For the occasional \tikzname{} figure, adding \ltxinline|\begin{bmlimage}| around it will suffice.
+  \begin{bmlimage}
+    \begin{tikzpicture}
+      \clip (1,-0.5) rectangle (8,2.5);
+      \begin{scope}[animate = {myself:xshift = {0s = "-2cm", 6s = "10cm", repeats}, myself:rotate = {0s = "0", 6s = "2160", origin = {(1,1)}, repeats}}]
+        \duck[tophat]
+      \end{scope}
+    \end{tikzpicture}
+  \end{bmlimage}
+\end{foldedframe}
+
+\begin{foldedframe}[open=""]{Difficult pictures}\label{difficult-pictures}
+  If the occasional picture takes too long to compile, or it comes out wrong, wrap it in \ltxinline|\begin{bmlimage}|.
+  \[ \text{straight \Xy-matrix: }
   \xymatrix{
-    U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
-    & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
-    & Y \ar[r]^g & Z}
+    A \ar[rd] \ar^\phi[r] & B \\
+                          & C } \]
+  \[ \text{\Xy-matrix in \texttt{bmlimage}: }\begin{bmlimage}
+  \xymatrix{
+    A \ar[rd] \ar^\phi[r] & B \\
+                          & C }
   \end{bmlimage} \]
+  \begin{lstlisting}[style=bookml]
+\[ \text{\Xy-matrix in \texttt{bmlimage}: }\begin{bmlimage}
+\xymatrix{
+  A \ar[rd] \ar^\phi[r] & B \\
+                        & C }
+\end{bmlimage} \]
   \end{lstlisting}
-  \[ \begin{bmlimage}
-    \xymatrix{
-      U \ar@/_/[ddr]_y \ar@/^/[drr]^x \ar@{.>}[dr]|-{(x,y)} \\
-      & X \times_Z Y \ar[d]^q \ar[r]_p & X \ar[d]_f \\
-      & Y \ar[r]^g & Z}
-    \end{bmlimage} \]
-  \bmlDescription{Universal property of the pullback as defined in [omitted].}
-  \caption{Example of \iflatexml\ltxinline|\xymatrix|\else\ltxinline|\\xymatrix|\fi{} from the \ltxinline|xypic| documentation.}
-  \label{fig:xymatrix}
-\end{figure}
 
-\subsection{Alternative formats}
-\ltxinline|\bmlAltFormat{docs.large.pdf}{PDF (large print)}| instructs BookML to compile \texttt{docs.large.tex} to PDF and include the result in the \HTML{} output. The file will appear in the `Downloads' menu of the GitBook style.
+  To deal with \textbf{every} \tikzname{} picture automatically, use \ltxinline|\bmlImageEnvironment{}|. The following code shows how to even \textbf{not load \tikzname}, so that \LaTeXML{} can run through the preamble faster, saving potentially up to 1 minute.
+  \begin{lstlisting}[style=bookml]
+\bmlImageEnvironment{tikzpicture}
+\iflatexml
+\else
+\usepackage{tikz}
+% ... ALL of the TikZ-related preamble code here
+\fi
+% No TikZ commands after this point!
+  \end{lstlisting}
+\end{foldedframe}
 
-Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltxinline|\documentclass| or it will be compiled by itself into \HTML{}, zip, and SCORM.
+\begin{foldedframe}[open=""]{Videos}\label{videos}
+  You can inject arbitrary \HTML{} using \ltxinline|\bmlRawHTML{HTML here}| or \ltxinline|\<div>TeX here\</div>|. That is enough to insert videos, for example by typing the YouTube embed code. Note that characters must be escaped, for instance replace \ltxinline|%| with \ltxinline|\%|, and you must follow the \XML{} syntax, so an attribute \htmlinline|<iframe allowfullscreen>| will need to be written as \htmlinline|<iframe allowfullscreen="">|.
+  \begin{lstlisting}[style=bookml]
+\bmlRawHTML{<iframe allowfullscreen=""></iframe>}
+  \end{lstlisting}
 
-See \texttt{template.tex}, \texttt{template-sans.tex}, \texttt{template-sans-large.tex} for an example.
+  I advise you to remove \htmlinline|width| and \htmlinline|height| and replace them with a suitable \htmlinline|style|, such as:
+  \begin{lstlisting}[style=bookml]
+\bmlRawHTML{<iframe style="width:100\%;
+  max-width:1920px;aspect-ratio:16/9"
+  src="https://www.youtube-nocookie.com/..." ...></iframe>}
+  \end{lstlisting}
 
-\subsection{SCORM description}
-BookML supports adding metadata to your SCORM packages via the \texttt{hyperref} package:
-\begin{lstlisting}[style=bookml]
+  You can even create a macro:
+  \begin{lstlisting}[style=bookml]
+\newcommand{\youtube}[2]{\bmlRawHTML{<iframe
+    src="https://www.youtube-nocookie.com/embed/#1"
+    title="#2" style=...></iframe>}}
+  \end{lstlisting}
+
+  \youtube{pTqBXcUPDug?si=tfkXijIyz4dgB38Z}{SCORM upload to Blackboard Learn Ultra}
+  % \bmlRawHTML{<iframe src="https://www.youtube-nocookie.com/embed/pTqBXcUPDug?si=tfkXijIyz4dgB38Z" title="SCORM upload to Blackboard Learn Ultra" frameborder="0" allow="picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="" style="width:100\%;max-width:1920px;aspect-ratio:16/9"></iframe>}
+\end{foldedframe}
+
+\begin{foldedframe}[open=""]{Foldable environments}\label{foldable-environments}
+  If you want to hide a proof, a solution, or some additional details, you can use the \htmlinline|<details>| \HTML{} tag, as follows:
+
+  \begin{lstlisting}[style=bookml]
+\<details>
+  \<summary>\textbf{Solution.}\</summary>
+  ...details of the solutions...
+\</details>
+    \end{lstlisting}
+
+  \<details>
+    \<summary>\textbf{Solution.}\</summary>
+    ...details of the solutions...
+  \</details>
+
+  I suggest creating an environment, for instance:
+  \begin{lstlisting}[style=bookml]
+\iflatexml % for the HTML
+\newenvironment{solution}
+  {\<details>\<summary>Solution.\</summary>}
+  {\</details>}
+\else      % for the PDF
+\newenvironment{solution}{\begin{proof}[Solution]}{\end{proof}}
+\fi
+  \end{lstlisting}
+
+  The \HTML{} tags must be written in \XML{} syntax (so \ltxinline|\<br/>| rather than \ltxinline|\<br>|). See \hyperref[reference-manual]{Reference manual} for more details.
+\end{foldedframe}
+
+\begin{foldedframe}{Customize header and footer (e.g.\ for copyright notice)}\label{headers-and-footers}
+  Use the environments \ltxinline|lxHeader|, \ltxinline|lxFooter|.
+  \begin{lstlisting}[style=bookml]
+\begin{lxFooter}
+  Copyright \copyright{} 2026 Vincenzo Mantova, University of Leeds.
+\end{lxFooter}
+    \end{lstlisting}
+  The header is omitted in the bookdown style.
+\end{foldedframe}
+
+\begin{foldedframe}{Split by chapter instead of section, or not split at all}\label{split-by-chapter}
+  Add \makeinline|SPLITAT=chapter| to \texttt{GNUmakefile} to split the output by chapters (you can use part, chapter, section\ldots). Write \makeinline|SPLITAT=| to output a single page.
+
+  You can also specify different splitting strategies for different files by writing:
+  \begin{lstlisting}
+$(AUX_DIR)/html/lecturenotes/index.html: SPLITAT=chapter
+$(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
+\end{lstlisting}
+  to the end of \texttt{GNUmakefile}. See \hyperref[reference-manual]{Reference manual} for more details.
+
+  By default, all files are split by section.
+\end{foldedframe}
+
+\begin{foldedframe}{Change MathJax version}\label{mathjax-versions}
+  The current default for BookML is MathJax 3 due to remaining minor incompatibilities, but MathJax 4 already works well for most documents. If you want to jump ahead, use
+  \begin{lstlisting}[style=bookml]
+\usepackage[mathjax=4]{bookml/bookml}
+  \end{lstlisting}
+\end{foldedframe}
+
+\begin{foldedframe}{Disable MathJax for an equation}\label{disable-mathjax}
+  Add \ltxinline|\bmlDisableMathJax| within the equation. For environments generating multiple equations, such as \ltxinline|\begin{align*}|, the command will only have effect on the row it appears. Please review the output in Firefox, Safari, and Chrome/Edge as it is likely to look different across different browsers.
+\end{foldedframe}
+
+\begin{foldedframe}{Alternative formats}\label{alternative-formats}
+  By default, BookML includes the PDF in the final output. Additional versions can be added by calling for instance
+  \begin{lstlisting}[style=bookml]
+\bmlAltFormat{docs.large.pdf}{PDF (large print)}
+  \end{lstlisting}
+  Then BookML will compile \texttt{docs.large.tex} to PDF and include it in the \HTML{} output. The file will appear in the `Downloads' menu of the GitBook style.
+
+  Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltxinline|\documentclass| or it will be compiled by itself into \HTML{}, zip, and SCORM.
+
+  See \texttt{template.tex}, \texttt{template-sans.tex}, \texttt{template-sans-large.tex} for an example.
+\end{foldedframe}
+
+\begin{foldedframe}{Set the SCORM description}\label{scorm-description}
+  BookML supports adding metadata to your SCORM packages via the \texttt{hyperref} package:
+  \begin{lstlisting}[style=bookml]
 \usepackage{hyperref}
 \hypersetup{pdfsubject={Description of this file}}
-\end{lstlisting}
-Note that the metadata is not specific to the SCORM package, but will also become part of the PDF. Use \ltxinline|\iflatexml...\fi| appropriately if you need different information. If the \texttt{pdfsubject} is not present, the abstract will be used as description.
-
-\subsection{Direct \HTML{} input}
-
-You can insert arbitrary \HTML{} code using \ltxinline|\bmlRawHTML{html code}|.
-
-\textbf{Warning:} the \HTML{} code needs to be written in `XML syntax', so you have to close all the tags (for instance, write \htmlinline|<br/>| instead of \htmlinline|<br>|, close the \htmlinline|<p>| tags, and so on) and empty attributes \emph{must} be given the value \htmlinline|""| (see this \href{https://dev.w3.org/html5/html-author/#elements}{old W3C guide} for some indications). Moreover, you must remember to escape your \ltxinline|%&_^${}|, and replace \ltxinline|\| with \ltxinline|\textbackslash|.
-
-\ltxinline|\bmlRawHTML| is robust, i.e.\ it does not change the category codes, so it can be used inside \ltxinline|\newcommand| to create custom macros. See for instance Figure~\ref{fig:youtube-ducks} for a generic YouTube embedding macro. Note that the video will not be visible in the PDF, so a link should always be provided (possibly PDF only, as in the example).
-
-\begin{figure}
-  \begin{lstlisting}[style=bookml]
-\newcommand{\youtube}[2]{\bmlRawHTML{
-  <div style="max-width: 1920px; width: 100\%">
-    <div style="position: relative;
-        padding-bottom: 56.25\%; height: 0; overflow: hidden;">
-      <iframe width="1920" height="1080"
-        src="https://www.youtube-nocookie.com/embed/#1"
-        title="YouTube: #2" allowfullscreen=""
-        style="border:none; position: absolute; top: 0; left: 0;
-          right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
-        allow="accelerometer; autoplay; clipboard-write;
-          encrypted-media; gyroscope; picture-in-picture"/>
-    </div>
-  </div>}
-\iflatexml\else
-\begin{center}
-  Watch \href{https://www.youtube.com/watch?v=#1}{#2}.
-\end{center}
-\fi}
-\youtube{mH0oCDa74tE}
-  {Group theory, abstraction, and the 196,883-dimensional monster}
   \end{lstlisting}
-  \newcommand{\youtube}[2]{\bmlRawHTML{
-    <div style="max-width: 1920px; width: 100\%">
-      <div style="position: relative;
-          padding-bottom: 56.25\%; height: 0; overflow: hidden;">
-        <iframe width="1920" height="1080"
-          src="https://www.youtube-nocookie.com/embed/#1"
-          title="YouTube: #2" allowfullscreen=""
-          style="border:none; position: absolute; top: 0; left: 0;
-            right: 0; bottom: 0; height: 100\%; max-width: 100\%;"
-          allow="accelerometer; autoplay; clipboard-write;
-            encrypted-media; gyroscope; picture-in-picture"/>
-      </div>
-    </div>}
-  \iflatexml\else
+  Note that the metadata is not specific to the SCORM package, but will also become part of the PDF. Use \ltxinline|\iflatexml...\fi| appropriately if you need different information. If the \texttt{pdfsubject} is not present, the abstract will be used as description.
+\end{foldedframe}
+
+\begin{foldedframe}{Some PDF and EPS figures look odd}\label{odd-pdf-eps-figures}
+  BookML uses \texttt{dvisvgm} to convert PDF and EPS images to SVG. Unfortunately, that goes wrong under certain conditions. If that happens to you, please convert those figures yourself, and place the resulting images in the same place and with the same name as the original PDF or EPS files, but extensions \texttt{.svg}, \texttt{.png}, or \texttt{.jpg}.
+\end{foldedframe}
+
+\begin{foldedframe}{Some images look weird in sepia and dark mode}\label{images-in-sepia-dark-mode}
+  BookML changes colours to all the images in sepia and dark mode so that they match the surrounding text. This is generally fine for diagrams and graphs, but can be problematic for photos.
+
+  To prevent a specific picture from changing, call \ltxinline|\bmlPlusClass{bml_no_invert}| immediately after the picture. You can see the difference on the two pictures below.
+
   \begin{center}
-    Watch \href{https://www.youtube.com/watch?v=#1}{#2}.
+    \begin{tikzpicture}
+      \duck[hat]
+    \end{tikzpicture}
+    \begin{tikzpicture}
+      \duck[hat]
+    \end{tikzpicture}\bmlPlusClass{bml_no_invert}
   \end{center}
-  \fi}
-  \youtube{mH0oCDa74tE}
-    {Group theory, abstraction, and the 196,883-dimensional monster}
-  \caption{Demonstration of \iflatexml\ltxinline|\bmlRawHTML|\else\ltxinline|\\bmlRawHTML|\fi{} within \iflatexml\ltxinline|\newcommand|\else\ltxinline|\\newcommand|\fi{} with a video from \href{https://www.youtube.com/3blue1brown}{3Blue1Brown}.}
-  \label{fig:youtube-ducks}
-\end{figure}
+\end{foldedframe}
 
-\subsection{Interspersing \LaTeX{} and \HTML{} (beta)}
+\begin{foldedframe}{Run different code for PDF and for \HTML{}}\label{different-code-for-PDF-and-HTML}
+  The conditional \ltxinline|\iflatexml| lets you pass different code to \LaTeXML{} and \LaTeX{}.
+  \begin{lstlisting}[style=bookml]
+\iflatexml
+% code run by LaTeXML only, for the HTML
+\else
+% code run by LaTeX only, for the PDF
+\fi
+  \end{lstlisting}
+\end{foldedframe}
 
-You may write arbitrary \HTML{} using the syntax \ltxinline|\<html-tag>|. Just as for \ltxinline|\bmlRawHTML|, you need to use the \XML{} syntax.
+\begin{foldedframe}{Customise \CSS{} (fonts, colors, etc)}\label{customise-CSS}
+  Just add \CSS{} files to the \texttt{bmluser/} folder. See \hyperref[reference-manual]{Reference manual} for how files get included.
+\end{foldedframe}
 
-If you need the command sequence \ltxinline|\<| for other purposes, load the BookML package with the option \texttt{nohtmlsyntax}. You may still intersperse the \HTML{} tags by declaring them first with \ltxinline|\bmlHTMLEnvironment{tag}|, and then using \ltxinline|\begin{h:tag} ... \end{h:tag}|. Attributes can be passed as optional arguments \ltxinline|\begin{h:tag}[attr1=val1,attr2=val2]|. You can specify multiple tags by separating them with commas, as in \ltxinline|\bmlHTMLEnvironment{tag1,tag2}|.
+\begin{foldedframe}{Disable the bookdown style}\label{disable-bookdown-style}
+  If you do not like the bookdown style and prefer a more plain page, use
+  \begin{lstlisting}[style=bookml]
+\usepackage[style=plain]{bookml/bookml}
+  \end{lstlisting}
+\end{foldedframe}
 
-Use \ltxinline|\bmlHTMLInlineEnvironment{tag}| for tags that can only contain `phrasing' content, for instance they should not contain \htmlinline|<p>| paragraphs.
+\begin{foldedframe}{Table headers}\label{table-headers}
+  Marking table cells, rows, or columns as headers can be very important for accessibility, especially for screen reader users. \LaTeXML{} offers a few rudimentary commands to deal with this. Import the \texttt{bookml/bookml} or the \texttt{latexml} package, and write the table as follows
+  \begin{lstlisting}[style=bookml]
+\begin{tabularx}{\textwidth}{c|X||c}
+  \lxBeginTableHead{} Header 1 & Header 2 & Header 3 \\
+  \hline \lxEndTableHead{}
+  Content & Content & Content \\
+  More content & content & content \\
+  \hline
+\end{tabularx}
+  \end{lstlisting}
+  Read the content of \href{https://github.com/brucemiller/LaTeXML/blob/master/lib/LaTeXML/texmf/latexml.sty}{\texttt{latexml.sty}} for more details about which commands are available for tables, and how you can use them.
 
-See figures~\ref{fig:details},~\ref{fig:details-nohtmlsyntax} for an example in both styles.
+  \begin{tabularx}{\textwidth}{c|X||c}
+    \lxBeginTableHead{} Header 1 & Header 2 & Header 3 \\
+    \hline \lxEndTableHead{}
+    Content & Content & Content \\
+    More content & content & content \\
+    \hline
+  \end{tabularx}
+\end{foldedframe}
 
-\begin{figure}
-  \<details style="text-align: left; width: 100\%" open="">
-    \<summary>
-      \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
-    \</summary>
-
-    Completing the quine is left as an exercise for the reader.
-    \begin{lstlisting}[style=bookml]
-\<details style="text-align: left; width: 100\%" open="">
-  \<summary>
-    \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
-  \</summary>
-
-  Completing the quine is left as an exercise for the reader.
-\</details>
+\begin{foldedframe}{Unsupported packages or classes}\label{unsupported-package-or-classes}
+  \LaTeXML{} supports only so many packages (\href{https://dlmf.nist.gov/LaTeXML/manual/included.bindings/}{full list}), and many only partially. If \LaTeXML{} does not recognise a particular package or class, it is sometimes easy to make it work, but it can also be near impossible.
+  \begin{itemize}
+    \item If you use your own custom-made package or class to keep your favourite packages and options (so essentially a fancy preamble): change its extension to \texttt{.tex} and use \ltxinline|\input| instead of \ltxinline|\usepackage|.
+    \item If the package is producing images: use the same strategy as for \tikzname{}.
+    \item If \LaTeXML{} supports a similar package: replace it (for instance, use \texttt{actuarialangle} instead of \texttt{lifecon}).
+    \item If the package is PDF-specific: use \ltxinline|\iflatexml| and \ltxinline|\newcommand| in the preamble to define macros that do something equivalent, or nothing at all, in \HTML{}. Useful, for instance, for references including page numbers, or setting headers and footers.
+    \item If the class is not supported, tell \LaTeXML{} to use a different class:
+      \begin{lstlisting}[style=bookml]
+\RequirePackage{latexml}
+\iflatexml
+\documentclass[12pt]{book}
+\else
+\documentclass[12pt]{memoir}
+\fi
       \end{lstlisting}
-  \</details>
-  \caption{Implementation of the \htmlinline|<details>| tag.}
-  \label{fig:details}
-\end{figure}
+      Make sure you pass your class options are consistent, for instance use the same font size.
+    \item If none of the above works, copy the missing macros directly from the package (or class) and add them to your preamble (usually within \ltxinline|\makeatletter| and \ltxinline|\makeatother|). It may work for simple packages, or packages partially supported by \LaTeXML{}.
+    \item Last resort, you can tell \LaTeXML{} to attempt reading the entire package or class. To do this, create a file named \texttt{package.sty.ltxml} in the same folder as the \texttt{.tex} file (replace \texttt{package} with the actual package name, and \texttt{sty} with \texttt{cls} if dealing with a class):
+    \begin{lstlisting}[language=Perl]
+use LaTeXML::Package;
+InputDefinitions('package', type => 'sty', noltxml => 1);
+1;
+      \end{lstlisting}
+    This will instruct \LaTeXML{} to read the content of \texttt{package.sty}. This may work wonderfully, or crash miserably.
+  \end{itemize}
+\end{foldedframe}
 
-\begin{figure}
-  \bmlHTMLEnvironment{details}
-  \bmlHTMLInlineEnvironment{summary}
-  \begin{h:details}[style={text-align: left; width: 100\%},open]
-    \begin{h:summary}
-      \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
-    \end{h:summary}
+\section{Reference manual}\label{reference-manual}
+This section follows closely the reference manual on the \href{https://github.com/vlmantova/bookml}{BookML repository}, but may lag behind new versions.
 
-    Completing the quine is left as an exercise for the reader.
-    \begin{lstlisting}[style=bookml]
-\bmlHTMLEnvironment{details}
-\bmlHTMLInlineEnvironment{summary}
-\begin{h:details}[style={text-align: left; width: 100\%},open]
-  \begin{h:summary}
-    \textbf{Code for \lstinline[language=html,frame=none]|<details>|.}
-  \end{h:summary}
+\subsection{Package options}\label{package-options}
+BookML can be configured by loading the \texttt{bookml/bookml} package and passing options to it like with any other LaTeX packages, for instance \ltxinline|\usepackage[imagescale=1.3333]{bookml/bookml}|. The following options are available:
 
-  Completing the quine is left as an exercise for the reader.
-\end{h:details}
-    \end{lstlisting}
-  \end{h:details}
-  \caption{Implementation of the \htmlinline|<details>| tag if using \texttt{nohtmlsyntax}.}
-  \label{fig:details-nohtmlsyntax}
-\end{figure}
+\begin{description}
+\item[\texttt{style=<\textit{name}>}] Switch style. <\textit{name}> can be \textit{gitbook} (default), which is almost identical to the output of bookdown, \textit{plain}, which is a tweaked version of the normal LaTeXML style, and \textit{none} for the default LaTeXML style with minimal compatibility and bug fixes only.
+\item[\texttt{mathjax=<\textit{number}>}] Select which MathJax version to use from 2, 3 (default), 4 (\textbf{incomplete}).
+\item[\texttt{nomathjax}] Disable MathJax.
+\item[\texttt{imagescale=X.XX}] (Deprecated) Rescale all images generated via LaTeX (using \ltxinline|bmlimage|, see below) by the desired factor. Images are normally sized so that fonts inside the image match the font size of the browser, but there have been cases where BookML is wrong, and images turn out too small or too large. When that happens, tweak \textit{imagescale}, and please report the issue.
+\item[\texttt{nohtmlsyntax}] Do not define the command \ltxinline|\<| used for writing \HTML{} tags directly in \TeX{}.
+\end{description}
 
-\subsection{...and everything from \texttt{latexml.sty}}
-By using \ltxinline|\usepackage{bookml/bookml}|, you will also import \texttt{latexml.sty}, making several \LaTeXML{}-related commands available, for instance \ltxinline|\lxBeginTableHead| for marking table headers. Please read the \href{https://github.com/brucemiller/LaTeXML/blob/81f2f004bdaa6860d673382837c4d4e3951a602e/lib/LaTeXML/texmf/latexml.sty}{source of \texttt{latexml.sty}} to learn what is included.
+\subsection{Package commands and environments}\label{commands-and-environments}
+Loading \ltxinline|\usepackage{bookml/bookml}| makes the following commands available. It also loads the \href{https://github.com/vlmantova/bookml/blob/main/latexml.sty}{latexml package}, which provides additional commands such as \ltxinline|\iflatexml| and \ltxinline|\lxRequireResource|.
+
+\begin{description}
+\item[\texttt{\textbackslash{}BookMLversion}] The currently running version of BookML.
+\item[\texttt{\textbackslash{}bmlAltFormat[<\textit{opts}>]\{<\textit{file}>\}\{<\textit{label}>\}}] Compile (if necessary) and include \texttt{<\textit{file}>} in the download menu with label \texttt{<\textit{label}>}. An empty label removes the file from the download menu. The optional argument \texttt{<\textit{opts}>} is a key-value list passed internally to \ltxinline|\lxRequireResource| (for instance, use \ltxinline|type=application/octet-stream| if LaTeXML is not able to recognise the MIME type of the file). Only available in the \texttt{\textit{gitbook}} style.
+\item[\texttt{\textbackslash{}<}] Open or close an \HTML{} tag, as in \ltxinline|\<span class="example">some \LaTeX{} code\</span>|. The content between the tags is normal \LaTeX{} code. Tags will normally generate an additional \htmlinline|<p>...</p>| tag, unless they can only contain 'phrasing content'. If necessary, the behaviour of each tag can be changed with the \ltxinline|\bmlHTML*Environment| commands. Tags must follow the XML syntax, for instance \ltxinline|\<br>| is not valid: you must write \ltxinline|\<br/>|.
+\item[\texttt{\textbackslash{}bmlHTMLEnvironment\{<\textit{tag}>\}}] Introduce or redefine an \HTML{} tag environment, to be used as \ltxinline|\begin{h:tag}[attr1=val1,...]...\end{h:tag}| or as \ltxinline|\<tag>|.
+\item[\texttt{\textbackslash{}bmlHTMLInlineEnvironment\{<\textit{tag}>}\}] Introduce or redefine an \HTML{} tag environment which accepts `phrasing content' only.
+\item[\texttt{\textbackslash{}bmlRawHTML\{<\textit{html}>}\}] Insert \texttt{\texttt{<\textit{html}>}} directly in the output document, after expanding all the \TeX{} macros. When the command appears in the preamble, \texttt{<\textit{html}>} will be part of the head and will be copied in every output page. \texttt{<\textit{html}>} must be written in valid XML syntax, with either no namespace or the correct namespace for \HTML.
+\item[\texttt{\textbackslash{}begin\{bmlimage\}}] The body of this environment is compiled directly into an SVG image via \LaTeX, instead of running through \LaTeXML.
+\item[\texttt{\textbackslash{}bmlImageEnvironment\{<\textit{env}>\}}] Compile all environments \texttt{<\textit{env}>} directly into SVG images via \LaTeX, instead of running them through \LaTeXML. The most typical example is \ltxinline|\bmlImageEnvironment{tikzpicture}| for when \LaTeXML{} struggles to process \tikzname{} figures properly or sufficiently quickly. \textbf{Warning:} this will not work properly when the environments are called implicitly (for instance, the package \texttt{tcolorbox} uses \ltxinline|\begin{tikzpicture}| internally to implement its theorems, and that could results in theorems appearing as images, and in the wrong places).
+\item[\texttt{\textbackslash{}bmlDescription\{<\textit{text}>\}}] Attach an alternative text \texttt{<\textit{text}>} to the immediately preceding object. Only useful for images, for instance immediately after \ltxinline|\end{tikzpicture}|. \textbf{Warning:} the command must immediately follow the object; even empty spaces can cause issues.
+\item[\texttt{\textbackslash{}bmlPlusClass\{\texttt{<\textit{class}>}\}}] Add the \CSS{} class \texttt{<\textit{class}>} to the immediately preceding object (this complements \ltxinline|\lxAddClass| and \ltxinline|\lxWithClass| provided by the \texttt{latexml} package). \textbf{Warning:} the command must immediately follow the object; even empty spaces can cause issues.
+\item[\texttt{\textbackslash{}bmlDisableMathJax}] Disable running MathJax on the current mathematical content. When used in an environment that generates multiple equations, it applies only to the current one.
+\end{description}
+
+\subsection{Makefile options}\label{makefile-options}
+
+The build process accepts configuration options via Make variables, using the syntax \makeinline|VARIABLE=value|. The options can be passed in three ways:
+
+\begin{enumerate}
+  \item In \texttt{GNUmakefile} before \makeinline|include bookml/bookml.mk|. Each option must appear on its own line, without indentation.
+  \item On the command line as \cmdinline{make VARIABLE=value}.
+  \item To apply an option to a single output \texttt{file}, write it in \texttt{GNUmakefile} somewhere after \makeinline|include bookml/bookml.mk| as \makeinline|file: VARIABLE=value| on its own line, without indentation. For instance, \makeinline|main.pdf: LATEXMKFLAGS=-pdflua|. \textbf{Warning:} the variable must be applied to the target it affects \textbf{immediately} or it can cause inconsistent results (see for example \makeinline|SPLITAT| below).
+\end{enumerate}
+
+Note that changing options will \textbf{not} trigger a recompilation of the files. You will typically need to run \cmdinline|make clean| before recompiling again. For more information about the Makefile syntax and how variables are evaluated, consult the \href{https://www.gnu.org/software/make/manual/}{GNU Make manual}.
+
+The following options are available.
+
+\begin{description}
+\item[\texttt{AUX\_DIR}] Location of the directory containing all intermediate files generated during compilation, such as \texttt{.aux} and \texttt{.bbl} files. This option is ignored by the BookML GitHub action. Default \texttt{\textit{auxdir}}.
+\item[\texttt{SOURCES}] Space-separated list of \texttt{.tex} files to be compiled. File names with spaces are \textbf{not} supported. Default is the list of \texttt{.tex} files in the current directory that contain the string \ltxinline|\documentclass| (even if appearing in a comment!).
+\item[\texttt{FORMATS}] Spaces-separated list of formats to be generated from \texttt{SOURCES}. Recognised formats are \texttt{pdf}, \texttt{scorm}, \texttt{zip}. Default \texttt{\textit{scorm zip}}.
+\item[\texttt{SPLITAT}] How to split the \HTML{} output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the \texttt{latexmlpost} manual, \cmdinline|--split| option, for more details. \textbf{Warning:} when applied to a single target, it must be applied to \makeinline|$(AUX_DIR)/file/index.html:| instead of say \cmdinline|file.zip:|, otherwise zip and SCORM outputs will see different values. Default \texttt{\textit{section}}.
+\item[\texttt{DVISVGM}] Command to call dvisvgm. Default \texttt{\textit{dvisvgm}}.
+\item[\texttt{DVISVGMFLAGS}] Options to pass to dvisvgm. Default \texttt{\textit{--no-fonts}}.
+\item[\texttt{LATEXMK}] Command to call Latexmk. Default \texttt{\textit{latexmk}}.
+\item[\texttt{LATEXMKFLAGS}] Command options to pass to Latexmk. For instance, use \ltxinline|LATEXMKFLAGS=-pdflua| to use LuaTeX when compiling to PDF. Please ensure that Latexmk will produce a PDF rather than a DVI.
+\item[\texttt{LATEXML}] Command to call \LaTeXML. Default \texttt{\textit{latexml}}.
+\item[\texttt{LATEXMLFLAGS}] Options to pass to \LaTeXML.
+\item[\texttt{LATEXMLPOST}] Command to call \texttt{latexmlpost}. Default \texttt{\textit{latexmlpost}}.
+\item[\texttt{LATEXMLPOSTFLAGS}] Options to pass to \texttt{latexmlpost}. \textbf{Warning:} when applied to a single target, it must be applied to \ltxinline|$(AUX_DIR)/file/index.html:| instead of say \ltxinline|file.zip:|, just like for \texttt{SPLITAT}.
+\item[\texttt{PERL}] Command to call Perl. Default \texttt{\textit{perl}}.
+\item[\texttt{TEXFOT}] Command to call texfot. Default \texttt{\textit{texfot}}.
+\item[\texttt{TEXFOTFLAGS}] Options to pass to texfot.
+\item[\texttt{ZIP}] Command to call zip. Default \texttt{\textit{zip}} (or \texttt{\textit{miktex-zip}} if \texttt{zip.exe} is not available on Windows).
+\end{description}
+
+\subsection{Makefile targets}\label{makefile-targets}
+The following targets can be used as arguments when calling \texttt{make}, for instance \cmdinline{make zip}.
+
+\begin{description}
+\item[\texttt{all}] Compile all targets, based on the content of \makeinline|SOURCES|, \makeinline|FORMATS|, and \makeinline|TARGETS|. This is the default target.
+\item[\texttt{check-for-update}] Check if there is a new release of BookML available.
+\item[\texttt{clean}] Delete all compilation products, based on \makeinline|SOURCES|, \makeinline|FORMATS|, and \makeinline|TARGETS|.
+\item[\texttt{detect}] Detect the versions of all the software required to run BookML and print them.
+\item[\texttt{html}] Compile all \makeinline|SOURCES| to \HTML. The outputs will be in the \makeinline|$(AUX_DIR)/html| directory.
+\item[\texttt{pdf}] Compile all \makeinline|SOURCES| to PDF. The outputs will be in the current directory, including the SyncTeX files.
+\item[\texttt{scorm}] Compile all \makeinline|SOURCES| to SCORM. The outputs will be in the current directory.
+\item[\texttt{update}] \textbf{Experimental:} update the \texttt{bookml/} directory. If BookML is being run from a Docker image, it will use the version bundled in the image, otherwise it will download the latest release. This operation is destructive, not well tested, and behaviour may change in the future; be prepared to download BookML manually if it breaks.
+\item[\texttt{xml}] Compile all \makeinline|SOURCES| to XML. The outputs will be in the \makeinline|$(AUX_DIR)/xml| directory.
+\item[\texttt{zip}] Compile all \makeinline|SOURCES| to zip. The outputs will be in the current directory.
+\end{description}
+
+\subsection{Custom \CSS}\label{custom-css}
+The \CSS{} files in the folder \texttt{bmluser} are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles.
+
+If the file name ends with \texttt{.style1,style2-jobname.css}, then that file will be used only when \ltxinline|style=style1| is passed, or when \ltxinline|style=style2| is passed and the main file being compiled is called \texttt{jobname.tex}. You can use \texttt{.\_all.css} to ensure that the file is included in every style.
+
+Custom \CSS{} can also be added using \ltxinline|\bmlRawHTML{<style> ... </style>}| to the preamble.
+
+For instance, the \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this manual has been compiled with \href{https://vlmantova.github.io/bookml/bmluser/latin-modern.plain.css}{\texttt{latin-modern.plain.css}} that sets the font to Latin Modern.
+
+\subsection{Options for the BookML GitHub action}\label{bookml-action}
+Below is the list of arguments recognised by the BookML GitHub action. The list may be incomplete; see the \href{https://github.com/marketplace/actions/compile-with-bookml}{BookML action} page for details about the latest version.
+
+\begin{description}
+\item[\texttt{checkout}] Whether to checkout the repository calling this action. Default: \yamlinline|true| (boolean).
+\item[\texttt{release}] Whether to create a release containing the outputs generated by BookML. Default: \yamlinline|true| (boolean).
+\item[\texttt{upload-aux-directory}] Whether to upload the entire aux directory, which contains all outputs generated by BookML as well as logs and other intermediate files, into a GitHub artifact attached to the workflow run. Default: \yamlinline|true| (boolean).
+\item[\texttt{scheme}] Select which TeX Live scheme to use among basic, small, medium, full. Default: \yamlinline|'full'| (string).
+\item[\texttt{version}] Select which version of BookML to use. Note that this only affects which Docker image is used; if the \yamlinline|bookml/| folder is already present in the repository, that version of BookML will be used. Default: \yamlinline|'latest'| (string).
+\item[\texttt{replace-bookml}] Whether to replace the \yamlinline|bookml/| folder with the one included in the Docker image. Default: \yamlinline|false| (boolean).
+\item[\texttt{timeout-minutes}] The maximum number of minutes to run BookML before cancelling the build. Default: \yamlinline|6| (positive integer).
+\end{description}
+
+The action has the following outputs.
+
+\begin{description}
+  \item[\texttt{outputs}] File names of all outputs compiled by BookML.
+  \item[\texttt{targets}] File names of all targets that BookML tried to compile.
+  \item[\texttt{outcome}] Compiling outcome (one of \yamlinline|'success'|, \yamlinline|'failure'|, \yamlinline|'timeout'|, \yamlinline|'invalid'|, \yamlinline|'cancelled'|).
+  \item[\texttt{aux-directory-url}] URL of GitHub artifact containing the aux directory (only if \yamlinline|upload-aux-directory| is true).
+  \item[\texttt{release-url}] URL of GitHub release (only if \yamlinline|release| is true).
+\end{description}
 
 \end{document}

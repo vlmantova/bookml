@@ -1,0 +1,17 @@
+details {
+  border: 4px solid;
+  padding: 0.5em 1em;
+  margin-bottom: 0.5em;
+  border-color: #c5dc6f;
+}
+
+summary {
+  margin: -0.5em -1em;
+  padding: 0.25em 0.5em;
+  background-color: #c5dc6f;
+}
+
+details[open]>summary {
+  border-bottom: 1px solid #c5dc6f;
+  margin-bottom: 0.5em;
+}

@@ -138,6 +138,29 @@ mtext {
   }
 }
 
+/* Experimental fix for vertical alignment in tables */
+.ltx_th, .ltx_td {
+  vertical-align: baseline;
+
+  @each $i in top middle bottom {
+    &.ltx_align_#{$i}>* {
+      vertical-align: #{$i};
+    }
+  }
+
+  @supports (baseline-source: first) {
+    &.ltx_align_top>* {
+      vertical-align: baseline;
+      baseline-source: first;
+    }
+
+    &.ltx_align_bottom>* {
+      vertical-align: baseline;
+      baseline-source: last;
+    }
+  }
+}
+
 /* MathML polyfills */
 
 /* not needed on Firefox */

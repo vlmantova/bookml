@@ -299,11 +299,13 @@ aux-zip: | $(AUX_DIR)
 # version detection targets
 detect: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-mutool \
-  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip
+  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip \
+	detect-curl
 .PHONY: detect
 .PHONY: detect-sources detect-bookml detect-make detect-tex detect-perl \
   detect-latexml detect-imagemagick detect-ghostscript detect-mutool \
-  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip
+  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip \
+	detect-curl
 detect-sources:
 	@$(call bml.echo,$(bml.cyan)    Main files:$(if $(SOURCES) \
 	  ,$(bml.green) $(SOURCES),$(bml.red) no .tex files with \documentclass found in this directory))
@@ -314,7 +316,7 @@ detect-tex:
 	  $(subst $(bml.openp), $(bml.openp),$(subst $(bml.spc), ,$(shell tex -version $(bml.null)))))))))
 	@$(call bml.testver,           TeX,,,$(tex_ver))
 detect-make:
-	@$(call bml.testver,      GNU Make,3.81,,$(MAKE_VERSION))
+	@$(call bml.testver,      GNU Make,3.81,4.3,$(MAKE_VERSION))
 detect-perl:
 	@$(eval perl_ver:=$(subst $(bml.closedp),,$(subst $(bml.openp),,$(firstword \
 	  $(filter $(bml.openp)%,$(shell perl --version $(bml.null)))))))
@@ -347,9 +349,9 @@ detect-dvisvgm:
 detect-latexmk:
 	@$(call bml.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
 detect-mutool:
-	@$(call bml.testver,        mutool,,,$(lastword $(shell mutool -v 2>&1)), (may be required for PDF to SVG))
+	@$(call bml.testver,        mutool,,,$(lastword $(shell mutool -v $(bml.null))), (may be required for PDF to SVG))
 detect-texfot:
-	@$(call bml.testver,        texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional))
+	@$(call bml.testver,        texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional, for hiding some LaTeX messages))
 detect-preview:
 	@$(eval preview_loc:=$(shell kpsewhich preview.sty $(bml.null)))
 	@$(eval preview_ver:=$(if $(preview_loc),$(subst },,$(subst _,., \
@@ -360,6 +362,8 @@ detect-zip:
 	@$(eval zip_ver := $(firstword $(subst Zip_,,\
 	  $(filter Zip_%,$(subst Zip ,Zip_,$(shell $(ZIP) -v $(bml.null)))))))
 	@$(call bml.testver,           zip,,,$(zip_ver))
+detect-curl:
+	@$(call bml.testver,          curl,,,$(wordlist 2,2,$(shell $(CURL) -V $(bml.null))), (required for updating with 'make update'))
 
 # create directories
 $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml): | $(AUX_DIR)

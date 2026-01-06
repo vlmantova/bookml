@@ -15,3 +15,23 @@ details[open]>summary {
   border-bottom: 1px solid #c5dc6f;
   margin-bottom: 0.5em;
 }
+
+/* sepia mode */
+.book.color-theme-1 details,
+.book.color-theme-1 details[open]>summary {
+  border-color: #F5D073;
+}
+
+.book.color-theme-1 details>summary {
+  background-color: #F5D073;
+}
+
+/* night mode */
+.book.color-theme-2 details,
+.book.color-theme-2 details[open]>summary {
+  border-color: #333e0f;
+}
+
+.book.color-theme-2 details>summary {
+  background-color: #333e0f;
+}

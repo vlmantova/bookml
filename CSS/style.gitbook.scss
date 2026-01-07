@@ -247,9 +247,9 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
   .book.color-theme-2 & {
     filter: invert(100%) saturate(70%) hue-rotate(180deg);
-    &.bml_no_invert {
-      filter: saturate(70%);
-    }
+  }
+  .book.color-theme-2.bml_no_invert &, .book.color-theme-2 .bml_no_invert &, .book.color-theme-2 &.bml_no_invert {
+    filter: saturate(70%);
   }
 }
 
@@ -495,6 +495,11 @@ mjx-container[jax="SVG"][display="true"] {
   margin: 0 !important;
 }
 
+/* disallow line breaks in aligned equations */
+.ltx_eqn_table mjx-container[jax="CHTML"] mjx-break {
+  white-space: nowrap;
+}
+
 /* lxFooter */
 .bml_footer {
   border-top: solid 1px;
@@ -646,5 +651,18 @@ svg foreignObject {
 @each $i in color border-color background-color fill stroke stop-color flood-color lighting-color text-decoration-color {
   *[class*="bml_#{$i}"] {
     #{$i}: var(--bml-#{$i}) !important;
+  }
+}
+
+/* set body background as well */
+body {
+  background-color: #fafafa;
+
+  &:has(.book.color-theme-1) {
+    background-color: #111111;
+  }
+
+  &:has(.book.color-theme-2) {
+    background-color: #2d3143;
   }
 }

@@ -119,6 +119,100 @@
 
         MathJax._.components.global.combineDefaults(MathJax.config, 'mml', {FindMathML: new bmlFindMathML()});
 
+        /*** fix border-*: properties becoming border: (code by Davide P. Cervone) ***/
+        if (MathJax.version === '4.0.0' || MathJax.version === '4.1.0') {
+          const { Styles } = MathJax._.util.Styles;
+          const { insert } = MathJax._.util.Options;
+          const combineTRBL = Styles.connect.padding.combine;
+          const combineSame = Styles.connect.border.combine;
+          function combinePart(name) {
+            combineTRBL.call(this, name);
+            this.combineChildren(name);
+            combineSame.call(this, name);
+            this.combineParent(name);
+          }
+          function combineWSC(name) {
+            const parts = [];
+            for (const child of Styles.connect[name].children) {
+              const value = this.styles[this.childName(name, child)];
+              if (value) {
+                parts.push(value);
+              }
+            }
+            if (parts.length > 1) {
+              this.styles[name] = parts.join(' ');
+            } else {
+              delete this.styles[name];
+            }
+          }
+          insert(Styles.connect, {
+            border: {
+              parts: ['width', 'style', 'color'],
+            },
+            'border-top': {
+              combine: combineWSC,
+            },
+            'border-right': {
+              combine: combineWSC,
+            },
+            'border-bottom': {
+              combine: combineWSC,
+            },
+            'border-left': {
+              combine: combineWSC,
+            },
+            'border-width': {
+              combine: combinePart,
+              subPart: true,
+            },
+            'border-style': {
+              combine: combinePart,
+              subPart: true,
+            },
+            'border-color': {
+              combine: combinePart,
+              subPart: true,
+            },
+          }, false);
+          Object.assign(Styles.prototype, {
+            set(name, value) {
+              name = this.normalizeName(name);
+              this.setStyle(name, String(value));
+              const connect = Styles.connect[name];
+              if (connect?.subPart) {
+                connect.combine.call(this, name);
+                return;
+              }
+              this.combineParent(name);
+              if (name.match(/-.*-/)) {
+                const pname = name.replace(/-.*-/, '-');
+                combineSame.call(this, pname);
+              }
+            },
+            combineParent(name) {
+              while (name.match(/-/)) {
+                const cname = name;
+                name = this.parentName(name);
+                const connect = Styles.connect[name];
+                if (
+                  !Styles.connect[cname] &&
+                  !connect?.children?.includes(cname.substring(name.length + 1))
+                ) {
+                  break;
+                }
+                connect.combine.call(this, name);
+              }
+              if (!this.styles[name]) {
+                return;
+              }
+              const connect = Styles.connect[name];
+              for (const cname of connect?.parts || []) {
+                delete this.styles[this.childName(name, cname)];
+              }
+            }
+          });
+        }
+
         MathJax.startup.defaultReady();
       }
     }

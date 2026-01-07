@@ -121,7 +121,7 @@ DeclareOption('nohtmlsyntax',  sub { $bml_htmlsyn = 0;         return; });
 DeclareOption('mathjax=2',     sub { $bml_mathjax = 2;         return; });
 DeclareOption('mathjax=3',     sub { $bml_mathjax = 3;         return; });
 DeclareOption('mathjax=4',     sub { $bml_mathjax = 4;         return; });
-DeclareOption('nomathjax',     sub { $bml_mathjax = undef;     return; });
+DeclareOption('nomathjax',     sub { $bml_mathjax = 0;         return; });
 
 DeclareOption(undef, sub {
     my ($stomach) = @_;

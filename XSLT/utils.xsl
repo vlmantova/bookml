@@ -44,6 +44,8 @@
 
   <xsl:param name="BMLAUTOIDPREFIX" select="'bml-auto-'"/>
 
+  <xsl:param name="AUTOSVG" select="'dvisvgm'"/>
+
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
@@ -52,6 +54,10 @@
     select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX4)"/>
 
   <!-- utility functions to check variables in template matches -->
+  <func:function name="b:auto-svg">
+    <func:result select="$AUTOSVG" />
+  </func:function>
+
   <func:function name="b:gitbook">
     <func:result select="$GITBOOK" />
   </func:function>

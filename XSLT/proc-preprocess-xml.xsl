@@ -49,7 +49,7 @@
   </xsl:template>
 
   <!-- replace PDF, EPS images with auto-generated SVGs if no other candidates are available -->
-  <xsl:template match="ltx:graphics/@candidates">
+  <xsl:template match="ltx:graphics/@candidates[b:auto-svg()]">
     <xsl:variable name="svg-candidate" select="b:auto-svg-candidate()"/>
     <xsl:attribute name="candidates">
       <xsl:choose>

@@ -106,23 +106,20 @@
           <xsl:variable name="ext" select="b:lower-case(substring($source,string-length($source)-2))" />
 
           <xsl:value-of select="$candidate" />
+          <xsl:text>: bml.svg.page=</xsl:text>
+          <xsl:value-of select="$page" />
+          <xsl:text>&#x0A;</xsl:text>
+
+          <xsl:value-of select="$candidate" />
           <xsl:text>: </xsl:text>
           <xsl:value-of select="$source" />
           <xsl:text> $(BOOKML_DEPS_AUTOSVG) | bmlimages/svg</xsl:text>
-          <xsl:if test="$page != ''">
-            <xsl:text>/</xsl:text>
-            <xsl:value-of select="$source-without-parent" />
-            <xsl:text>/./</xsl:text>
-          </xsl:if>
+          <xsl:text>/</xsl:text>
+          <xsl:value-of select="$source-without-parent" />
+          <xsl:text>/./&#x0A;</xsl:text>
           <!-- WARNING: must be kept in sync with bookml.mk -->
-          <xsl:text>&#x0A;&#x09;@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --</xsl:text>
-          <xsl:value-of select="$ext" />
-          <xsl:if test="$page != ''">
-            <xsl:text> --page=</xsl:text>
-            <xsl:value-of select="$page" />
-          </xsl:if>
-          <xsl:text> "$&lt;" --output="$@")&#x0A;</xsl:text>
-          <xsl:text>&#x09;@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")&#x0A;</xsl:text>
+          <xsl:text>&#x09;@$(bml.pdftosvg)&#x0A;</xsl:text>
+          <xsl:text>&#x09;@$(bml.pdftosvg.proc)&#x0A;</xsl:text>
         </xsl:if>
       </xsl:otherwise>
     </xsl:choose>

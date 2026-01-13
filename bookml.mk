@@ -14,10 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+bml.is.win := $(if $(subst xWindows_NT,,x$(OS)),,true)
+# find if a command is available
+ifeq ($(bml.is.win),true)
+  bml.which = $(shell where "$1" 2>NUL)
+else
+  bml.which = $(shell command -v "$1")
+endif
+# backward compatible file/grep function
+ifeq ($(findstring version-3.8,version-$(MAKE_VERSION)),version-3.8)
+  ifeq ($(bml.is.win),true)
+    bml.file = $(shell type $(subst /,\,$1))
+  else
+    bml.file = $(shell cat -- $1)
+  endif
+else
+  bml.file = $(file < $1)
+endif
+bml.grep = $(findstring $1,$(call bml.file,$2))
+
 ### CONFIGURATION
 # Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
 # (1) where to store auxiliary files (*.aux, *.d, *.toc,...)
-AUX_DIR    ?= auxdir
+AUX_DIR ?= auxdir
 # (2) latexmk command and options
 LATEXMK      ?= latexmk
 LATEXMKFLAGS ?=
@@ -33,10 +52,11 @@ PERL ?= perl
 SPLITAT ?= section
 # (6) source files: by default, all .tex files containing a \documentclass, unless this is a recursive call
 ifndef SOURCES
-ifndef BMLGOALS
-$(if $(filter-out %.tex,$(wildcard *.tex)),$(warning Some .tex files have spaces in their names, which is not supported!))
-SOURCES ?= $(foreach f,$(filter %.tex,$(wildcard *.tex)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
-endif
+  ifndef BMLGOALS
+	  bml.allsources := $(wildcard *.tex)
+    $(if $(filter-out %.tex,$(bml.allsources)),$(warning Some .tex files have spaces in their names, which is not supported!))
+    SOURCES := $(foreach f,$(filter %.tex,$(bml.allsources)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
+  endif
 endif
 # (7) formats: possible values are pdf, scorm, zip
 FORMATS ?= scorm zip
@@ -48,16 +68,17 @@ TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
 TARGETS       ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
 # (9) texfot (optional, disable with TEXFOT=)
-TEXFOT      ?= $(if $(call bml.which,texfot),texfot)
+ifndef TEXFOT
+  TEXFOT    := $(if $(call bml.which,texfot),texfot)
+endif
 TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
 # (10) various terminal commands: by default, use typical Windows or Unix version
-bml.is.win  := $(if $(subst xWindows_NT,,x$(OS)),,true)
 ifeq ($(bml.is.win),true)
   ifndef ZIP
-    ZIP        := $(if $(shell where zip 2>NUL),zip,miktex-zip)
+    ZIP        := $(if $(call bml.which,zip),zip,miktex-zip)
   endif
   ifndef UNZIP
-    UNZIP      := $(if $(shell where tar 2>NUL),tar)
+    UNZIP      := $(if $(call bml.which,tar),tar)
     UNZIPFLAGS := -x -f
   endif
   CP           := copy
@@ -67,7 +88,7 @@ ifeq ($(bml.is.win),true)
 else
   ZIP          ?= zip
   ifndef UNZIP
-    UNZIP      := $(if $(shell command -v unzip),unzip)
+    UNZIP      := $(if $(call bml.which,unzip),unzip)
     UNZIPFLAGS := -o
   endif
   CP           := cp
@@ -76,10 +97,17 @@ else
   MKDIR        := mkdir -p --
 endif
 ZIP_EXCLUDE ?= -x
-CURL        ?= $(if $(call bml.which,curl),curl)
+ifndef CURL
+  CURL := $(if $(call bml.which,curl),curl)
+endif
 # (11) dvisvgm
 DVISVGM      ?= dvisvgm
 DVISVGMFLAGS ?= --no-fonts --optimize
+# (12) mutool
+MUTOOL      ?= mutool
+MUTOOLFLAGS ?=
+# (13) choice of PDF to SVG converter
+PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm))
 ### END CONFIGURATION
 
 ### INTERNAL VARIABLES
@@ -104,26 +132,9 @@ define bml.nl # newline
 
 endef
 
-# find if a command is available
-ifeq ($(bml.is.win),true)
-  bml.which = $(shell where "$1" 2>NUL)
-else
-  bml.which = $(shell command -v "$1")
-endif
 # recursively list all files and folders, or just files, within a directory (after https://stackoverflow.com/a/18258352)
 bml.reclist      = $(foreach d,$(wildcard $(1:=/*)),$(call bml.reclist,$d) $d)
 bml.reclist.file = $(foreach d,$(wildcard $(1:=/*)),$(eval _x:=$(call bml.reclist.file,$d))$(if $(_x),$(_x),$d)) # BUG: empty folders are interpreted as files
-# backward compatible file/grep function
-ifeq ($(findstring version-3.8,version-$(MAKE_VERSION)),version-3.8)
-  ifeq ($(bml.is.win),true)
-    bml.file = $(shell type $1)
-  else
-    bml.file = $(shell cat -- $1)
-  endif
-else
-  bml.file = $(file < $1)
-endif
-bml.grep = $(findstring $1,$(call bml.file,$2))
 
 # help editors detect UTF-8 encoding: ∀x.x=x
 
@@ -132,7 +143,7 @@ bml.spc := $(strip) $(strip)
 bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg) )
 ifeq ($(bml.is.win),true)
   bml.cmd  = $(call bml.echo,$(bml.cyan)$1) & $1
-  bml.echo = echo $1$(bml.reset)
+  bml.echo = echo $(subst >,^>,$1)$(bml.reset)
 else
   bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$(subst \,\\,$1)
   bml.echo = $(info $1$(bml.reset))
@@ -207,6 +218,31 @@ bml.recver  = $(strip $(if $3, \
     $(bml.red) $3; required at least $1$(if $2,; recommended $2 or later)), \
     $(bml.red) NOT FOUND))
 bml.testver = $(call bml.echo,$(bml.cyan)$1:$(call bml.recver,$2,$3,$4)$(bml.reset)$5)
+
+# PDF to SVG conversion
+ifeq ($(PDFTOSVG_CONVERTER),dvisvgm)
+  ifeq ($(DVISVGM),)
+    $(warning Option PDFTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. PDF figures will not be automatically converted to SVG.)
+    PDFTOSVG_CONVERTER=
+  else
+    bml.pdftosvg=$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf $(if $(bml.svg.page),--page=$(bml.svg.page) )"$<" --output="$@")
+  endif
+else ifeq ($(PDFTOSVG_CONVERTER),mutool)
+  ifeq ($(DVISVGM),)
+    $(warning Option PDFTOSVG_CONVERTER is 'mutool', but MUTOOL is empty. PDF figures will not be automatically converted to SVG.)
+    PDFTOSVG_CONVERTER=
+  else
+    # mutool always add the page number to the file name
+    bml.pdftosvg=$(call bml.cmd,$(MUTOOL) draw $(MUTOOLFLAGS) -F svg "$<" $(bml.svg.page) > $(call bml.ospath,"$@"))
+  endif
+else ifneq ($(PDFTOSVG_CONVERTER),)
+$(warning Option PDFTOSVG_CONVERTER: value '$(PDFTOSVG_CONVERTER)' not recognised. PDF figures will not be automatically converted to SVG.)
+PDFTOSVG_CONVERTER=
+endif
+
+ifneq ($(PDFTOSVG_CONVERTER),)
+bml.pdftosvg.proc=$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+endif
 
 # do not delete intermediate files
 .SECONDARY:
@@ -337,19 +373,21 @@ detect-ghostscript:
 	$(eval gs_ver:=$(firstword $(subst Ghostscript_,,$(filter Ghostscript_%,$(subst Ghostscript ,Ghostscript_,$(gs_info))))))
 	@$(call bml.testver,   Ghostscript,,,$(gs_ver), (required for BookML images, EPS to SVG; may be required for PDF to SVG))
 detect-dvisvgm:
-	@$(eval dvisvgm_info:=$(shell dvisvgm -V1 $(bml.null)))
-	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst dvisvgm ,dvisvgm_,$(dvisvgm_info))))))
+	@$(eval dvisvgm_info:=$(if $(DVISVGM),$(shell $(DVISVGM) -V1 $(bml.null))))
+	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst $(DVISVGM) ,dvisvgm_,$(dvisvgm_info))))))
 	@$(eval gs_ver:=$(wordlist 2,2,$(subst &, ,$(filter Ghostscript:%,$(subst &Ghostscript:, Ghostscript:,$(subst $() ,&,$(dvisvgm_info)))))))
 	@$(eval mutool_ver:=$(wordlist 2,2,$(subst &, ,$(filter mutool:%,$(subst &mutool:, mutool:,$(subst $() ,&,$(dvisvgm_info)))))))
 	@$(eval needs_mutool:=$(if $(call ver.leq,10.01.0,$(gs_ver)),true))
-	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for BookML images, EPS$(if $(needs_mutool),,/PDF) to SVG))
-	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (required for BookML images, EPS$(if $(needs_mutool),,/PDF) to SVG))
-	@$(if $(needs_mutool),$(call bml.testver,       dvisvgm,3.0,,$(dvisvgm_ver), (required for PDF to SVG)))
-	@$(if $(needs_mutool),$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), ($(if $(needs_mutool),required for PDF to SVG,optional))))
+	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (required for BookML images, EPS to SVG$(if $(needs_mutool),,, PDF to SVG if using PDFTOSVG_CONVERTER=dvisvgm (current value '$(PDFTOSVG_CONVERTER)'))))
+	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (required for BookML images, EPS to SVG$(if $(needs_mutool),,, PDF to SVG if using PDFTOSVG_CONVERTER=dvisvgm (current value '$(PDFTOSVG_CONVERTER)'))))
+	@$(if $(needs_mutool),$(call bml.testver,       dvisvgm,3.0,,$(dvisvgm_ver), (required for PDF to SVG if using PDFTOSVG_CONVERTER=dvisvgm (current value '$(PDFTOSVG_CONVERTER)'))))
+	@$(if $(needs_mutool),$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), (required for PDF to SVG if using PDFTOSVG_CONVERTER=dvisvgm (current value '$(PDFTOSVG_CONVERTER)'))))
 detect-latexmk:
 	@$(call bml.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
 detect-mutool:
-	@$(call bml.testver,        mutool,,,$(lastword $(shell mutool -v $(bml.null))), (may be required for PDF to SVG))
+	@$(eval mutool_info:=$(shell $(MUTOOL) -v 2>&1))
+	@$(eval mutool_ver:=$(if $(filter-out mutool,$(firstword $(mutool_info))),,$(lastword $(mutool_info))))
+	@$(call bml.testver,        mutool,,,$(mutool_ver), (required for PDF to SVG if using PDFTOSVG_CONVERTER=mutool (current value '$(PDFTOSVG_CONVERTER)')))
 detect-texfot:
 	@$(call bml.testver,        texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (optional, for hiding some LaTeX messages))
 detect-preview:
@@ -400,14 +438,14 @@ $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf | $(AUX
 	  $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/latexmlaux/$*.latexml.log" --destination="$@" "$<")
 
 $(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_PREPROCESS)
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$<" --output "$@" --stringparam AUX_DIR "$(AUX_DIR)")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$<" --output "$@" --stringparam AUX_DIR "$(AUX_DIR)" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
 
 # build HTML and deps files
 
 # discover postprocessing dependencies (including bmluser/ files, alternative formats, images)
 # save in .htmldeps- to avoid rebuilding these files when not required
 $(AUX_DIR)/deps/%.htmldeps-: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html")
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
 
 BMLGOALS.HTML := $(patsubst $(AUX_DIR)/html/%/index.html,%,$(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)))
 BMLGOALS.HTMLDEPS := $(patsubst %,$(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS.HTML))
@@ -462,19 +500,19 @@ $(AUX_DIR)/html/%/imsmanifest.xml: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.
 
 # image conversions
 # match EPS first, as dvisvgm is more reliable with it
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.eps $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.eps $$(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.EPS $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.EPS $$(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
 	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
 
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.pdf $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.PDF $$(BOOKML_DEPS_AUTOSVG)| $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf "$<" --output="$@")
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.pdf $$(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
+	@$(bml.pdftosvg)
+	@$(bml.pdftosvg.proc)
+bmlimages/svg/%.svg: $$(bml.svg.parent)%.PDF $$(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
+	@$(bml.pdftosvg)
+	@$(bml.pdftosvg.proc)
 
 # /./ disambiguates between %.svg, %pdf targets and actual folders
 # a hack, but required to keep compatibility with GNU make 3.81

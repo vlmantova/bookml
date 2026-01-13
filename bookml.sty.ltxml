@@ -208,7 +208,7 @@ DefPrimitive('\bmlAltFormat OptionalKeyVals {} {}', sub {
     $path = ToString(Expand($path));
     $name = ToString(Expand($name));
     BMLRequireResource($path, location => 'download', name => $name, $kv ? $kv->getHash : ()) if $name;
-    @bml_download = grep { !$_ eq $path } @bml_download;
+    @bml_download = grep { ! ($_ eq $path) } @bml_download;
     return;
 });
 

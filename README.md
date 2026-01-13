@@ -74,7 +74,7 @@ Or you can unpack the [template](https://github.com/vlmantova/bookml/releases/la
 - for BookML images (see <code>bmlimage</code> below): [Ghostscript](https://www.ghostscript.com/), [latexmk](https://ctan.org/pkg/latexmk), [preview.sty](https://ctan.org/pkg/preview), [dvisvgm](https://ctan.org/pkg/dvisvgm) (minimum 1.6, recommended 2.7 or later)
 - for automatic PDF, HTML, zip, SCORM packaging, EPS/PDF to SVG automatic conversion: [GNU make](https://www.gnu.org/software/make/), [latexmk](https://ctan.org/pkg/latexmk), [zip](https://sourceforge.net/projects/infozip/), optionally [texfot](https://ctan.org/pkg/texfot)
 - for autoconverting EPS images to SVG, when using GNU make: [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/)
-- for autoconverting PDF images to SVG, when using GNU make: any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html)
+- for autoconverting PDF images to SVG, when using GNU make: [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html) is the default and most reliable option; otherwise, BookML can try using any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html)
 
 ### Running locally on your device (calling latexml, latexmlpost, latexmlc directly)
 You can also run BookML as a simple addition to LaTeXML. You will lose some functionality, such as conversion of EPS and PDF figures to SVG and SCORM packaging.
@@ -198,8 +198,14 @@ The following options are available.
 <dd>Command to call latexmlpost. Default <i>latexmlpost</i>.</dd>
 <dt>LATEXMLPOSTFLAGS</dt>
 <dd>Options to pass to latexmlpost. <strong>Warning:</strong> when applied to a single target, it must be applied to <code>$(AUX_DIR)/file/index.html:</code> instead of say <code>file.zip:</code>, just like for SPLITAT.</dd>
+<dt>MUTOOL</dt>
+<dd>Command to call mutool. Default <i>mutool</i>.</dd>
+<dt>MUTOOLFLAGS</dt>
+<dd>Options to pass to mutool draw.</dd>
 <dt>PERL</dt>
 <dd>Command to call Perl. Default <i>perl</i>.</dd>
+<dt>PDFTOSVG_CONVERTER</dt>
+<dd>Select which converter to use for converting PDF images to SVG. Currently supported values are dvisvgm and mutool. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default <i>mutool</i>.</dd>
 <dt>TEXFOT</dt>
 <dd>Command to call tex. Default <i>texfot</i>.</dd>
 <dt>TEXFOTFLAGS</dt>

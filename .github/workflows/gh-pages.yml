@@ -1,5 +1,12 @@
 name: Publish to GitHub Pages
-on: push
+on:
+  push:
+    branches:
+      - docs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

@@ -191,9 +191,9 @@ When all goes well, you should see an output like the following:
   LaTeXML:       & \textcolor{OliveGreen}{0.8.8 OK}                                              \\
   Image::Magick: & \textcolor{red}{NOT FOUND} (required for any image handling)                  \\
   Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS to SVG; may be required for PDF to SVG) \\
-  mutool:        & \textcolor{red}{NOT FOUND} (may be required for PDF to SVG)                   \\
-  dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (required for BookML images, EPS/PDF to SVG) \\
-  dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS/PDF to SVG)  \\
+  mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (required for PDF to SVG if using PDFTOSVG\_CONVERTER=mutool (current value `mutool')) \\
+  dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (required for BookML images, EPS to SVG, PDF to SVG if using PDFTOSVG\_CONVERTER=dvisvgm (current value `mutool')) \\
+  dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS to SVG, PDF to SVG if using PDFTOSVG\_CONVERTER=dvisvgm (current value `mutool'))  \\
   latexmk:       & \textcolor{OliveGreen}{4.87 OK}                                               \\
   texfot:        & \textcolor{OliveGreen}{1.48 OK} (optional, for hiding some LaTeX messages)    \\
   preview.sty:   & \textcolor{OliveGreen}{14.0.6 OK} (required for BookML images)                \\
@@ -458,8 +458,10 @@ $(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
   Note that the metadata will also be included in the PDF. Use \ltxinline|\iflatexml...\fi| appropriately if you need different information. If the \texttt{pdfsubject} is not present, the abstract will be used as description.
 \end{foldedframe}
 
-\begin{foldedframe}{Some PDF and EPS figures look odd}\label{odd-pdf-eps-figures}
-  BookML uses \texttt{dvisvgm} to convert PDF and EPS images to SVG. Unfortunately, that goes wrong under certain conditions. If that happens to you, please convert those images yourself, and place the resulting images in the same folder and with the same name as the original PDF or EPS files, but extensions \texttt{.svg}, \texttt{.png}, or \texttt{.jpg}.
+\begin{foldedframe}{Some PDF and EPS figures look odd or prevent compilation}\label{odd-pdf-eps-figures}
+  By default, BookML uses \texttt{dvisvgm} to convert EPS images to SVG, and \texttt{mutool} to convert PDF images to SVG. If you do not want to install \texttt{mutool}, you can try setting \makeinline|PDFTOSVG_CONVERTER=dvisvgm| in \texttt{GNUmakefile}. The output of \cmdinline|make detect| will help you determine if this is feasible on your machine.
+
+  If you cannot get good SVGs from the automatic conversion, you have two possibilities. You can convert the images yourself, and place the resulting images in the same folder and with the same name as the original PDF or EPS files, but extensions \texttt{.svg}, \texttt{.png}, or \texttt{.jpg}. \textbf{You must use }\ltxinline|\includegraphics{figure}|\textbf{ instead of }\ltxinline|\includegraphics{figure.pdf}|\textbf{ for this to work.} You can also disable the automatic conversion altogether with \makeinline|PDFTOSVG_CONVERTER=|, at which point \LaTeXML{} will convert the images to PNG using ImageMagick.
 \end{foldedframe}
 
 \begin{foldedframe}{Some images look weird in sepia and dark mode}\label{images-in-sepia-dark-mode}
@@ -609,6 +611,9 @@ The following options are available.
 \item[\texttt{LATEXMLFLAGS}] Options to pass to \LaTeXML.
 \item[\texttt{LATEXMLPOST}] Command to call \texttt{latexmlpost}. Default \texttt{\textit{latexmlpost}}.
 \item[\texttt{LATEXMLPOSTFLAGS}] Options to pass to \texttt{latexmlpost}. \textbf{Warning:} when applied to a single target, it must be applied to \ltxinline|$(AUX_DIR)/file/index.html:| instead of say \ltxinline|file.zip:|, just like for \texttt{SPLITAT}.
+\item[\texttt{MUTOOL}] Command to call mutool. Default \texttt{\textit{mutool}}.
+\item[\texttt{MUTOOLFLAGS}] Options to pass to mutool draw.
+\item[\texttt{PDFTOSVG\_CONVERTER}] Select which converter to use for converting PDF images to SVG. Currently supported values are \texttt{dvisvgm} and \texttt{mutool}. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default \texttt{\textit{mutool}}.
 \item[\texttt{PERL}] Command to call Perl. Default \texttt{\textit{perl}}.
 \item[\texttt{TEXFOT}] Command to call texfot. Default \texttt{\textit{texfot}}.
 \item[\texttt{TEXFOTFLAGS}] Options to pass to texfot.

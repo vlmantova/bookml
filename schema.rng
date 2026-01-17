@@ -51,4 +51,14 @@
   <define name="Misc.class" combine="choice">
     <ref name="xmlinlineelem"/>
   </define>
+  <define name="rawhtml" combine="choice">
+    <element name="rawhtml">
+      <zeroOrMore>
+        <choice>
+          <ref name="htmlElement"/>
+          <text/>
+        </choice>
+      </zeroOrMore>
+    </element>
+  </define>
 </grammar>

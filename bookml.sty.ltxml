@@ -480,7 +480,7 @@ DefConstructor('\bmlRawHTML Digested', sub {
     # wrap in <span> to set the XHTML namespace
     my $html = $parser->parse_balanced_chunk('<span xmlns="http://www.w3.org/1999/xhtml">'
         . ToString($arg) . '</span>');
-    my @elems = $html->firstChild->findnodes('*');
+    my @elems = $html->firstChild->findnodes('node()');
 
     my $inpreamble = $options{inPreamble};
     my $savenode   = $document->floatToElement('ltx:resource') if $inpreamble;
@@ -516,7 +516,7 @@ DefConstructor('\bml@image@depth{}', sub {
     my $node = $document->getLastChildElement($document->getElement);
     return Error('expected', 'dpth', $document,
       'could not find depth for BookML image ' . $node->getAttribute('graphic')
-        . "; see $bml_jobname.latexml.log for more details, and try deleting $dpth")
+        . "; read the log for more details, and try deleting $dpth")
       unless defined $bml_depth && exists $$bml_depth{"$counter-depth"};
     $document->setAttribute($node, 'imagedepth', int(0.5 + $$bml_depth{"$counter-depth"} * $bml_imagescale * 96 / 72));
     return;
@@ -565,7 +565,6 @@ DefPrimitive('\bml@image@generate', sub {
       require Win32::ShellQuote;
       @lmk_invocation = Win32::ShellQuote::quote_system_list(@lmk_invocation); }
     &$bml_NoteLog('Calling ' . join(' ', @lmk_invocation));
-    &$bml_NoteLog('Logs in ' . pathname_concat($outdir, $bml_jobname . '.log'));
     my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
       @lmk_invocation);
 
@@ -580,7 +579,6 @@ DefPrimitive('\bml@image@generate', sub {
         &$bml_ProgressStep("latexmk: run number $1"); }
       else {
         chomp;
-        $_ = ' ' . $_;
         # copied from texfot.pl v1.47 by Karl Berry (public domain)
         if ($print_next) {
           &$bml_NoteSTDERR($_);
@@ -645,7 +643,8 @@ DefPrimitive('\bml@image@generate', sub {
     waitpid($lmk_pid, 0);
     if ($! || $?) {
       &$bml_ProgressSpindown('BookML images');
-      return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; see $outdir/$bml_jobname.log for more details",
+      my $log = ($LaTeXML::Common::Error::LOG && !ref $LaTeXML::Common::Error::LOG_PATH) ? "the log" : "$outdir/$bml_jobname.log";
+      return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; read $log for more details",
         $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
         'Invocation:', @lmk_invocation); }
 
@@ -696,7 +695,7 @@ DefPrimitive('\bml@image@generate', sub {
       waitpid($dsvg_pid, 0);
       if ($! || $?) {
         &$bml_ProgressSpindown('BookML images');
-        return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; see $bml_jobname.latexml.log for more details",
+        return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; read the log for more details",
           $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
           'Invocation:', @dsvg_invocation); }
 

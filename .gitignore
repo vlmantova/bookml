@@ -2,6 +2,9 @@ bookml
 gitbook
 test-*
 
+auxdir
+bmlimages
+bmluser
 *.xml
 *.zip
 *.epub

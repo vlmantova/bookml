@@ -69,9 +69,9 @@
       ],
     },
     output: {
-      linebreaks: {
-        inline: false, // temporarily disabled due to incompatibility with LaTeXML's equation groups via tables
-      },
+      /*** make mtext elements use surrounding font ***/
+      mtextInheritFont: true,
+      merrorInheritFont: true,
     },
     startup: {
       ready: () => {

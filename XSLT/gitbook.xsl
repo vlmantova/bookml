@@ -379,6 +379,8 @@
       <xsl:when test="$GITBOOK">
         <header class="book-header fixed" aria-label="toolbar">
           <!-- we purposefully omit the invisible title provided by GitBook; code left for reference -->
+          <!-- references to h1 in gitbook's app.min.js are replaced by span.bml-separator -->
+          <span class="bml-separator"/>
           <!-- <h1>
             <xsl:choose>
               <xsl:when test="/ltx:*/ltx:tocticle">

@@ -118,7 +118,7 @@ th > .ltx_p:last-child {
   justify-items: stretch;
   grid-auto-flow: dense;
 
-  grid-template-columns: [leqno] var(--bml-eqn-eqno) [leftpad] var(--bml-eqn-leftpad) [eqn] var(--bml-eqn-columns) [rightpad] var(--bml-eqn-rightpad) [reqno] var(--bml-eqn-eqno);
+  grid-template-columns: [leqno-start] var(--bml-eqn-eqno) [leqno-end leftpad-start] var(--bml-eqn-leftpad) [leftpad-end eqn-start] var(--bml-eqn-columns) [eqn-end rightpad-start] var(--bml-eqn-rightpad) [rightpad-end reqno-start] var(--bml-eqn-eqno) [reqno-end];
 
   &.bml_eqn_has_eqno {
     --bml-eqn-eqno: auto;
@@ -137,12 +137,8 @@ th > .ltx_p:last-child {
 
   & .ltx_eqn_div {
     grid-template-columns: subgrid;
-    grid-column-start: leftpad;
+    grid-column-start: leqno;
     grid-column-end: reqno;
-    &.bml_eqn_has_eqno {
-      grid-column-start: 1;
-      grid-column-end: -1;
-    }
   }
 
   .ltx_fleqn & {
@@ -162,10 +158,6 @@ th > .ltx_p:last-child {
 
     grid-column-start: leqno;
     visibility: hidden;
-
-    .ltx_fleqn & {
-      display: none;
-    }
 
     &:first-child {
       grid-column-start: reqno;
@@ -192,8 +184,8 @@ th > .ltx_p:last-child {
   &>tbody, &>span, .ltx_eqn_row {
     display: grid;
     grid-template-columns: subgrid;
-    grid-column-start: 1;
-    grid-column-end: -1;
+    grid-column-start: leqno;
+    grid-column-end: reqno;
   }
 }
 
@@ -205,19 +197,12 @@ th > .ltx_p:last-child {
     content: "";
     display: flex; /* Chrome complains otherwise, not sure why */
     grid-column-start: leqno;
-    grid-column-end: eqn;
-
-    .ltx_eqn_table.bml_eqn_has_eqno & {
-      grid-column-start: leftpad;
-      .ltx_fleqn & {
-        grid-column-start: leqno;
-      }
-      .ltx_fleqn.ltx_leqno & {
-        grid-column-start: leftpad;
-      }
-    }
+    grid-column-end: leftpad;
   }
 
+  &.bml_eqn_has_eqno::before {
+    grid-column-start: leftpad;
+  }
 
   &.ltx_intertext {
     &::before {
@@ -225,8 +210,8 @@ th > .ltx_p:last-child {
     }
 
     &>.ltx_eqn_cell {
-      grid-column-start: 1;
-      grid-column-end: -1;
+      grid-column-start: leqno;
+      grid-column-end: reqno;
     }
   }
 
@@ -237,7 +222,7 @@ th > .ltx_p:last-child {
 
     &>.ltx_eqn_cell {
       grid-column-start: leftpad;
-      grid-column-end: reqno;
+      grid-column-end: rightpad;
     }
   }
 }
@@ -251,14 +236,9 @@ th > .ltx_p:last-child {
     grid-column-start: leqno;
     visibility: hidden;
 
-    .ltx_fleqn & {
-      display: none; /* covered by .ltx_eqn_row::before or, if .ltx_leqno, by &:first-child */
-    }
-
     &:first-child {
       grid-column-start: reqno;
       visibility: visible;
-      display: initial;
     }
 
     .ltx_leqno & {
@@ -288,4 +268,29 @@ th > .ltx_p:last-child {
   &[rowspan] {
     grid-row-end: span var(--bml-eqn-rowspan, 1);
   }
+}
+
+/* plain MathML improvements */
+@font-feature-values "STIX Two Math" {
+  @styleset {
+    roundhand: 1;
+    sup: 4;
+  }
+}
+
+msup>mo {
+  font-variant-alternates: styleset(sup);
+}
+
+.ltx_font_mathcaligraphic {
+  /* undo unfortunate LaTeXML choice */
+  font-family: inherit;
+}
+
+.ltx_font_mathscript {
+  font-variant-alternates: styleset(roundhand);
+}
+
+msup>mo.ltx_font_mathscript {
+  font-variant-alternates: styleset(sup) styleset(roundhand);
 }

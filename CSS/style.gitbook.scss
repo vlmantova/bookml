@@ -348,6 +348,11 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   background-color: transparent;
 }
 
+/* replace h1 separator with span.bml-separator */
+.book .book-header span.bml-separator {
+  display: block;
+}
+
 /* Force LaTeX table borders over GitBook */
 /* double in top borders is to win the border conflict resolution */
 .ltx_border_t  { border-top:1px double !important; }
@@ -485,7 +490,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
     border: none;
   }
 
-  &>tr:last-child, &>tbody:last-child>tr:last-child {
+  &>tr:last-child, &>tbody:last-child {
     border-bottom: 1px solid #ccc;
   }
 }

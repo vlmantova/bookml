@@ -1,0 +1,572 @@
+% mathtools documentation
+\documentclass{article}
+
+\usepackage{fourier}
+\usepackage{mathtools}
+
+\usepackage{xcolor,varioref,amssymb}
+
+\usepackage{xurl}
+
+\usepackage[final,
+hyperindex=false,
+colorlinks,
+]{hyperref}
+
+\makeatletter
+\newcommand*\thinfbox[2][black]{\fboxsep0pt\textcolor{#1}{\rulebox{{\normalcolor#2}}}}
+\newcommand*\thinboxed[2][black]{\thinfbox[#1]{\ensuremath{\displaystyle#2}}}
+\newcommand*\rulebox[1]{%
+  \sbox\z@{\ensuremath{\displaystyle#1}}%
+  \@tempdima\dp\z@
+  \hbox{%
+    \lower\@tempdima\hbox{%
+      \vbox{\hrule height\fboxrule\box\z@\hrule height\fboxrule}%
+    }%
+  }%
+}
+\makeatother
+
+\title{BookML test: \texttt{mathtools} user guide}
+\author{Morten Høgholm, Lars Madsen and the \LaTeX3 project}
+\date{2026-03-02}
+
+\input{test-info}
+
+\begin{document}
+
+\section{Tools for mathematical typesetting}
+
+\subsubsection{A complement to \texttt{\textbackslash smash},
+  \texttt{\textbackslash llap}, and \texttt{\textbackslash rlap}}
+
+\[
+  X = \sum_{1\le i\le j\le n} X_{ij}
+\]
+\[
+  X = \sum_{\mathclap{1\le i\le j\le n}} X_{ij}
+\]
+
+\subsubsection{Forcing a cramped style}
+
+\begin{equation}\label{eq:mathclap}
+  \sum_{\mathclap{a^2<b^2<c}}\qquad
+  \sum_{a^2<b^2<c}
+\end{equation}
+
+\begingroup \fontsize{24}{\baselineskip}\selectfont
+\[
+  \sum_{\mathclap{a^2<b^2<c}}\qquad
+  \sum_{a^2<b^2<c}
+\]
+\endgroup
+
+\[
+  \cramped{x^2}               \leftrightarrow x^2    \quad
+  \cramped[\scriptstyle]{x^2} \leftrightarrow {\scriptstyle x^2}
+\]
+
+\begin{quote}
+  The 2005 Euro\TeX{} conference is held in Abbaye des
+  Pr\'emontr\'es, France, marking the 16th ($2^{2^2}$) anniversary
+  of both Dante and GUTenberg (the German and French \TeX{} users
+  group resp.).
+\end{quote}
+
+
+\begin{quote}
+  The 2005 Euro\TeX{} conference is held in Abbaye des
+  Pr\'emontr\'es, France, marking the 16th ($\cramped{2^{2^2}}$)
+  anniversary of both Dante and GUTenberg (the German and French
+  \TeX{} users group resp.).
+\end{quote}
+
+\begin{equation*}\label{eq:mathclap-b}
+  \sum_{\crampedclap{a^2<b^2<c}}
+  \tag{\ref{eq:mathclap}*}
+\end{equation*}
+
+\begingroup \fontsize{24}{\baselineskip}\selectfont
+\[
+  \sum_{\substack{a^2<b^2<c}}\qquad
+  \sum_{a^2<b^2<c}
+\]
+\endgroup
+
+\begingroup \fontsize{24}{\baselineskip}\selectfont
+\[
+  \sum_{\crampedsubstack{a^2<b^2<c}}\qquad
+  \sum_{a^2<b^2<c}
+\]
+\endgroup
+
+\subsubsection{Smashing an operator}
+\[
+  V = \sum_{1\le i\le j\le n}^{\infty} V_{ij}                  \quad
+  X = \smashoperator{\sum_{1\le i\le j\le n}^{3456}} X_{ij}    \quad
+  Y = \smashoperator[r]{\sum\limits_{1\le i\le j\le n}} Y_{ij} \quad
+  Z = \smashoperator[l]{\mathop{T}_{1\le i\le j\le n}} Z_{ij}
+\]
+
+\subsubsection{Adjusting limits of operators}
+
+\[
+  \text{a)} \lim_{n\to\infty} \max_{p\ge n} \quad
+  \text{b)} \lim_{n\to\infty} \max_{p^2\ge n} \quad
+  \text{c)} \lim_{n\to\infty} \sup_{p^2\ge nK} \quad
+  \text{d)} \limsup_{n\to\infty} \max_{p\ge n}
+\]
+
+\[
+  \text{a)} \adjustlimits\lim_{n\to\infty} \max_{p\ge n} \quad
+  \text{b)} \adjustlimits\lim_{n\to\infty} \max_{p^2\ge n} \quad
+  \text{c)} \adjustlimits\lim_{n\to\infty} \sup_{p^2\ge nK} \quad
+  \text{d)} \adjustlimits\limsup_{n\to\infty} \max_{p\ge n}
+\]
+
+
+\subsubsection{Swapping space above \texorpdfstring{\AmS}{AMS} display math environments }
+
+\noindent\rule\textwidth{1pt}
+\begin{align*}  A &= B \end{align*}
+\noindent\rule\textwidth{1pt}
+\begin{align*}
+\SwapAboveDisplaySkip
+A &= B
+\end{align*}
+
+\subsection{Controlling tags}
+
+\newtagform{brackets}{[}{]}
+\usetagform{brackets}
+  \begin{equation}
+    E \neq m c^3
+  \end{equation}
+
+\newtagform{brackets2}[\textbf]{[}{]}
+\usetagform{brackets2}
+\begin{equation}
+  E \neq m c^3
+\end{equation}
+
+\subsubsection{Showing only referenced tags}
+
+\begin{quote}\renewcommand*\rmdefault{ppl}\normalfont\itshape
+\begin{equation*}
+  a=b \label{eq:example}\tag*{Q\&A}
+\end{equation*}
+See \ref{eq:example} or is it better with \refeq{eq:example}?
+\end{quote}
+
+\mathtoolsset{showonlyrefs,showmanualtags}
+\usetagform{brackets}
+\begin{gather}
+  a=a \label{eq:a} \\
+  b=b \label{eq:b} \tag{**}
+\end{gather}
+This should refer to the equation containing $a=a$: \eqref{eq:a}.
+Then a switch of tag forms.
+\usetagform{default}
+\begin{align}
+  c&=c \label{eq:c} \\
+  d&=d \label{eq:d}
+\end{align}
+This should refer to the equation containing $d=d$: \eqref{eq:d}.
+\begin{equation}
+  e=e
+\end{equation}
+Back to normal.\mathtoolsset{showonlyrefs=false}
+\begin{equation}
+  f=f
+\end{equation}
+
+\subsection{Extensible symbols}
+
+\[
+  A \xLeftarrow[under]{over} B
+\]
+
+\begin{align*}
+  A &\xleftrightarrow[below]{above} B &
+  A &\xRightarrow[below]{above} B \\
+  A &\xLeftarrow[below]{above} B &
+  A &\xLeftrightarrow[below]{above} B \\
+  A &\xhookleftarrow[below]{above} B &
+  A &\xhookrightarrow[below]{above} B \\
+  A &\xmapsto[below]{above} B \\
+  A &\xrightharpoondown[below]{above} B &
+  A &\xrightharpoonup[below]{above} B \\
+  A &\xleftharpoondown[below]{above} B &
+  A &\xleftharpoonup[below]{above} B \\
+  A &\xrightleftharpoons[below]{above} B &
+  A &\xleftrightharpoons[below]{above} B \\
+\end{align*}
+
+\begin{align*}
+  A & \longrightarrow B & A & \longleftarrow B \\
+  A & \xlongrightarrow[b]{a} B & A & \xlongleftarrow[b]{a} B \\
+  A & \xlongrightarrow[below]{above} B & A & \xlongleftarrow[below]{above} B \\
+\end{align*}
+\begin{align*}
+  A & \xLongrightarrow B & A & \Longleftarrow B \\
+  A & \xLongrightarrow[b]{a} B & A & \xLongleftarrow[b]{a} B \\
+  A & \xLongrightarrow[below]{above} B & A & \xLongleftarrow[below]{above} B \\
+\end{align*}
+
+\subsubsection{Braces and brackets}
+
+\[
+  \underbracket[3pt]{xxx\  yyy}_{zzz} \quad \text{and} \quad
+  \underbracket[1pt][7pt]{xxx\  yyy}_{zzz}
+\]
+\[
+  \mathop{\thinboxed[blue]{\sum}}_{n}
+  \mathop{\thinboxed[blue]{\LaTeXunderbrace{\thinboxed[green]{foof}}}}_{zzz}
+\]
+
+\par\Huge\vskip-\baselineskip
+\[
+  \mathop{\thinboxed[blue]{\sum}}_{n}
+  \mathop{\thinboxed[blue]{\LaTeXunderbrace{\thinboxed[green]{foof}}}}_{zzz}
+\]\normalsize
+\par\footnotesize
+\[
+  \mathop{\thinboxed[blue]{\sum}}_{n}
+  \mathop{\thinboxed[blue]{\LaTeXunderbrace{\thinboxed[green]{foof}}}}_{zzz}
+\]\normalsize
+
+\subsection{New mathematical building blocks}
+
+\subsubsection{Matrices}\label{subsubsec:matrices}
+
+\[
+  \begin{pmatrix*}[r]
+    -1 & 3 \\
+    2  & -4
+  \end{pmatrix*}
+\]
+
+\[
+\begin{bsmallmatrix}    a & -b \\ -c & d \end{bsmallmatrix}
+\begin{bsmallmatrix*}[r] a & -b \\ -c & d \end{bsmallmatrix*}
+\]
+\[
+\begin{bsmallmatrix} a & -b \\ -c & d \end{bsmallmatrix}
+\begin{bsmallmatrix*}[r] a & -b \\ -c & d \end{bsmallmatrix*}
+\]
+
+\subsubsection{The \texttt{multlined} environment}
+
+\[
+  A = \begin{multlined}[t]
+        \framebox[4cm]{first} \\
+        \framebox[4cm]{last}
+      \end{multlined} B
+\]
+\[
+  \begin{multlined}
+    \framebox[.65\columnwidth]{First line} \\
+    \framebox[.5\columnwidth]{Second line} \\
+    \shoveleft{L+E+F+T}         \\
+    \shoveright{R+I+G+H+T}         \\
+    \shoveleft[1cm]{L+E+F+T}         \\
+    \shoveright[\widthof{$R+I+G+H+T$}]{R+I+G+H+T}         \\
+    \framebox[.65\columnwidth]{Last line}
+  \end{multlined}
+\]
+
+\[
+    \begin{multlined}[b][7cm]
+        \framebox[4cm]{first} \\
+        \framebox[4cm]{last}
+      \end{multlined} = B
+\]
+
+\subsubsection{More \texttt{cases}-like environments}
+
+\[
+  a=\begin{cases}
+    E = m c^2     & \text{Nothing to see here} \\
+    \int x-3\, dx & \text{Integral is text style}
+  \end{cases}
+\]
+
+\[
+  \begin{dcases}
+    E = m c^2     & c \approx 3.00\times 10^{8}\,\mathrm{m}/\mathrm{s} \\
+    \int x-3\, dx & \text{Integral is display style}
+  \end{dcases}
+\]
+
+\[
+  a= \begin{dcases*}
+    E = m c^2     & Nothing to see here \\
+    \int x-3\, dx & Integral is display style
+  \end{dcases*}
+\]
+
+\[
+\begin{rcases*}
+  x^2 & for $x>0$\\
+  x^3 & else
+\end{rcases*} \quad \Rightarrow\cdots
+\]
+
+
+\subsubsection{Emulating indented lines in alignments}
+\begin{align*}
+  \MoveEqLeft \framebox[10cm][c]{Long first line}\\
+  & = \framebox[6cm][c]{2nd line}\\
+  & \leq \dots
+\end{align*}
+
+\begin{align*}
+  \MoveEqLeft[3] \framebox[10cm][c]{Long first line}\\
+    = {} & \framebox[6cm][c]{2nd line}\\
+        & + \framebox[4cm][c]{last part}
+\end{align*}
+
+\subsubsection{Boxing a single line in an alignment}
+
+\begin{align*}
+  \Aboxed{ f(x) & = \int h(x)\, dx} \\
+                & = g(x)
+\end{align*}
+
+\begin{align*}
+  \setlength\fboxsep{1em}
+  \Aboxed{ f(x) &= 0 } & \Aboxed{ g(x) &= b} \\
+  \Aboxed{ h(x) }      & \Aboxed{ i(x) }
+\end{align*}
+
+\newcommand\myboxA[1]{\fcolorbox{gray}{yellow}{#1}}
+\newcommand\myboxB[1]{{\fboxsep=5pt\fboxrule=2pt\fbox{#1}}}
+\MakeAboxedCommand\AboxedA\myboxA
+\MakeAboxedCommand\AboxedB\myboxB
+\begin{align*}
+  \AboxedA{ f(x) &= x^2 } & \AboxedB{ f(x) &= x^2 }
+\end{align*}
+
+\subsubsection{Adding arrows between lines in an alignment}
+
+\begin{alignat}{2}
+  && \framebox[1.5cm]{} &= \framebox[3cm]{}\\
+  \ArrowBetweenLines
+  && \framebox[1.5cm]{} &= \framebox[2cm]{}
+\end{alignat}
+
+\begin{alignat*}{2}
+  \framebox[1.5cm]{} &= \framebox[3cm]{}  &&\\
+  \ArrowBetweenLines*[\Downarrow]
+  \framebox[1.5cm]{} &= \framebox[2cm]{}  &&
+\end{alignat*}
+
+\subsubsection{Centered \texorpdfstring{\texttt{vdots}}{\textbackslash vdots}}
+
+\begin{align*}
+  \framebox[1.5cm]{} &= \framebox[3cm]{}\\
+                      & \vdots\\
+                      &= \framebox[3cm]{}
+\end{align*}
+
+\begin{align*}
+  a &= b              \\
+    & \vdotswithin{=} \\
+    & = c             \\
+    \shortvdotswithin{=}
+    & = d
+\end{align*}
+
+\begin{alignat*}{3}
+  A&+ B &&= C &&+ D \\
+  \MTFlushSpaceAbove
+  &\vdotswithin{+} &&&& \vdotswithin{+}
+  \MTFlushSpaceBelow
+  C &+ D &&= Y &&+K
+\end{alignat*}
+
+\subsection{Intertext and short intertext}
+
+\begin{align}
+  a&=b \intertext{Some text}
+  c&=d
+\end{align}
+
+\begin{align}
+  a&=b \shortintertext{Some text}
+  c&=d
+\end{align}
+
+\subsection{Paired delimiters}
+
+
+\DeclarePairedDelimiter\abs\lvert\rvert
+\[
+  \abs{\frac{a}{b}}
+\]
+
+\[
+  \abs*{\frac{a}{b}}
+\]
+
+\[
+  \abs[\Bigg]{\frac{a}{b}}
+\]
+
+\DeclarePairedDelimiterX\innerp[2]{\langle}{\rangle}{#1,#2}
+\DeclarePairedDelimiterX\braket[3]{\langle}{\rangle}%
+{#1\,\delimsize\vert\,\mathopen{}#2\,\delimsize\vert\,\mathopen{}#3}
+\[
+\innerp*{A}{ \frac{1}{2} } \quad
+\braket[\Big]{B}{\sum_{k}}{C}
+\]
+
+\providecommand\given{}
+\newcommand\SetSymbol[1][]{\nonscript\:#1\vert\allowbreak\nonscript\:\mathopen{}}
+\DeclarePairedDelimiterX\Set[1]\{\}{%
+    \renewcommand\given{\SetSymbol[\delimsize]}
+    #1
+}
+\[ \Set*{ x \in X \given \frac{\sqrt{x}}{x^2+1} > 1 } \]
+
+\subsection{Special symbols}
+
+\subsubsection{Vertically centered colon}
+\[\mathtoolsset{centercolon}
+  a := b
+\]
+
+\subsubsection{A few additional symbols}
+
+\[
+    \lim_{a\ndownarrow 0} f(a) \neq \bigtimes_n X_n \qquad
+    \frac{ \bigtimes_{k=1}^7 B_k \nuparrow \Omega }{2}
+\]
+
+
+\subsection{Mathematics within italic text}
+
+\begin{quote}\itshape
+Compare these lines: \par
+\mathtoolsset{mathic}
+Subset of \(V\) and subset of \(A\). \par
+\mathtoolsset{mathic=false}
+Subset of \(V\) and subset of \(A\).
+\par
+\end{quote}
+
+\subsection{Left sub/superscripts}
+
+\[
+  {}^{4}_{12}\mathbf{C}^{5+}_{2}          \quad
+  \prescript{14}{2}{\mathbf{C}}^{5+}_{2}  \quad
+  \prescript{4}{12}{\mathbf{C}}^{5+}_{2}  \quad
+  \prescript{14}{}{\mathbf{C}}^{5+}_{2}   \quad
+  \prescript{}{2}{\mathbf{C}}^{5+}_{2}
+\]
+
+\newcommand*\myisotope[3]{%
+  \begingroup
+    \mathtoolsset{
+      prescript-sup-format=\mathit,
+      prescript-sub-format=\mathbf,
+      prescript-arg-format=\mathrm,
+    }%
+  \prescript{#1}{#2}{#3}%
+  \endgroup
+}
+\[
+  \myisotope{A}{Z}{X}\to \myisotope{A-4}{Z-2}{Y}+
+  \myisotope{4}{2}{\alpha}
+\]
+
+\subsection{Spreading equations}\label{sec:spread}
+
+\begin{spreadlines}{20pt}
+Large spaces between the lines.
+\begin{gather}
+  a=b\\
+  c=d
+\end{gather}
+\end{spreadlines}
+Back to normal spacing.
+\begin{gather}
+  a=b\\
+  c=d
+\end{gather}
+
+
+\subsection{Gathered environments}\label{subsec:gathered}
+
+\begin{equation}
+  \begin{lgathered}
+      x=1,\quad x+1=2 \\
+      y=2
+  \end{lgathered}
+\end{equation}
+
+\newcounter{steplinecnt}
+\newcommand\stepline{\stepcounter{steplinecnt}\thesteplinecnt}
+\newgathered{stargathered}{\llap{\stepline}$*$\quad\hfil}{\hfil}{\setcounter{steplinecnt}{0}}
+\begin{gather}
+  \begin{stargathered}
+    x=1,\quad x+1=2 \\
+    y=2
+  \end{stargathered}
+\end{gather}
+
+\subsection{Split fractions}
+
+\[
+a=\frac{
+    \splitfrac{xy + xy + xy + xy + xy}
+              {+ xy + xy + xy + xy}
+  }
+  {z}
+=\frac{
+    \splitdfrac{xy + xy + xy + xy + xy}
+              {+ xy + xy + xy + xy}
+  }
+  {z}
+\]
+\[
+\frac{
+    \splitfrac{xy + xy + xy + xy + xy}
+    {
+    \splitfrac{xy + xy + xy + xy + xy}
+              {+ xy + xy + xy + xy}
+    }
+  }
+  {z}
+=\frac{
+    \splitfrac{xy + xy + xy + xy + xy}
+    {
+    \splitfrac{\mathstrut  xy + xy + xy + xy + xy}
+              {+ xy + xy + xy + xy}
+    }
+  }
+  {z}
+\]
+
+\section{New additions}
+
+ \subsection{Variable math strut}
+\[
+  \begin{cases*}
+    \frac{\frac{ x-1 }{ x-\sin x} }{ \sqrt{ 1 -x }} & $x >0$ \\
+    0 & otherwise
+  \end{cases*}
+\qquad\text{vs.}\qquad
+  \begin{cases*}
+    \frac{\frac{ \xmathstrut{0.1} x-1 }{ \xmathstrut{0.25} x-\sin x} }{\xmathstrut{0.4} \sqrt{ 1 -x }} & $x >0$ \\
+    0 & otherwise
+  \end{cases*}
+\]
+
+\newcommand\vfb[1]{\begingroup\fboxsep=0pt\boxed{\,#1\,}\endgroup}
+\[
+  \llap{\rlap{\rule{18mm}{0.1pt}}\quad}a \vfb{\mathstrut} \ \vfb{\xmathstrut{0}}\
+  \vfb{\xmathstrut{0.5} } \  \vfb{\xmathstrut{-0.1} }\  \vfb{\xmathstrut[0.5]{0}} a
+\]
+
+\end{document}

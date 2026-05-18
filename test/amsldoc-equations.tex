@@ -1,0 +1,173 @@
+% amsmath documentation, chapter 'Displayed equations'
+\documentclass[oneside]{book}
+
+\title{BookML test: \texttt{amsmath} user guide, displayed equations}
+\author{American Mathematical Society, \LaTeX\ Project}
+\date{1999-12-13\\(revised 2002-02-25, 2016-11-14, 2018-04-05, 2019-10-14, 2020-02-18)}
+
+\usepackage{amsmath}
+
+\usepackage{hyperref}
+
+\hypersetup{pdfborder=0 0 0}
+
+\input{test-info}
+
+\begin{document}
+
+\chapter{Displayed equations}
+
+\section{Introduction}
+
+\begin{equation*}
+a=b
+\end{equation*}
+
+\begin{equation}
+a=b
+\end{equation}
+
+\begin{equation}\label{xx}
+\begin{split}
+a& =b+c-d\\
+ & \quad +e-f\\
+ & =g+h\\
+ & =i
+\end{split}
+\end{equation}
+
+\begin{multline}
+a+b+c+d+e+f\\
++i+j+k+l+m+n
+\end{multline}
+
+\begin{gather}
+a_1=b_1+c_1\\
+a_2=b_2+c_2-d_2+e_2
+\end{gather}
+
+\begin{align}
+a_1& =b_1+c_1\\
+a_2& =b_2+c_2-d_2+e_2
+\end{align}
+
+\begin{align}
+a_{11}& =b_{11}&
+  a_{12}& =b_{12}\\
+a_{21}& =b_{21}&
+  a_{22}& =b_{22}+c_{22}
+\end{align}
+
+\begin{flalign*}
+a_{11} + b_{11}& = c_{11}&
+  a_{12}& =b_{12}\\
+b_{21}& = c_{21}&
+  a_{22}& =b_{22}+c_{22}
+\end{flalign*}
+
+\section{Split equations without alignment}
+
+\begin{multline}
+\framebox[.65\columnwidth]{A}\\
+\framebox[.5\columnwidth]{B}\\
+\shoveright{\framebox[.55\columnwidth]{C}}\\
+\framebox[.65\columnwidth]{D}
+\end{multline}
+
+\section{Split equations with alignment}
+
+\begin{equation}\label{e:barwq}\begin{split}
+H_c&=\frac{1}{2n} \sum^n_{l=0}(-1)^{l}(n-{l})^{p-2}
+  \sum_{l _1+\dots+ l _p=l}\prod^p_{i=1} \binom{n_i}{l _i}\\
+&\quad\cdot[(n-l )-(n_i-l _i)]^{n_i-l _i}\cdot
+  \Bigl[(n-l )^2-\sum^p_{j=1}(n_i-l _i)^2\Bigr].
+  \kern-2em % adjust equation body to the right [mjd,13-Nov-1994]
+\end{split}\end{equation}
+
+\section{Equation groups without alignment}
+
+\begin{gather}
+  first equation\\
+  \begin{split}
+    second & equation\\
+           & on two lines
+  \end{split}
+  \\
+  third equation
+\end{gather}
+
+\section{Equation groups with mutual alignment}
+
+\begin{align}
+x&=y       & X&=Y       & a&=b+c\\
+x'&=y'     & X'&=Y'     & a'&=b\\
+x+x'&=y+y' & X+X'&=Y+Y' & a'b&=c'b
+\end{align}
+
+\begin{align}
+x& = y_1-y_2+y_3-y_5+y_8-\dots
+                    && \text{by \eqref{eq:C}}\\
+ & = y'\circ y^*    && \text{by \eqref{eq:D}}\\
+ & = y(0) y'        && \text {by Axiom 1.}
+\end{align}
+
+\begin{alignat}{2}
+x& = y_1-y_2+y_3-y_5+y_8-\dots
+                  &\quad& \text{by \eqref{eq:C}}\\
+ & = y'\circ y^*  && \text{by \eqref{eq:D}}\\
+ & = y(0) y'      && \text {by Axiom 1.}
+\end{alignat}
+
+\begin{flalign}
+x&=y       & X&=Y\\
+x'&=y'     & X'&=Y'\\
+x+x'&=y+y' & X+X'&=Y+Y'
+\end{flalign}
+
+\begin{flalign*}
+x&=y       & X&=Y\\
+x'&=y'     & X'&=Y'\\
+x+x'&=y+y' & X+X'&=Y+Y'
+\end{flalign*}
+
+\section{Alignment building blocks}
+
+\begin{equation*}
+\left.\begin{aligned}
+  B'&=-\partial\times E,\\
+  E'&=\partial\times B - 4\pi j,
+\end{aligned}
+\right\}
+\qquad \text{Maxwell's equations}
+\end{equation*}
+
+\begin{equation}\label{eq:C}
+P_{r-j}=
+  \begin{cases}
+    0&  \text{if $r-j$ is odd},\\
+    r!\,(-1)^{(r-j)/2}&  \text{if $r-j$ is even}.
+  \end{cases}
+\end{equation}
+
+\section{Interrupting a display}
+
+\begin{align}
+  A_1&=N_0(\lambda;\Omega')-\phi(\lambda;\Omega'),\\
+  A_2&=\phi(\lambda;\Omega')-\phi(\lambda;\Omega),\\
+\intertext{and}
+  A_3&=\mathcal{N}(\lambda;\omega).
+\end{align}
+
+
+\chapter{Miscellaneous mathematical features}
+
+\section{Matrices}
+
+\begin{equation}\label{eq:D}
+\begin{pmatrix} D_1t&-a_{12}t_2&\dots&-a_{1n}t_n\\
+-a_{21}t_1&D_2t&\dots&-a_{2n}t_n\\
+\hdotsfor[2]{4}\\
+-a_{n1}t_1&-a_{n2}t_2&\dots&D_nt\end{pmatrix},
+\end{equation}
+
+\end{document}

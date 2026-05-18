@@ -1,4 +1,13 @@
 MathJax = {
+  /*** make mtext/merror elements use surrounding font ***/
+  chtml: {
+    mtextInheritFont: true,
+    merrorInheritFont: true,
+  },
+  svg: {
+    mtextInheritFont: true,
+    merrorInheritFont: true,
+  },
   startup: {
     ready: () => {
       /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/

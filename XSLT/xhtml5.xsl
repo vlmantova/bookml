@@ -575,7 +575,7 @@
   </xsl:template>
 
   <!-- improve table layout of equation groups using CSS grids -->
-  <!-- part 1: save row/colspans into CSS custom properties -->
+  <!-- part 1: save row/colspans into CSS custom properties and whether a row contains a tag -->
   <xsl:template name="bml-table-span-to-css">
     <xsl:param name="cell" select="." />
     <xsl:if test="$cell/@colspan">
@@ -604,6 +604,15 @@
       <xsl:call-template name="bml-table-span-to-css">
         <xsl:with-param name="cell" select=".." />
       </xsl:call-template>
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="tr[(b:gitbook() or b:plain()) and b:has-class('ltx_eqn_row') and td[b:has-class('ltx_eqn_eqno',.)]]/@class | span[b:has-class('ltx_eqn_row') and span[b:has-class('ltx_eqn_eqno')]]/@class" mode="bml-alter">
+    <xsl:variable name="attr"><span><xsl:apply-imports /></span></xsl:variable>
+    <xsl:variable name="class" select="exsl:node-set($attr)//@class" />
+    <xsl:attribute name="class">
+      <xsl:value-of select="$class" />
+      <xsl:text> bml_eqn_has_eqno</xsl:text>
     </xsl:attribute>
   </xsl:template>
 
@@ -915,6 +924,21 @@
 
   <xsl:template match="mtable/@align[string()='bottom']" mode="bml-alter">
     <xsl:attribute name="align">baseline -1</xsl:attribute>
+  </xsl:template>
+
+  <!-- add roundhand vs chancery Unicode Variation selectors -->
+  <xsl:template
+    match="mi[b:has-class('ltx_font_mathscript')]/text()[contains('𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵',.)]"
+    mode="bml-alter">
+    <xsl:value-of select="." />
+    <xsl:text>&#xFE01;</xsl:text>
+  </xsl:template>
+
+  <xsl:template
+    match="mi[b:has-class('ltx_font_mathcaligraphic')]/text()[contains('𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵',.)]"
+    mode="bml-alter">
+    <xsl:value-of select="." />
+    <xsl:text>&#xFE00;</xsl:text>
   </xsl:template>
 
 </xsl:stylesheet>

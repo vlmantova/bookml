@@ -1,5 +1,20 @@
 {
   let config = () => {
+    MathJax.Hub.Config({
+      /*** make mtext elements use surrounding font ***/
+      CommonHTML: {
+        mtextFontInherit: true,
+      },
+      "HTML-CSS": {
+        mtextFontInherit: true,
+      },
+      SVG: {
+        mtextFontInherit: true,
+      },
+      PreviewHTML: {
+        mtextFontInherit: true,
+      },
+    });
     /*** adjust TeX spacing to treat identifier-like characters within <mo> as operators ***/
     MathJax.Hub.Register.StartupHook("MathML Jax Ready", function () {
       const TEXCLASS = MathJax.ElementJax.mml.TEXCLASS;

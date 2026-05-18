@@ -54,6 +54,9 @@ BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 
+TEST_DIRS    := $(patsubst %,test/%,$(BOOKML_DIRS))
+TEST_OUT     := $(patsubst %,test/bookml/%,$(GITBOOK_OUT)) $(patsubst %,test/%,$(BOOKML_OUT))
+
 BOOKML_VERSION = $(shell git log HEAD^..HEAD --format='%(describe)')
 BOOKML_DATE    = $(shell git log HEAD^..HEAD --format='%ad' --date='format:%Y/%m/%d')
 
@@ -117,13 +120,8 @@ docker-manifest:
 		--annotation=index:org.opencontainers.image.description='Run BookML in the current working directory. Usage: `docker run --rm -i -t -v.:/source $(REF):$(BOOKML_VERSION)`' \
 		$(foreach arch,$(ARCHS),$(REF)-full:$(BOOKML_VERSION)-$(arch))
 
-test: example.zip template.zip
-	-$(RMDIR) test-example test-template
-	-$(MKDIR) test-example test-template
-	$(call UNZIP,example.zip,test-example)
-	$(call UNZIP,template.zip,test-template)
-	$(MAKE) -C test-template
-	$(MAKE) -C test-example
+test: $(TEST_OUT)
+	$(MAKE) -C test
 
 release.zip: $(RELEASE_OUT)
 	-$(RM) "$(call ospath,$@)"
@@ -135,20 +133,23 @@ example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 
 clean:
 	-$(RMDIR) test-example test-template
-	-$(RMDIR) docker-ctx/release.zip $(call ospath,$(call reverse,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(CSS) *.zip))
+	-$(RMDIR) docker-ctx/release.zip $(call ospath,$(call reverse,$(RELEASE_OUT) $(GITBOOK_OUT) $(GITBOOK_DIRS) $(BOOKML_OUT) $(BOOKML_DIRS) $(TEST_OUT) $(TEST_DIRS) $(CSS) *.zip))
 
 $(GITBOOK_SOURCE):
 	git submodule update --init bookdown
 
 $(GITBOOK_CSS) $(GITBOOK_JS): $(GITBOOK_SOURCE)
 
-$(BOOKML_DIRS) $(GITBOOK_DIRS):
+$(BOOKML_DIRS) $(GITBOOK_DIRS) $(TEST_DIRS):
 	$(MKDIR) "$(call ospath,$@)"
 
 gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
 bookml/%: % | $(BOOKML_DIRS)
+	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
+
+test/bookml/%: bookml/% | $(TEST_DIRS)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
 bookml/GNUmakefile: template/GNUmakefile | $(BOOKML_DIRS)
@@ -162,12 +163,12 @@ $(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 	perl -p -e "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g;" \
-	        -e "s/result\.insertBefore\((.)title\)/toolbar.append(\1result)/;" \
 	        -e "s/<a>/<button>/;" -e "s/,href:.#.//;"\
 	        -e "s/(toggleDropdown\(e\){)/\1e.currentTarget.setAttribute('aria-expanded',e.currentTarget.getAttribute('aria-expanded')!=='true');/;" \
 	        -e "s/(.)(\(.\.dropdown-menu.\)\.removeClass\(.open.\))/\1\2;\1('.toggle-dropdown').attr('aria-expanded','false').attr('aria-haspopup','menu')/;" \
 	        -e "s/(addClass\(.toggle-dropdown.\))/\1.attr('aria-expanded','false')/;" \
 	        -e "s/(,closeDropdown\))/\1;gitbook.keyboard.bind('escape',closeDropdown)/;" \
+	        -e "s/h1/span.bml-separator/g;" \
 	        "$<" > "$@"
 
 # patch automatic TOC highlighting and scrolling

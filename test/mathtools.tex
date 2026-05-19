@@ -204,14 +204,14 @@ Back to normal.\mathtoolsset{showonlyrefs=false}
 
 \begin{align*}
   A & \longrightarrow B & A & \longleftarrow B \\
-  A & \xlongrightarrow[b]{a} B & A & \xlongleftarrow[b]{a} B \\
-  A & \xlongrightarrow[below]{above} B & A & \xlongleftarrow[below]{above} B \\
+  % A & \xlongrightarrow[b]{a} B & A & \xlongleftarrow[b]{a} B \\
+  % A & \xlongrightarrow[below]{above} B & A & \xlongleftarrow[below]{above} B \\
 \end{align*}
-\begin{align*}
-  A & \xLongrightarrow B & A & \Longleftarrow B \\
-  A & \xLongrightarrow[b]{a} B & A & \xLongleftarrow[b]{a} B \\
-  A & \xLongrightarrow[below]{above} B & A & \xLongleftarrow[below]{above} B \\
-\end{align*}
+% \begin{align*}
+%   A & \xLongrightarrow B & A & \Longleftarrow B \\
+%   A & \xLongrightarrow[b]{a} B & A & \xLongleftarrow[b]{a} B \\
+%   A & \xLongrightarrow[below]{above} B & A & \xLongleftarrow[below]{above} B \\
+% \end{align*}
 
 \subsubsection{Braces and brackets}
 
@@ -341,11 +341,11 @@ Back to normal.\mathtoolsset{showonlyrefs=false}
 
 \newcommand\myboxA[1]{\fcolorbox{gray}{yellow}{#1}}
 \newcommand\myboxB[1]{{\fboxsep=5pt\fboxrule=2pt\fbox{#1}}}
-\MakeAboxedCommand\AboxedA\myboxA
-\MakeAboxedCommand\AboxedB\myboxB
-\begin{align*}
-  \AboxedA{ f(x) &= x^2 } & \AboxedB{ f(x) &= x^2 }
-\end{align*}
+% \MakeAboxedCommand\AboxedA\myboxA
+% \MakeAboxedCommand\AboxedB\myboxB
+% \begin{align*}
+%   \AboxedA{ f(x) &= x^2 } & \AboxedB{ f(x) &= x^2 }
+% \end{align*}
 
 \subsubsection{Adding arrows between lines in an alignment}
 
@@ -422,7 +422,8 @@ Back to normal.\mathtoolsset{showonlyrefs=false}
 \]
 
 \providecommand\given{}
-\newcommand\SetSymbol[1][]{\nonscript\:#1\vert\allowbreak\nonscript\:\mathopen{}}
+% \newcommand\SetSymbol[1][]{\nonscript\:#1\vert\allowbreak\nonscript\:\mathopen{}}
+\newcommand\SetSymbol[1][]{\:#1\vert\allowbreak\:\mathopen{}}
 \DeclarePairedDelimiterX\Set[1]\{\}{%
     \renewcommand\given{\SetSymbol[\delimsize]}
     #1
@@ -550,23 +551,23 @@ a=\frac{
 
 \section{New additions}
 
- \subsection{Variable math strut}
-\[
-  \begin{cases*}
-    \frac{\frac{ x-1 }{ x-\sin x} }{ \sqrt{ 1 -x }} & $x >0$ \\
-    0 & otherwise
-  \end{cases*}
-\qquad\text{vs.}\qquad
-  \begin{cases*}
-    \frac{\frac{ \xmathstrut{0.1} x-1 }{ \xmathstrut{0.25} x-\sin x} }{\xmathstrut{0.4} \sqrt{ 1 -x }} & $x >0$ \\
-    0 & otherwise
-  \end{cases*}
-\]
+%  \subsection{Variable math strut}
+% \[
+%   \begin{cases*}
+%     \frac{\frac{ x-1 }{ x-\sin x} }{ \sqrt{ 1 -x }} & $x >0$ \\
+%     0 & otherwise
+%   \end{cases*}
+% \qquad\text{vs.}\qquad
+%   \begin{cases*}
+%     \frac{\frac{ \xmathstrut{0.1} x-1 }{ \xmathstrut{0.25} x-\sin x} }{\xmathstrut{0.4} \sqrt{ 1 -x }} & $x >0$ \\
+%     0 & otherwise
+%   \end{cases*}
+% \]
 
-\newcommand\vfb[1]{\begingroup\fboxsep=0pt\boxed{\,#1\,}\endgroup}
-\[
-  \llap{\rlap{\rule{18mm}{0.1pt}}\quad}a \vfb{\mathstrut} \ \vfb{\xmathstrut{0}}\
-  \vfb{\xmathstrut{0.5} } \  \vfb{\xmathstrut{-0.1} }\  \vfb{\xmathstrut[0.5]{0}} a
-\]
+% \newcommand\vfb[1]{\begingroup\fboxsep=0pt\boxed{\,#1\,}\endgroup}
+% \[
+%   \llap{\rlap{\rule{18mm}{0.1pt}}\quad}a \vfb{\mathstrut} \ \vfb{\xmathstrut{0}}\
+%   \vfb{\xmathstrut{0.5} } \  \vfb{\xmathstrut{-0.1} }\  \vfb{\xmathstrut[0.5]{0}} a
+% \]
 
 \end{document}

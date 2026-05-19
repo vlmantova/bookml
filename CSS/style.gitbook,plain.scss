@@ -271,6 +271,15 @@ th > .ltx_p:last-child {
 }
 
 /* plain MathML improvements */
+math {
+  font-family: 'STIX Two Math', 'Latin Modern Math', 'Cambria Math', math;
+}
+
+@font-face {
+  font-family: 'STIX Two Math';
+  src: local('STIX Two Math');
+}
+
 @font-feature-values "STIX Two Math" {
   @styleset {
     roundhand: 1;
@@ -292,5 +301,5 @@ msup>mo {
 }
 
 msup>mo.ltx_font_mathscript {
-  font-variant-alternates: styleset(sup) styleset(roundhand);
+  font-variant-alternates: styleset(sup, roundhand);
 }

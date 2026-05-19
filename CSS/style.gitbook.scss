@@ -69,6 +69,23 @@ h1.title {
 
 /* BookML tweaks */
 
+/* use CSS custom properties for the font family */
+.book.font-family-0, .book.font-family-1 {
+  font-family: var(--bml-font-family);
+}
+
+.book.font-family-0 {
+  --bml-font-family: Georgia, serif;
+}
+
+.book.font-family-1 {
+  --bml-font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+mtext {
+  font-family: var(--bml-font-family);
+}
+
 /* skip to content */
 .bml-skip-to-content {
   display: block;

@@ -1,0 +1,26 @@
+\documentclass[british]{article}
+
+\usepackage{bookml/bookml}
+\usepackage{babel}
+\usepackage{hyperref}
+
+\title{BookML tests}
+\author{Vincenzo Mantova}
+
+\bmlAltFormat{\jobname.pdf}{}
+
+\begin{document}
+
+\maketitle
+
+\begin{tabular}{l|c|c}
+  \lxBeginTableHead{} Test & MathJax & MathML \\
+  \hline \lxEndTableHead{}
+  AMS equations \lxTableRowHead  & \href{../amsldoc-equations-mathjax2/}{v2}, \href{../amsldoc-equations-mathjax3/}{v3}, \href{../amsldoc-equations-mathjax4/}{v4} & \href{../amsldoc-equations-nomathjax/}{no MathJax} \\
+  Mathtools equations \lxTableRowHead & \href{../mathtools-mathjax2/}{v2}, \href{../mathtools-mathjax3/}{v3}, \href{../mathtools-mathjax4/}{v4} & \href{../mathtools-nomathjax/}{no MathJax} \\
+  \LaTeXML{} equations test \lxTableRowHead & \href{../latexml-t-ams-mathtools-mathjax2/}{v2}, \href{../latexml-t-ams-mathtools-mathjax3/}{v3}, \href{../latexml-t-ams-mathtools-mathjax4/}{v4} & \href{../latexml-t-ams-mathtools-nomathjax/}{no MathJax} \\
+  Disable MathJax \lxTableRowHead & \href{../disable-mathjax-mathjax2/}{v2}, \href{../disable-mathjax-mathjax3/}{v3}, \href{../disable-mathjax-mathjax4/}{v4} & \href{../disable-mathjax-nomathjax/}{no MathJax} \\
+  Math variants \lxTableRowHead & \href{../mathvariants-mathjax2/}{v2}, \href{../mathvariants-mathjax3/}{v3}, \href{../mathvariants-mathjax4/}{v4} & \href{../mathvariants-nomathjax/}{no MathJax}
+\end{tabular}
+
+\end{document}

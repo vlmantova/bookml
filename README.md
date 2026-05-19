@@ -42,7 +42,7 @@ BookML is a small wrapper around [LaTeXML](https://dlmf.nist.gov/LaTeXML/) for t
   ```
 - declare alternative PDF versions (for instance sans serif, large print):
   ```latex
-  \bmlAltFormat{PDF (large print)}{notes-large-print.pdf}
+  \bmlAltFormat{notes-large-print.pdf}{PDF (large print)}
   % you must provide notes-large-print.tex
   ```
   the files will be automatically compiled and included in the 'Download' menu of bookdown (see the [example](https://github.com/vlmantova/bookml/releases/latest/download/example.zip) for more info)

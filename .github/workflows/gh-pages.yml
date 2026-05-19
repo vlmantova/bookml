@@ -11,16 +11,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Compile with BookML
-        id: bookml
+      - name: Compile manual with BookML
+        id: bookml-manual
         uses: vlmantova/bookml-action@v1
         with:
           release: false
           upload-aux-directory: false
           replace-bookml: true
+      - name: Checkout the BookML repository
+        uses: actions/checkout@v6
+        with:
+          repository: vlmantova/bookml
+          ref: main
+          path: ./tests
+      - run: mv ./tests/test/{*.tex,GNUmakefile} .
+      - name: Compile tests with BookML
+        id: bookml-tests
+        uses: vlmantova/bookml-action@v1
+        with:
+          checkout: false
+          release: false
+          upload-aux-directory: false
+          replace-bookml: true
       - name: Create tarball
         run: |
-          tar -cvf "$RUNNER_TEMP"/docs.tar.gz -C "$RUNNER_TEMP"/auxdir/html/docs --exclude=./LaTeXML.cache .
+          tar -cvf "$RUNNER_TEMP"/docs.tar.gz -C "$RUNNER_TEMP"/auxdir/html/docs --exclude=./LaTeXML.cache . -C "$RUNNER_TEMP"/auxdir/html --exclude=./docs --exclude=./*/LaTeXML.cache .
       - name: Upload pages artifact
         uses: actions/upload-artifact@v6
         with:

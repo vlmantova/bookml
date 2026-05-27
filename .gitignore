@@ -1,6 +1,10 @@
 bookml
 gitbook
 test-*
+test/*-nomathjax.tex
+test/*-mathjax2.tex
+test/*-mathjax3.tex
+test/*-mathjax4.tex
 
 auxdir
 bmlimages

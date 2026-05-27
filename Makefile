@@ -121,7 +121,7 @@ docker-manifest:
 		$(foreach arch,$(ARCHS),$(REF)-full:$(BOOKML_VERSION)-$(arch))
 
 test: $(TEST_OUT)
-	$(MAKE) -C test
+	$(MAKE) -C test $(TESTFLAGS)
 
 release.zip: $(RELEASE_OUT)
 	-$(RM) "$(call ospath,$@)"

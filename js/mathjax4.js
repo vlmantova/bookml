@@ -219,7 +219,9 @@
   };
 
   let script = document.createElement('script');
-  script.setAttribute('src', 'https://cdn.jsdelivr.net/npm/mathjax@4/mml-chtml.js');
+  // CHTML on WebKit misaligns characters by one pixel due to rounding issues
+  script.setAttribute('src', 'https://cdn.jsdelivr.net/npm/mathjax@4/mml-' +
+    (window.matchMedia('(-webkit-transform-2d)').matches ? 'svg' : 'chtml') + '.js');
   script.setAttribute('async', '');
   script.setAttribute('id', 'MathJax-script');
   document.body.appendChild(script);

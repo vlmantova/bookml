@@ -134,6 +134,7 @@ endef
 
 # recursively list all files and folders, or just files, within a directory (after https://stackoverflow.com/a/18258352)
 bml.reclist      = $(foreach d,$(wildcard $(1:=/*)),$(call bml.reclist,$d) $d)
+bml.reclist.dir  = $(foreach d,$(wildcard $(1:=/*/./)),$(call bml.reclist.dir,$(d:/./=)) $(d:/./=))
 bml.reclist.file = $(foreach d,$(wildcard $(1:=/*)),$(eval _x:=$(call bml.reclist.file,$d))$(if $(_x),$(_x),$d)) # BUG: empty folders are interpreted as files
 
 # help editors detect UTF-8 encoding: ∀x.x=x
@@ -175,6 +176,9 @@ ifeq ($(bml.is.win),true)
   bml.lt      := ^<
   bml.gt      := ^>
   bml;        := &
+  bml.mkdir   = if not exist "$(call bml.ospath,$1/)" $(MKDIR) "$(call bml.ospath,$1/)"
+  bml.rm      = if exist "$(call bml.ospath,$1)" $(RM) "$(call bml.ospath,$1)"
+  bml.rmdir   = if exist "$(call bml.ospath,$1/)" $(RMDIR) "$(call bml.ospath,$1/)"
 else
   SHELL      := bash
   bml.ospath  = $1
@@ -183,6 +187,9 @@ else
   bml.lt      := "<"
   bml.gt      := ">"
   bml;        := ;
+  bml.mkdir   = $(MKDIR) "$1/"
+  bml.rm      = $(RM) "$1"
+  bml.rmdir   = $(RMDIR) "$1"
 endif
 
 # painful version comparison
@@ -281,17 +288,17 @@ clean:  clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
 .PHONY: clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
 
 clean-aux:
-	-$(RMDIR) $(call bml.ospath,$(AUX_DIR))
+	$(call bml.rmdir,$(AUX_DIR))
 clean-html:
 	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.LaTeXML.db $(AUX_DIR)/latexmlaux/*.latexmlpost.log)
-	-$(RMDIR) $(call bml.ospath,$(AUX_DIR)/html)
+	$(call bml.rmdir,$(AUX_DIR)/html)
 clean-pdf:
 	-$(RMDIR) $(call bml.ospath,$(AUX_DIR)/pdf)
 	-$(RM) $(call bml.ospath,$(TARGETS.PDF) $(TARGETS.PDF:.pdf=.synctex) $(TARGETS.PDF:.pdf=.synctex.gz))
 clean-scorm:
 	-$(RM) $(call bml.ospath,$(TARGETS.SCORM))
 clean-svg:
-	-$(RMDIR) $(call bml.ospath,bmlimages/svg)
+	$(call bml.rmdir,bmlimages/svg)
 clean-xml:
 	-$(RMDIR) $(call bml.ospath,$(AUX_DIR)/xml bmlimages/dvi)
 	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.latexml.log)
@@ -329,7 +336,7 @@ endif
 # dump auxdir into zip file
 .PHONY: aux-zip
 aux-zip: | $(AUX_DIR)
-	-@$(call bml.cmd,$(RM) "AUX.$(AUX_DIR).zip")
+	@$(call bml.rm,AUX.$(AUX_DIR).zip)
 	@$(call bml.cmd,$(ZIP) --quiet --recurse-paths "AUX.$(AUX_DIR).zip" "$(AUX_DIR)")
 
 # version detection targets
@@ -406,7 +413,7 @@ detect-curl:
 # create directories
 $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml): | $(AUX_DIR)
 $(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf xml):
-	@$(MKDIR) "$(call bml.ospath,$@)"
+	@$(call bml.mkdir,$@)
 
 # copy PDF and synctex.gz files from $(AUX_DIR) to main folder
 # use relative paths is possible (with extra work if there are spaces)
@@ -421,12 +428,17 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
 
 # force rebuild if pdfdeps file is missing
 # typo LATEKMKFLAGS preserved for backwards compatibility
-$(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps
+bml.auxdir.subtree := $(patsubst %,$(AUX_DIR)/pdf/%,$(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.))))
+$(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps $(bml.auxdir.subtree)
 	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" "$<")
 	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
+
+# mirror folder tree under $(AUX_DIR)/pdf to support including files from subfolders
+$(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:
+	@$(call bml.mkdir,$@)
 
 # build XML files
 # (Windows can sometimes set the READONLY attribute on the xml folder,
@@ -462,7 +474,7 @@ $(AUX_DIR)/html/%/index.html: $$(AUX_DIR)/xml/$$*.preprocessed-xml $$(BOOKML_DEP
 	@$(eval _recurse:=$(if $(filter $@,$(BMLGOALS)),,yes))
 	+@$(if $(_recurse),$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@")
 	@$(if $(_recurse),,$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html))
-	-@$(if $(_recurse),,$(call bml.cmd,$(RMDIR) $(call bml.ospath,$(AUX_DIR)/html/$*)))
+	@$(if $(_recurse),,$(call bml.rmdir,$(AUX_DIR)/html/$*))
 	@$(if $(_recurse),,$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --urlstyle=file --pmml --mathtex \
 		$(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
@@ -476,7 +488,7 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.zip %.zip: $(AUX_DIR)/html/%.zip
 # package HTML output and manifest into SCORM package
 $(AUX_DIR)/html/SCORM.%.zip: $(AUX_DIR)/html/%/imsmanifest.xml
 	@$(call bml.prog,SCORM: $* → $@)
-	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
+	@$(call bml.rm,$@)
 	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)html$(bml.pathsep)$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)SCORM.$*.zip" . "$(ZIP_EXCLUDE)LaTeXML.cache")
 
 # prevent make from trying to build the files in $(AUX_DIR)/html for which we have no recipe
@@ -485,7 +497,7 @@ $(foreach f,$(call bml.reclist.file,$(AUX_DIR)/html),$(eval $(f):))
 # package HTML output into zip file
 $(AUX_DIR)/html/%.zip: $$(AUX_DIR)/html/$$*/index.html $$(filter-out $$(AUX_DIR)/html/$$*/index.html $$(AUX_DIR)/html/$$*/imsmanifest.xml $$(AUX_DIR)/html/$$*/LaTeXML.cache,$$(call bml.reclist.file,$$(AUX_DIR)/html/$$*))
 	@$(call bml.prog,zip: $(AUX_DIR)/html/$* → $@)
-	-@$(call bml.cmd,$(RM) "$(call bml.ospath,$@)")
+	@$(call bml.rm,$@)
 	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)html") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "$*.zip" "$*" "$(ZIP_EXCLUDE)$*$(bml.pathsep)LaTeXML.cache" "$(ZIP_EXCLUDE)$*$(bml.pathsep)imsmanifest.xml")
 
 # create BookML minimal manifest (a list of files generated by latexmlpost in XML format)
@@ -514,9 +526,9 @@ bmlimages/svg/%.svg: $$(bml.svg.parent)%.PDF $$(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
 	@$(bml.pdftosvg)
 	@$(bml.pdftosvg.proc)
 
-# /./ disambiguates between %.svg, %pdf targets and actual folders
+# /./ disambiguates between %.svg, %.pdf targets and actual folders
 # a hack, but required to keep compatibility with GNU make 3.81
 bmlimages/svg/%/./:
-	$(MKDIR) "$(call bml.ospath,$(@))"
+	@$(call bml.mkdir,$@)
 bmlimages/svg/./:
-	$(MKDIR) "$(call bml.ospath,$(@))"
+	@$(call bml.mkdir,$@)

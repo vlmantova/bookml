@@ -161,6 +161,23 @@ mtext {
   }
 }
 
+/* for screen readers only (similar to the assistive MathML of MathJax 3) */
+.bml_sr_only {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px;
+  display: block;
+  overflow: hidden clip;
+  height: 1px;
+  width: 1px;
+  margin-left: -1px;
+  margin-top: -1px;
+  clip-path: inset(50%);
+  user-select: none;
+}
+
 /* MathML polyfills */
 
 /* not needed on Firefox */
@@ -181,6 +198,13 @@ mtext {
     menclose[notation=box] {
       border-style: none;
       padding: initial;
+    }
+
+    /* -webkit-(left|center|right) is buggy and not needed on WebKit */
+    @each $side in left center right {
+      mtd[columnalign="#{$side}"] {
+        text-align: #{$side};
+      }
     }
   }
 }

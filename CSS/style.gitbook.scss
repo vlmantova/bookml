@@ -397,6 +397,49 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
 }
 
+.bml_equationgroup, .bml_equation, .bml_intertext {
+  --bml-border-color: #ddd;
+  border-color: var(--bml-border-color);
+  border-style: solid;
+  border-width: 0px;
+
+  .book.color-theme-1 & {
+    background-color: #fdf6e3;
+    --bml-background-color: #fdf6e3;
+    --bml-border-color: #f5d06c;
+  }
+
+  .book.color-theme-2 & {
+    background-color: #2d3143;
+    --bml-background-color: #2d3143;
+    --bml-border-color: #3b3f54;
+  }
+}
+
+.bml_equation_container {
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+
+  margin-bottom: 0.85em;
+
+  & .bml_equationgroup, & .bml_equation, & .bml_intertext {
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+
+    & + .bml_equationgroup, & + .bml_equation, & + .bml_intertext {
+      border-top-width: 1px;
+    }
+  }
+}
+
+.bml_equation, .bml_intertext {
+  padding: 0.85em 0;
+}
+
+.bml_equation:has(>.bml_eqn_row) {
+  row-gap: 1.7em;
+}
+
 .ltx_eqn_div {
   margin-bottom: 0.85em;
   border-top: solid 1px #ddd;
@@ -432,8 +475,12 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
 }
 
+.book .book-body .page-wrapper .page-inner section.normal .bml_intertext>.ltx_p:last-child {
+  margin-bottom: 0;
+}
+
 /* adjust CSS grid for equations */
-.ltx_eqn_div, .ltx_eqn_table {
+.ltx_eqn_div, .ltx_eqn_table, .bml_equation_container {
   overflow-x: auto;
   overflow-y: hidden;
 
@@ -441,11 +488,19 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
     --bml-eqn-eqno: minmax(2.85em,auto);
   }
 
-  &>span, .ltx_eqn_cell {
+  &>span, .ltx_eqn_cell, .bml_eqn_cell {
     &>mjx-container[display] {
       padding: 0;
     }
     line-height: normal;
+  }
+}
+
+.ltx_fleqn .bml_equation_container {
+  --bml-eqn-leftpad: 2.85em;
+  &:has(.ltx_eqn_eqno) {
+    --bml-eqn-eqno: minmax(2.85em,auto);
+    --bml-eqn-leftpad: 0;
   }
 }
 
@@ -454,7 +509,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   padding-bottom: 0.85em;
 }
 
-.ltx_eqn_div.bml_eqn_has_eqno {
+.ltx_eqn_div.bml_eqn_has_eqno, .bml_equationgroup:has(>.ltx_eqn_eqno), .bml_equation:has(>.ltx_eqn_eqno) {
   &>span.ltx_tag {
     position: sticky;
     right: 0;
@@ -493,7 +548,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   display: grid;
 }
 
-.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_intertext>.ltx_eqn_cell {
+.book .book-body .page-wrapper .page-inner section.normal table.ltx_eqn_table .ltx_intertext>.ltx_eqn_cell, .bml_intertext {
   padding-left: 0.85em;
   padding-right: 0.85em;
 }
@@ -585,6 +640,16 @@ mjx-container[jax="SVG"][display="true"] {
     &::after, &::before {
       content: none;
     }
+  }
+}
+
+/* copy/download buttons */
+.ltx_listing_data {
+  user-select: none;
+  &>button {
+    appearance: none;
+    background: transparent;
+    border: none;
   }
 }
 

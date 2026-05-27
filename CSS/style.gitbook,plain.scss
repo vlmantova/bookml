@@ -106,6 +106,125 @@ th > .ltx_p:last-child {
   font-variant-numeric: tabular-nums;
 }
 
+/* BookML aligned equations */
+.bml_equation_container {
+  width: 100%;
+  max-width: 100%;
+
+  --bml-eqn-eqno: 0;
+  --bml-eqn-leftpad: 1fr;
+  --bml-eqn-rightpad: 1fr;
+  --bml-eqn-columns: repeat(100,max-content);
+
+  display: grid;
+  justify-items: stretch;
+
+  grid-template-columns: [leqno-start leqno-end leftpad-start] var(--bml-eqn-leftpad) [leftpad-end eqn-start] var(--bml-eqn-columns) [eqn-end rightpad-start] var(--bml-eqn-rightpad) [rightpad-end reqno-start reqno-end];
+
+  /* add tracks for the eqno's, if present */
+  &:has(.ltx_eqn_eqno) {
+    --bml-eqn-eqno: auto;
+    grid-template-columns: [leqno-start] var(--bml-eqn-eqno) [leqno-end leftpad-start] var(--bml-eqn-leftpad) [leftpad-end eqn-start] var(--bml-eqn-columns) [eqn-end rightpad-start] var(--bml-eqn-rightpad) [rightpad-end reqno-start] var(--bml-eqn-eqno) [reqno-end];
+  }
+
+  /* fleqn: align equations to the left */
+  .ltx_fleqn & {
+    --bml-eqn-leftpad: 2em;
+    &:has(.ltx_eqn_eqno) {
+      --bml-eqn-eqno: minmax(2em,auto);
+      --bml-eqn-leftpad: 0;
+    }
+  }
+
+  & .bml_equationgroup, & .bml_equation {
+    display: grid;
+    grid-template-columns: subgrid;
+
+    grid-column: leftpad / rightpad;
+
+    &:has(.ltx_eqn_eqno) {
+      grid-column: leqno / reqno;
+    }
+  }
+}
+
+.bml_equation::before {
+    content: "";
+    display: flex; /* Chrome complains otherwise, not sure why */
+    grid-column: leftpad;
+}
+
+.bml_eqn_row {
+  display: contents;
+  &>*:first-child {
+    grid-column-start: eqn;
+  }
+}
+
+.bml_intertext {
+  grid-column: leqno / reqno;
+  padding: 0.85em 0; /* TODO move padding to gitbook CSS */
+}
+
+/* apply align-items as late as possible to work around a Chrome issue */
+.bml_equationgroup>.ltx_eqn_eqno, .bml_equation>*, .bml_eqn_row>* {
+  align-self: baseline;
+}
+
+/* TODO handle .bml_constraint (do we even need to?) */
+
+.bml_equationgroup>.ltx_eqn_eqno, .bml_equation>.ltx_eqn_eqno {
+  max-width: initial;
+  justify-self: end;
+  text-align: right;
+
+  grid-column: leqno;
+  visibility: hidden;
+
+  /* place the eqno *before* padding */
+  order: -1;
+
+  &:first-of-type {
+    grid-column: reqno;
+    visibility: visible;
+    /* place the eqno *after* the cells on the first row */
+    order: 1;
+  }
+
+  .ltx_leqno & {
+    grid-column: reqno;
+    justify-self: start;
+    text-align: left;
+    order: 1;
+    &:first-of-type {
+      grid-column: leqno;
+      /* place the eqno *before* padding */
+      order: -1;
+    }
+  }
+
+  & .ltx_tag {
+    float: initial;
+  }
+}
+
+.bml_equationgroup, .bml_equation, .bml_intertext, .bml_eqn_row {
+  & ~ .bml_equationgroup, & ~ .bml_equation, & ~ .bml_intertext, & ~ .bml_eqn_row>* {
+    /* place content after the first row *after* the eqno */
+    order: 2;
+  }
+}
+
+.bml_eqn_cell {
+  &.ltx_align_left + &.ltx_align_left,
+  &.ltx_align_left + &.ltx_align_center,
+  &.ltx_align_left + &.ltx_align_right,
+  &.ltx_align_center + &.ltx_align_center,
+  &.ltx_align_center + &.ltx_align_right {
+    padding-left: 3em;
+  }
+}
+
 /* use CSS grids for equations */
 .ltx_eqn_div, .ltx_eqn_table {
   width: 100%;

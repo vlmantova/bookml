@@ -118,13 +118,13 @@ Please note that the image contains a complete copy of TeX Live 2021. For a smal
 
 ### Package options
 
-Certain options can be passed to BookML like with any other LaTeX packages, for instance  ```\usepackage[mathjax=4]{bookml/bookml}```. The following options are available:
+Certain options can be passed to BookML like with any other LaTeX packages, for instance  ```\usepackage[mathjax=3]{bookml/bookml}```. The following options are available:
 
 <dl>
 <dt>style=&lt;<i>name</i>&gt;</dt>
 <dd>Switch style. &lt;<i>name</i>&gt; can be <i>gitbook</i> (default), which is almost identical to the output of bookdown, <i>plain</i>, which is a tweaked version of the normal LaTeXML style, and <i>none</i> for the LaTeXML with compatibility and bug fixes only.</dd>
 <dt>mathjax=&lt;<i>number</i>&gt;</dt>
-<dd>Select which MathJax version to use from 2, 3 (default), 4.</dd>
+<dd>Select which MathJax version to use from 2, 3, 4 (default).</dd>
 <dt>nomathjax</dt>
 <dd>Disable MathJax.</dd>
 <dt>imagescale=X.XX</dt>

@@ -2,7 +2,8 @@
 
 \usepackage{amssymb}
 \usepackage{mathtools}
-
+% BookML test
+\usepackage{cases}
 
 \mathtoolsset{
 mathic % or mathic = true
@@ -724,5 +725,53 @@ a &= b              \\
 \shortvdotswithin{=}
 & = d
 \end{align*}
+
+\section{Additional BookML tests}
+
+\subsection{Nesting}
+
+\begin{equation}
+  \begin{aligned}
+    a &= b \\
+    &= c \\
+    &= d
+  \end{aligned}
+\end{equation}
+
+\begin{equation}
+  \begin{gathered}
+    \begin{aligned}
+      a &= b \\
+      &= c \\
+      &= d
+    \end{aligned} \\
+    x^2
+  \end{gathered}
+  \begin{aligned}
+    a &= b \\
+    &= c \\
+    &= d
+  \end{aligned}
+\end{equation}
+
+\subsection{Cases}
+
+\begin{numcases} {|x|=}
+  x, & for $x \geq 0$\\
+  -x, & for $x < 0$
+\end{numcases}
+
+\begin{subnumcases} {\label{weqn} w\equiv}
+0 & for $c = d = 0$\label{wzero}\\
+\sqrt{|c|}\,\sqrt{\frac{1 + \sqrt{1+(d/c)^2}}{2}} & for $|c| \geq |d|$ \\
+\sqrt{|d|}\,\sqrt{\frac{|c/d| + \sqrt{1+(c/d)^2}}{2}} & for $|c| < |d|$
+\end{subnumcases}
+
+\begin{subnumcases}{\label{sqrteqn} \sqrt{c+id}=}
+0\,, & $w=0$ (case \ref{wzero})\\
+w+i\frac{d}{2w}\,, & $w \neq 0$, $c \geq 0$ \\
+\frac{|d|}{2w} + iw\,, & $w \neq 0$, $c < 0$, $d \geq 0$ \\
+\frac{|d|}{2w} - iw\,, & $w \neq 0$, $c < 0$, $d < 0$
+\end{subnumcases}
 
 \end{document}

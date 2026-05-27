@@ -199,7 +199,12 @@
     <xsl:param name="context"/>
     <xsl:element name="{f:blockelement($context,'div')}">
       <xsl:attribute name="class">ltx_listing_data</xsl:attribute>
-      <a download="{@dataname}" title="download code">
+      <xsl:if test="b:gitbook()">
+        <button title="copy code" aria-label="copy code" onclick="const u=event.target.nextElementSibling.href;navigator.clipboard.writeText(atob(u.substring(u.indexOf(',')+1)))">
+          <xsl:text>&#x2BBA;</xsl:text>
+        </button>
+      </xsl:if>
+      <a download="{@dataname}" title="download {f:if(@dataname='','code',@dataname)}">
         <xsl:call-template name="add_data_attribute">
           <xsl:with-param name="name" select="'href'"/>
         </xsl:call-template>
@@ -939,6 +944,232 @@
     mode="bml-alter">
     <xsl:value-of select="." />
     <xsl:text>&#xFE00;</xsl:text>
+  </xsl:template>
+
+  <!--
+    BookML CSS (sub)grid equation layout
+
+    - ltx:equationgroup, ltx:equation create grids with columns
+        leqno | leftpad | eqn (up to 100 columns) | rightpad | reqno
+      CSS transforms nested grids into subgrids, spanning 'leftpad / rightpad'
+      or 'leqno / reqno' depending on whether there is an equation number
+
+    - content of ltx:equation is laid out in cells within 'eqn', using
+      ltx:MathFork/ltx:MathBranch[1] if available
+
+    - ltx:MathBranch/ltx:tr creates a row
+
+    - ltx:MathBranch/ltx:td creates a cell
+
+    - ltx:p creates a row
+
+    - everything else is wrapped in a cell
+  -->
+
+  <xsl:template match="ltx:equationgroup[b:bmlalignedequations() and (b:gitbook() or b:plain())]
+                       | ltx:equation[b:bmlalignedequations() and (b:gitbook() or b:plain())]">
+    <xsl:param name="context" />
+    <xsl:apply-templates select="." mode="bml-equation">
+      <xsl:with-param name="context" select="$context" />
+      <xsl:with-param name="isContainer" select="true()" />
+    </xsl:apply-templates>
+  </xsl:template>
+
+  <xsl:template match="ltx:equationgroup | ltx:equation" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:param name="isContainer" select="false()" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="concat('bml_',local-name(),f:if($isContainer,' bml_equation_container',''),' ltx_align_baseline')" />
+      </xsl:call-template>
+      <!-- add ARIA attributes if this is a numbered equation -->
+      <xsl:if test="not(.//ltx:equation/ltx:tags) and ltx:tags">
+        <xsl:variable name="tag" select="ltx:tags/ltx:tag[not(@role)][1]" />
+        <xsl:attribute name="role">region</xsl:attribute>
+        <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id($tag)" /></xsl:attribute>
+        <xsl:apply-templates select="$tag" mode="bml-equation">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:if>
+      <!-- as LaTeXML does: all content of equationgroup, equation except Meta and EquationMeta (and tags) -->
+      <xsl:apply-templates select="ltx:equationgroup | ltx:equation | ltx:p
+                                   | ltx:Math | ltx:MathFork | ltx:text
+                                   | ltx:inline-itemize | ltx:inline-enumerate | ltx:inline-description | ltx:inline-block
+                                   | ltx:verbatim | ltx:break | ltx:graphics | svg:svg | ltx:rawhtml | ltx:rawliteral
+                                   | ltx:ERROR | ltx:inline-logical-block | ltx:tabular | ltx:picture | ltx:inline-sectional-block"
+                           mode="bml-equation">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <xsl:apply-templates select="ltx:constraint[not(@hidden='true')]">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+    </xsl:element>
+  </xsl:template>
+
+  <!-- emit equation numbers twice to ensure perfect centering -->
+  <xsl:template match="ltx:tag" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:variable name="numrows"
+                  select="count(
+                          ../../descendant-or-self::ltx:equation/ltx:MathFork/ltx:MathBranch[1]/ltx:tr
+                          | ../../descendant-or-self::ltx:equation[ltx:MathFork/ltx:MathBranch[1]/ltx:td]
+                          | ../../descendant-or-self::ltx:equation[ltx:Math or ltx:MathFork/ltx:MathBranch[not(ltx:tr or ltx:td)]]
+                          | ../../descendant-or-self::ltx:equation/ltx:constraint
+                          )" />
+    <!-- TODO use CSS custom properties rather than inline code (but careful about inheritance!) -->
+    <xsl:variable name="extra_style">
+      <xsl:if test="$numrows &gt; 1">
+        <xsl:value-of select="concat('grid-row-end:span ',$numrows,';')" />
+        <xsl:text>align-self:center;</xsl:text>
+      </xsl:if>
+    </xsl:variable>
+    <xsl:variable name="tag">
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="'inline'" />
+      </xsl:apply-templates>
+      <xsl:value-of select="@open" />
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="'inline'" />
+      </xsl:apply-templates>
+      <xsl:value-of select="@close" />
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="'inline'" />
+      </xsl:apply-templates>
+    </xsl:variable>
+    <xsl:text>&#x0A;</xsl:text>
+    <span class="ltx_eqn_eqno" id="{b:generate-id()}">
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes">ltx_eqn_eqno</xsl:with-param>
+        <xsl:with-param name="extra_style" select="$extra_style" />
+      </xsl:call-template>
+      <span class="bml_sr_only">
+        <xsl:text>equation</xsl:text>
+        <xsl:if test="self::ltx:equationgroup">s</xsl:if>
+        <xsl:text> </xsl:text>
+      </span>
+      <xsl:copy-of select="$tag" />
+    </span>
+    <xsl:text>&#x0A;</xsl:text>
+    <span>
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes">ltx_eqn_eqno</xsl:with-param>
+        <xsl:with-param name="extra_style" select="$extra_style" />
+      </xsl:call-template>
+      <!-- TODO strip id's from the second copy (id's in tags seem exceedingly unlikely, though) -->
+      <xsl:copy-of select="$tag" />
+    </span>
+  </xsl:template>
+
+  <xsl:template match="ltx:MathFork" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:apply-templates select="ltx:MathBranch[1]/*" mode="bml-equation">
+      <xsl:with-param name="context" select="$context" />
+    </xsl:apply-templates>
+  </xsl:template>
+
+  <xsl:template match="ltx:tr" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'bml_eqn_row ltx_align_baseline'" />
+      </xsl:call-template>
+      <!-- only select ltx:td, as LaTeXML does (trailing ltx:text is handled elsewhere) -->
+      <xsl:apply-templates select="ltx:td" mode="bml-equation">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:td" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'bml_eqn_cell'" />
+        <xsl:with-param name="extra_style">
+          <xsl:if test="ancestor::ltx:equationgroup/@rowsep">
+            <xsl:value-of select="concat('padding-top:',f:half(ancestor::ltx:equationgroup/@rowsep),';')" />
+            <xsl:value-of select="concat('padding-bottom:',f:half(ancestor::ltx:equationgroup/@rowsep),';')" />
+            <xsl:if test="@colspan">
+              <xsl:value-of select="concat('grid-column-end:span ',@colspan,';')" />
+            </xsl:if>
+            <xsl:if test="@rowspan">
+              <xsl:value-of select="concat('grid-row-end:span ',@rowspan,';')" />
+            </xsl:if>
+          </xsl:if>
+        </xsl:with-param>
+      </xsl:call-template>
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <!-- TODO understand why LaTeXML appends ltx:text in here -->
+      <xsl:if test="(self::* = ../ltx:td[position()=last()])
+                    and (parent::* = ../../ltx:tr[position()=last()])
+                    and ancestor::ltx:MathFork/following-sibling::*[position()=1][self::ltx:text]">
+        <!-- if we're the last td in the last tr in an equation followed by a text,
+             insert the text here!-->
+        <xsl:apply-templates select="ancestor::ltx:MathFork/following-sibling::ltx:text[1]/node()">
+          <xsl:with-param name="context" select="$context"/>
+        </xsl:apply-templates>
+      </xsl:if>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:Math" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:call-template name="add_attributes">
+        <xsl:with-param name="extra_classes" select="'bml_eqn_cell ltx_align_center'" />
+      </xsl:call-template>
+      <xsl:apply-templates select=".">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+      <!-- TODO understand why LaTeXML appends ltx:text in here -->
+      <xsl:if test="ancestor::ltx:MathFork/following-sibling::*[position()=1][self::ltx:text]">
+        <!-- if we're followed by a text, insert the text here!-->
+        <xsl:apply-templates select="ancestor::ltx:MathFork/following-sibling::ltx:text[1]/node()">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:if>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:p" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <span class="bml_intertext ltx_align_baseline">
+      <xsl:apply-templates>
+        <xsl:with-param name="context" select="'inline'" />
+      </xsl:apply-templates>
+    </span>
+  </xsl:template>
+
+  <xsl:template match="ltx:constraint" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:if test="not(@hidden)">
+      <xsl:text>&#x0A;</xsl:text>
+      <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+        <xsl:attribute name="class">bml_constraint</xsl:attribute>
+        <xsl:apply-templates select=".">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:element>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="*" mode="bml-equation">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:attribute name="class">bml_eqn_cell</xsl:attribute>
+      <xsl:apply-templates select=".">
+        <xsl:with-param name="context" select="$context" />
+      </xsl:apply-templates>
+    </xsl:element>
   </xsl:template>
 
 </xsl:stylesheet>

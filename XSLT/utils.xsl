@@ -49,9 +49,11 @@
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
   <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
-  <xsl:variable name="MATHJAX4" select="b:if-option('mathjax=4')"/>
-  <xsl:variable name="MATHJAX3"
-    select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX4)"/>
+  <xsl:variable name="MATHJAX3" select="b:if-option('mathjax=3')"/>
+  <xsl:variable name="MATHJAX4"
+    select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX3)"/>
+
+  <xsl:variable name="BMLALIGNEDEQUATIONS" select="true()"/>
 
   <!-- utility functions to check variables in template matches -->
   <func:function name="b:auto-svg">
@@ -76,6 +78,10 @@
 
   <func:function name="b:mathjax4">
     <func:result select="$MATHJAX4" />
+  </func:function>
+
+  <func:function name="b:bmlalignedequations">
+    <func:result select="boolean($BMLALIGNEDEQUATIONS)"/>
   </func:function>
 
   <!-- generate IDs -->

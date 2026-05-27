@@ -44,7 +44,7 @@ my $bmlVersion = '@VERSION@';
 
 my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog, $bml_NoteSTDERR);
 
-my $bml_mathjax = 3;
+my $bml_mathjax = 4;
 
 if (!defined &ProgressSpinup) {
   # pre-0.8.6 reporting

@@ -1,6 +1,6 @@
 bookml
 gitbook
-test-*
+/test-*
 test/*-nomathjax.tex
 test/*-mathjax2.tex
 test/*-mathjax3.tex

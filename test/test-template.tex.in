@@ -1,0 +1,2 @@
+\RequirePackage[@OPTIONS@]{bookml/bookml}
+\input{@INPUT@}

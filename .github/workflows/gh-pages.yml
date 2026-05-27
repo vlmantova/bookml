@@ -24,7 +24,7 @@ jobs:
           repository: vlmantova/bookml
           ref: main
           path: ./tests
-      - run: mv ./tests/test/{*.tex,GNUmakefile} .
+      - run: mv ./tests/test/{*.tex,*.tex.in,GNUmakefile} .
       - name: Compile tests with BookML
         id: bookml-tests
         uses: vlmantova/bookml-action@v1

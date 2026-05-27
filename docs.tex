@@ -119,7 +119,7 @@
 \title{\texorpdfstring{BookML\@: \LaTeX{} to \HTML, made easy(ish). \\ Powered by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML}.}{BookML: LaTeX to HTML, made easy(ish). Powered by LaTeXML.}}
 \author{Vincenzo Mantova}
 
-\date{14\textsuperscript{th} January 2026}
+\date{27\textsuperscript{th} May 2026}
 
 \begin{document}
 
@@ -157,6 +157,7 @@ BookML is a small package to help you convert \LaTeX{} documents into accessible
 BookML key features are:
 \begin{itemize}
   \item simple installation: BookML is just a zip file you unpack in the folder containing your \texttt{.tex} files (admittedly a lie: you must install \LaTeXML{} first, see \hyperref[get-started-on-your-device]{Getting started on your device});
+  \item Overleaf and GitHub integration: BookML can also be used with Overleaf by adding a single file to your project and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub;
   \item accessible and mobile friendly output based on the popular \href{https://bookdown.org/home/}{bookdown} project, including font selection and dark mode, tweaked to meet the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA;
   \item fully automated (re-)compilation based on which files have changed on disk, powered by \href{https://www.gnu.org/software/make/}{GNU Make}: running a single \cmdinline{make} will recompile the files which need updating;
   \item high quality conversion of external EPS and PDF figures to SVG via \href{https://dvisvgm.de}{dvisvgm}, rather than ImageMagick used by LaTeXML;
@@ -421,9 +422,9 @@ $(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
 \end{foldedframe}
 
 \begin{foldedframe}{Change MathJax version}\label{mathjax-versions}
-  The current default for BookML is MathJax 3, but MathJax 4 already seems to work well for most documents. If you want to jump ahead, use
+  The current default for BookML is MathJax 4, which provides the best rendering quality, speed, and accessibility features. However, if you need to go back to a previous version, use
   \begin{lstlisting}[style=bookml]
-\usepackage[mathjax=4]{bookml/bookml}
+\usepackage[mathjax=3]{bookml/bookml}
   \end{lstlisting}
 \end{foldedframe}
 
@@ -561,7 +562,7 @@ BookML can be configured by loading the \texttt{bookml/bookml} package and passi
 
 \begin{description}
 \item[\texttt{style=<\textit{name}>}] Switch style. \texttt{<\textit{name}>} can be \texttt{\textit{gitbook}} (default), which is almost identical to the output of bookdown, \texttt{\textit{plain}}, which is a tweaked version of the normal LaTeXML style, and \texttt{\textit{none}} for the default LaTeXML style with minimal compatibility and bug fixes only.
-\item[\texttt{mathjax=<\textit{number}>}] Select which MathJax version to use from 2, 3 (default), 4.
+\item[\texttt{mathjax=<\textit{number}>}] Select which MathJax version to use from 2, 3, 4 (default).
 \item[\texttt{nomathjax}] Disable MathJax.
 \item[\texttt{imagescale=X.XX}] (Deprecated) Rescale all images generated via LaTeX (using \ltxinline|bmlimage|, see below) by the desired factor. Images are normally sized so that fonts inside the image match the font size of the browser, but there have been cases where BookML is wrong, and images turn out too small or too large. When that happens, tweak \texttt{\textit{imagescale}}, and please report the issue.
 \item[\texttt{nohtmlsyntax}] Do not define the command \ltxinline|\<| used for writing \HTML{} tags directly in \TeX{}.

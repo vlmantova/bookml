@@ -200,15 +200,22 @@
     <xsl:element name="{f:blockelement($context,'div')}">
       <xsl:attribute name="class">ltx_listing_data</xsl:attribute>
       <xsl:if test="b:gitbook()">
-        <button title="copy code" aria-label="copy code" onclick="const u=event.target.nextElementSibling.href;navigator.clipboard.writeText(atob(u.substring(u.indexOf(',')+1)))">
-          <xsl:text>&#x2BBA;</xsl:text>
+        <button title="copy code" aria-label="copy code" onclick="const u=event.currentTarget.nextElementSibling.href;navigator.clipboard.writeText(atob(u.substring(u.indexOf(',')+1)))">
+          <i class="fa fa-clone" aria-hidden="true"></i>
         </button>
       </xsl:if>
       <a download="{@dataname}" title="download {f:if(@dataname='','code',@dataname)}">
         <xsl:call-template name="add_data_attribute">
           <xsl:with-param name="name" select="'href'"/>
         </xsl:call-template>
-        <xsl:text>&#x2B07;</xsl:text>
+        <xsl:choose>
+          <xsl:when test="b:gitbook()">
+            <i class="fa fa-download" aria-hidden="true"></i>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>&#x2B07;</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
       </a>
     </xsl:element>
   </xsl:template>

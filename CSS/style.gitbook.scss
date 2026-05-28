@@ -645,11 +645,16 @@ mjx-container[jax="SVG"][display="true"] {
 
 /* copy/download buttons */
 .ltx_listing_data {
+  font-size: small;
   user-select: none;
   &>button {
     appearance: none;
     background: transparent;
     border: none;
+  }
+
+  &>a[download=""] {
+    display: none;
   }
 }
 

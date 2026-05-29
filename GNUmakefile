@@ -1,4 +1,4 @@
-LATEXMLPOSTFLAGS=--timestamp=0 --splitnaming=label --urlstyle=server
+LATEXMLPOSTFLAGS=--timestamp=0 --splitnaming=label --urlstyle=negotiated
 
 include bookml/bookml.mk
 

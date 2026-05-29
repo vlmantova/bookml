@@ -195,28 +195,32 @@
   </xsl:template>
 
   <!-- add descriptive tooltip to download button -->
-  <xsl:template match="ltx:listing[@data]" mode="begin">
+  <xsl:template match="ltx:listing[@data and (b:gitbook() or b:plain())]" mode="begin">
     <xsl:param name="context"/>
     <xsl:element name="{f:blockelement($context,'div')}">
       <xsl:attribute name="class">ltx_listing_data</xsl:attribute>
-      <xsl:if test="b:gitbook()">
-        <button title="copy code" aria-label="copy code" onclick="const u=event.currentTarget.nextElementSibling.href;navigator.clipboard.writeText(atob(u.substring(u.indexOf(',')+1)))">
-          <i class="fa fa-clone" aria-hidden="true"></i>
-        </button>
-      </xsl:if>
-      <a download="{@dataname}" title="download {f:if(@dataname='','code',@dataname)}">
-        <xsl:call-template name="add_data_attribute">
-          <xsl:with-param name="name" select="'href'"/>
-        </xsl:call-template>
-        <xsl:choose>
-          <xsl:when test="b:gitbook()">
-            <i class="fa fa-download" aria-hidden="true"></i>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>&#x2B07;</xsl:text>
-          </xsl:otherwise>
-        </xsl:choose>
-      </a>
+      <xsl:element name="{f:blockelement($context,'div')}">
+        <span>
+          <xsl:if test="b:gitbook()">
+            <button title="copy code" aria-label="copy code" onclick="const u=event.currentTarget.nextElementSibling.href;navigator.clipboard.writeText(atob(u.substring(u.indexOf(',')+1)))">
+              <i class="fa fa-clone" aria-hidden="true"></i>
+            </button>
+          </xsl:if>
+          <a download="{@dataname}" title="download {f:if(@dataname='','code',@dataname)}">
+            <xsl:call-template name="add_data_attribute">
+              <xsl:with-param name="name" select="'href'"/>
+            </xsl:call-template>
+            <xsl:choose>
+              <xsl:when test="b:gitbook()">
+                <i class="fa fa-download" aria-hidden="true"></i>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text>&#x2B07;</xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </a>
+        </span>
+      </xsl:element>
     </xsl:element>
   </xsl:template>
 
@@ -437,8 +441,8 @@
     </m:semantics>
   </xsl:template>
 
-  <!-- modify listings to use <pre>, <code> tags -->
-  <xsl:template match="ltx:text[b:has-class('ltx_lstlisting')]">
+  <!-- modify listings to use <code> tags and follow LaTeX layout -->
+  <xsl:template match="ltx:text[b:has-class('ltx_lstlisting') and (b:gitbook() or b:plain())]">
     <xsl:param name="context" />
     <code>
       <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
@@ -456,44 +460,53 @@
     </code>
   </xsl:template>
 
-  <xsl:template match="ltx:listing">
+  <xsl:template match="ltx:listing[b:gitbook() or b:plain()]">
+    <xsl:param name="context" />
+    <xsl:text>&#x0A;</xsl:text>
+    <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+      <xsl:attribute name="class">bml_listing</xsl:attribute>
+      <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
+        <xsl:call-template name="add_id" />
+        <xsl:call-template name="add_attributes" />
+        <xsl:apply-templates select="." mode="begin">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+        <xsl:apply-templates>
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="end">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:element>
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:listingline[b:gitbook() or b:plain()]">
     <xsl:param name="context" />
     <xsl:text>&#x0A;</xsl:text>
     <xsl:element name="{f:blockelement($context,'div')}" namespace="{$html_ns}">
       <xsl:call-template name="add_id" />
       <xsl:call-template name="add_attributes" />
-      <xsl:apply-templates select="." mode="begin">
+      <xsl:apply-templates select="ltx:tags">
         <xsl:with-param name="context" select="$context" />
       </xsl:apply-templates>
-      <xsl:element name="{f:blockelement($context,'pre')}" namespace="{$html_ns}">
-        <xsl:apply-templates>
+      <code>
+        <xsl:apply-templates select="." mode="begin">
           <xsl:with-param name="context" select="$context" />
         </xsl:apply-templates>
-      </xsl:element>
-      <xsl:apply-templates select="." mode="end">
-        <xsl:with-param name="context" select="$context" />
-      </xsl:apply-templates>
-      <xsl:text>&#x0A;</xsl:text>
+        <xsl:apply-templates select="node()[not(self::ltx:tags)]">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="end">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </code>
+      <xsl:if test="b:has-class('ltx_lst_listing',parent::ltx:listing)">
+        <xsl:apply-templates select="ltx:tags">
+          <xsl:with-param name="context" select="$context" />
+        </xsl:apply-templates>
+      </xsl:if>
     </xsl:element>
-  </xsl:template>
-
-  <xsl:template match="ltx:listingline">
-    <xsl:param name="context" />
-    <xsl:text>&#x0A;</xsl:text>
-    <code>
-      <xsl:call-template name="add_id" />
-      <xsl:call-template name="add_attributes" />
-      <xsl:apply-templates select="." mode="begin">
-        <xsl:with-param name="context" select="$context" />
-      </xsl:apply-templates>
-      <xsl:apply-templates>
-        <xsl:with-param name="context" select="$context" />
-      </xsl:apply-templates>
-      <xsl:apply-templates select="." mode="end">
-        <xsl:with-param name="context" select="$context" />
-      </xsl:apply-templates>
-      <xsl:text>&#x0A;</xsl:text>
-    </code>
   </xsl:template>
 
   <!-- replace code space with actual space, to facilitate copy & paste -->
@@ -1177,6 +1190,35 @@
         <xsl:with-param name="context" select="$context" />
       </xsl:apply-templates>
     </xsl:element>
+  </xsl:template>
+
+  <!-- remove unnecessary non-breaking space from rules -->
+  <xsl:template match="ltx:rule[b:gitbook() or b:plain()]">
+    <xsl:param name="context"/>
+    <xsl:element name="span" namespace="{$html_ns}">
+      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
+      <xsl:call-template name="add_id"/>
+      <xsl:call-template name="add_attributes"/>
+      <xsl:apply-templates select="." mode="begin">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <xsl:apply-templates select="." mode="end">
+        <xsl:with-param name="context" select="$innercontext"/>
+      </xsl:apply-templates>
+      <!-- <xsl:if test="string(@width)!='0.0pt' and string(@height)='100%'">&#x200B;</xsl:if> -->
+    </xsl:element>
+  </xsl:template>
+
+  <xsl:template match="ltx:rule[b:gitbook() or b:plain()]" mode="styling">
+    <xsl:param name="context"/>
+    <xsl:apply-templates select="." mode="base-styling"/>
+    <xsl:choose>
+      <xsl:when test="@color">
+        <xsl:value-of select="concat('--ltx-border-color:',@color,';display:inline-block;')"/>
+      </xsl:when>
+      <!-- Note: width doesn't affect an inline element, but we don't want to be a block -->
+      <xsl:otherwise>--ltx-border-color:black;display:inline-block;</xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>

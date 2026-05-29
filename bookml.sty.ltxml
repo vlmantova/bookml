@@ -306,7 +306,9 @@ DefConstructorI('\bml@colors', undef, sub {
     for my $node ($document->findnodes('//*[@_font]')) {
       my $color = $document->getNodeFont($node)->getColor;
       $color = '000000' if $color eq 'black';    # $LaTeXML::Common::Font::DEFCOLOR
-      my $class = genColors('color', $color); }
+      my $class = genColors('color', $color);
+      my $bgcolor = $document->getNodeFont($node)->getBackground;
+      $class .= ' ' . genColors('background-color', $bgcolor) if defined $bgcolor; }
 
     # <ltx:* framecolor="...">
     for my $node ($document->findnodes('//*[@framecolor]')) {

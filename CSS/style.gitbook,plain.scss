@@ -57,6 +57,117 @@ ol.ltx_enumerate>li.ltx_item>.ltx_tag {
   margin-right: 0;
   max-width: 100%;
   width: 100%;
+  display: table;
+
+  &.ltx_lst_numbers_left>.ltx_listingline>.ltx_tag:last-child {
+    visibility: hidden;
+  }
+
+  &.ltx_lst_numbers_right>.ltx_listingline>.ltx_tag:first-child {
+    visibility: hidden;
+  }
+
+  &:has(.ltx_listingline>.ltx_tag)>.ltx_listingline:not(:has(>.ltx_tag))::before {
+    content: "";
+    display: table-cell;
+  }
+
+  &>.ltx_listing_data {
+    margin-left: initial;
+    float: initial;
+    display: table-row;
+    &>* {
+      text-align: right;
+      display: table-cell;
+    }
+  }
+
+  &.ltx_lst_numbers_left, &.ltx_lst_numbers_right {
+    &>.ltx_listing_data::before {
+      content: "";
+      display: table-cell;
+    }
+  }
+
+  &.ltx_framed {
+    padding: 0;
+    border-style: none;
+  }
+
+  &>.ltx_listingline:first-child, &>.ltx_listing_data + .ltx_listingline {
+    &>code {
+      padding-top: 0.5em;
+    }
+  }
+
+  &>.ltx_listingline:last-child>code {
+    padding-bottom: 0.5em;
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_top, &.ltx_framed_topbottom {
+    &>.ltx_listingline:first-child, &>.ltx_listing_data + .ltx_listingline {
+      &>code {
+        border-top-width: 1px;
+        border-top-style: solid;
+      }
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_left, &.ltx_framed_leftright {
+    &>.ltx_listingline>code {
+      border-left-width: 1px;
+      border-left-style: solid;
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_right, &.ltx_framed_leftright {
+    &>.ltx_listingline>code {
+      border-right-width: 1px;
+      border-right-style: solid;
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_bottom, &.ltx_framed_underline, &.ltx_framed_topbottom {
+    &>.ltx_listingline:last-child>code {
+      border-bottom-width: 1px;
+      border-bottom-style: solid;
+    }
+  }
+}
+
+.ltx_listingline {
+  display: table-row;
+
+  &>* {
+    display: table-cell;
+  }
+
+  &>code {
+    padding-left: 0.7em;
+    padding-right: 0.7em;
+  }
+
+  .ltx_listing>&>.ltx_tag {
+    position: initial;
+    width: 1.7em;
+    user-select: none;
+
+    &:first-child {
+      text-align: right;
+      padding-right: 0.5em;
+    }
+
+    &:last-child {
+      text-align: left;
+      padding-left: 0.5em;
+    }
+  }
+}
+
+.bml_listing {
+  width: 100%;
+  max-width: 100%;
+  display: block;
 }
 
 /* Enlarge blockquote's */
@@ -421,4 +532,14 @@ msup>mo {
 
 msup>mo.ltx_font_mathscript {
   font-variant-alternates: styleset(sup, roundhand);
+}
+
+/* ltx:rule adjustments */
+.ltx_rule {
+  border-left: solid 1px;
+  border-bottom: solid 1px;
+
+  &[style*="height:100%"]::before {
+    content: "\200B";
+  }
 }

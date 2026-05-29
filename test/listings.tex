@@ -1,0 +1,331 @@
+\documentclass{article}
+
+\usepackage{xcolor}
+\usepackage{imakeidx}
+\makeindex
+\usepackage{listings}
+
+\title{BookML test: \texttt{lstlisting} user guide}
+
+\author{Copyright 1996--2004, Carsten Heinz%
+   \\ Copyright 2006--2007, Brooks Moses
+   \\ Copyright 2013--, Jobst Hoffmann}
+
+\input{test-info}
+
+\begin{document}
+
+\refstepcounter{section}
+\refstepcounter{subsection}
+\subsection{Typesetting listings}
+
+\lstset{language=Pascal,numbers=left,frame=tblr}
+
+\lstinline!var i:integer;!, \lstinline$var i:integer;$
+
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}
+
+\begin{lstlisting}[numbers=none]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}
+
+\begin{lstlisting}[numbers=right]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}
+
+{\lstset{frame=trbl,framesep=0pt}
+\begin{lstlisting}[firstline=2,
+                    lastline=5]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{frame=lines,framesep=0pt}
+\begin{lstlisting}[firstline=2,
+                    lastline=5]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{frame=topline,framesep=0pt}
+\begin{lstlisting}[firstline=2,
+                    lastline=5]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{frame=bottomline,framesep=0pt}
+\begin{lstlisting}[firstline=2,
+                    lastline=5]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+\lstinputlisting[lastline=4,language=TeX]{listings.sty}
+
+\subsection{Figure out the appearance}
+{\lstset{% general command to set parameter(s)
+       basicstyle=\small,          % print whole listing small
+       keywordstyle=\color{black}\bfseries\underbar,
+                                   % underlined bold black keywords
+       identifierstyle=,           % nothing happens
+       commentstyle=\color{red}, % white comments
+       stringstyle=\ttfamily,      % typewriter type for strings
+       showstringspaces=false}     % no special string spaces
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+\subsection{Seduce to use}\label{gSeduceToUse}
+{\lstset{numbers=left, numberstyle=\tiny, stepnumber=2, numbersep=5pt}
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{frame=tb}
+\begin{lstlisting}[float,caption=A floating example]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{literate={:=}{{$\gets$}}1 {<=}{{$\leq$}}1 {>=}{{$\geq$}}1
+{<>}{{$\neq$}}1}
+\begin{lstlisting}
+if (i<=0) then i := 1;
+if (i>=0) then i := 0;
+if (i<>0) then i := 0;
+\end{lstlisting}}
+
+\refstepcounter{section}
+
+\setcounter{subsection}{4}
+
+\subsection{Special characters}\label{uSpecialCharacters}
+{\lstset{tabsize=2}
+\begin{lstlisting}
+123456789
+	{ one tabulator }
+		{ two tabs }
+123		{ 123 + two tabs }
+\end{lstlisting}}
+
+{\lstset{showspaces=true,
+        showtabs=true,
+        tab=\rightarrowfill}
+\begin{lstlisting}
+    for i:=maxint to 0 do
+    begin
+	{ do nothing }
+    end;
+\end{lstlisting}}
+
+\subsection{Line numbers}
+
+{\lstset{numbers=left,numberstyle=\tiny,
+    stepnumber=2,numbersep=5pt}
+\begin{lstlisting}[firstnumber=100]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+\end{lstlisting}
+
+\begin{lstlisting}[firstnumber=last]
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{numbers=left,numberstyle=\tiny,stepnumber=2,numbersep=5pt}
+\begin{lstlisting}[name=Test]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+
+\end{lstlisting}
+
+\begin{lstlisting}[name=Test]
+Write('Case insensitive ');
+WritE('Pascal keywords.');
+\end{lstlisting}}
+
+{\lstset{numbers=left,numberstyle=\tiny,stepnumber=1,numbersep=5pt}
+\begin{lstlisting}[name=Test,
+    language={[ansi]C},
+    linerange={1-4,6-7,10-14,
+    17-19,21-22},
+    firstnumber=1]
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc,char* argv[]){
+    /* declaring variables */
+    int i;
+    int limit;
+
+    /* checking arguments */
+    if ( argc > 1 ) {
+        limit = atoi(argv[1]);
+    } else {
+        limit = 100;
+    }
+
+    /* counting lines */
+    for (i = 1;i <= limit;i++) {
+        printf("Line no. %3.0d\n", i);
+    }
+
+    return 0;
+}
+
+\end{lstlisting}
+
+\begin{lstlisting}[language={},
+    linerange={1-2,6-7},
+    consecutivenumbers=false]
+Line no.   1
+Line no.   2
+Line no.   3
+Line no.   4
+Line no.   5
+Line no.   6
+Line no.   7
+\end{lstlisting}}
+
+\subsection{Layout elements}
+
+\begin{lstlisting}[frame=single]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+\end{lstlisting}
+
+\begin{lstlisting}[frame=trBL]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+\end{lstlisting}
+
+{\lstset{frameround=fttt}
+\begin{lstlisting}[frame=trBL]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+\end{lstlisting}}
+
+{\lstset{xleftmargin=.05\linewidth}
+\begin{lstlisting}[caption={Useless code},label=useless]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+\end{lstlisting}}
+
+{\lstset{xleftmargin=.05\linewidth}
+\begin{lstlisting}[title={`Caption' without label}]
+for i:=maxint to 0 do
+begin
+    { do nothing }
+end;
+\end{lstlisting}}
+
+{\lstset{backgroundcolor=\color{yellow}}
+\begin{lstlisting}[frame=single,
+                      framerule=0pt]
+for i:=maxint to 0 do
+begin
+    j:=square(root(i));
+end;
+\end{lstlisting}}
+
+\subsection{Emphasize identifiers}
+
+{\lstset{emph={square,root},emphstyle=\underbar}
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    j:=square(root(i));
+end;
+\end{lstlisting}}
+
+{\lstset{emph={square},      emphstyle=\color{red},
+           emph={[2]root,base},emphstyle={[2]\color{blue}}}
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    j:=square(root(i));
+end;
+\end{lstlisting}}
+
+\subsection{Indexing}
+
+{\lstset{index={square},index={[2]root}}
+\begin{lstlisting}
+for i:=maxint to 0 do
+begin
+    j:=square(root(i));
+end;
+\end{lstlisting}}
+
+\end{document}

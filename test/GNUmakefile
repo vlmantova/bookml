@@ -1,20 +1,24 @@
-TESTS=amsldoc-equations disable-mathjax latexml-t-ams-mathtools mathtools mathvariants
-SOURCES=tests.tex $(foreach opt,mathjax2 mathjax3 mathjax4 nomathjax,$(TESTS:=-$(opt).tex))
+MATHSTESTS=amsldoc-equations disable-mathjax latexml-t-ams-mathtools mathtools mathvariants
+CODETESTS=algorithm2e algorithmic algorithmicx
+SOURCES=tests.tex algorithm2e.tex algorithmic.tex algorithmicx.tex listings.tex $(foreach opt,mathjax2 mathjax3 mathjax4 nomathjax,$(MATHSTESTS:=-$(opt).tex))
 TARGETS=$(TARGETS.HTML)
 SPLITAT=
 
 html:
 -include bookml/bookml.mk
 
-.PHONY: $(TESTS) equations
+.PHONY: $(MATHSTESTS) algorithmicx code equations listings
 
 equations: amsldoc-equations latexml-t-ams-mathtools mathtools
+code: algorithmic algorithmicx listings
+
+algorithm2e algorithmic algorithmicx listings: %: $(AUX_DIR)/html/%/index.html
 
 define test
 $(eval
-$1: $(TESTS:=-$1.tex)
+$1: $(MATHSTESTS:=-$1.tex)
 
-$(TESTS): %: $(AUX_DIR)/html/%-$1/index.html
+$(MATHSTESTS): %: $(AUX_DIR)/html/%-$1/index.html
 
 %-$1.tex: test-template.tex.in
 	perl -pe "s/\@OPTIONS\@/$2/; s/\@INPUT\@/$$*.tex/g" "$$<" > "$$@"

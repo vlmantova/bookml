@@ -69,6 +69,28 @@ h1.title {
 
 /* BookML tweaks */
 
+/* max-width relative to the font size */
+.book-body .page-wrapper .page-inner {
+  .book & {
+    max-width: 57em;
+  }
+  .book.font-size-0 & {
+    font-size: 1.2rem;
+  }
+  .book.font-size-1  & {
+    font-size: 1.4rem;
+  }
+  .book.font-size-2  & {
+    font-size: 1.6rem;
+  }
+  .book.font-size-3  & {
+    font-size: 2.2rem;
+  }
+  .book.font-size-4  & {
+    font-size: 4rem;
+  }
+}
+
 /* use CSS custom properties for the font family */
 .book.font-family-0, .book.font-family-1 {
   font-family: var(--bml-font-family);
@@ -286,20 +308,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 
 /* Tweak listings */
 .ltx_listing {
-  background-color: #f7f7f7;
-  --bml-background-color: #f7f7f7;
   margin: 0 0 1.275em;
-  padding: .85em 1em;
-}
-
-.book.color-theme-1 .ltx_listing {
-  background-color: #fdf6e3;
-  --bml-background-color: #fdf6e3;
-}
-
-.book.color-theme-2 .ltx_listing {
-  background-color: #2d3143;
-  --bml-background-color: #2d3143;
 }
 
 /* Remove indentation on paragraphs */
@@ -593,53 +602,112 @@ mjx-container[jax="SVG"][display="true"] {
 
 /* adjust listings */
 .book .book-body .page-wrapper .page-inner section.normal div.ltx_listing {
-
-  /* set anchor for download button */
-  position: relative;
   width: 100%;
   max-width: 100%;
 
-  /* restore initial LaTeXML style */
-  &.ltx_framed_rectangle {
-    border-style: solid;
-    border-width: 1px;
-  }
-
-  /* disable spaces */
-  &>pre {
-    white-space: normal;
-    margin: 0;
-    padding: 0;
+  &[class*="bml_background-color_"] {
+    background: none !important;
   }
 
   /* unset bookdown font size, restore spaces */
-  &>pre>code {
+  & code {
+    padding: 0;
     font-size: inherit;
-    white-space: normal;
-    display: block;
+    line-height: normal;
+    background-color: var(--bml-background-color);
   }
 
-  /* adjust position of download button */
-  &>.ltx_listing_data {
-    margin-left: -100%;
+  & .ltx_tag {
+    line-height: normal;
   }
 }
 
-/* typeset line numbers within container */
-.ltx_lst_numbers_left .ltx_listingline .ltx_tag {
-  position: initial;
-  display: inline-block;
-  margin-left: 0;
-  width: 1.7em;
+.bml_listing {
+  --bml-background-color-parent: var(--bml-background-color);
+  overflow: auto;
+}
+
+.ltx_listing {
+  --bml-background-color: #f7f7f7;
+
+  .book.color-theme-1 & {
+    --bml-background-color: #fdf6e3;
+  }
+
+  .book.color-theme-2 & {
+    --bml-background-color: #2d3143;
+  }
+
+  .bml_listing>&>.ltx_listingline {
+    &>.ltx_tag, &::before {
+      position: sticky;
+      z-index: 1;
+      background-color: var(--bml-background-color-parent);
+    }
+    &>.ltx_tag:first-child, &::before {
+      left: 0;
+    }
+    &>.ltx_tag:last-child {
+      right: 0;
+    }
+  }
+
+  .book .book-body .page-wrapper .page-inner section.normal &>.ltx_listingline>code {
+    border-color: var(--bml-border-color, currentColor);
+  }
+}
+
+.book .book-body .page-wrapper .page-inner section.normal .ltx_listing {
+
+  &>.ltx_listingline:first-child, &>.ltx_listing_data + .ltx_listingline {
+    &>code {
+      padding-top: 0.5em;
+    }
+  }
+
+  &>.ltx_listingline:last-child>code {
+    padding-bottom: 0.5em;
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_top, &.ltx_framed_topbottom {
+    &>.ltx_listingline:first-child, &>.ltx_listing_data + .ltx_listingline {
+      &>code {
+        border-top-width: 1px;
+        border-top-style: solid;
+      }
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_left, &.ltx_framed_leftright {
+    &>.ltx_listingline>code {
+      border-left-width: 1px;
+      border-left-style: solid;
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_right, &.ltx_framed_leftright {
+    &>.ltx_listingline>code {
+      border-right-width: 1px;
+      border-right-style: solid;
+    }
+  }
+
+  &.ltx_framed_rectangle, &.ltx_framed_bottom, &.ltx_framed_underline, &.ltx_framed_topbottom {
+    &>.ltx_listingline:last-child>code {
+      border-bottom-width: 1px;
+      border-bottom-style: solid;
+    }
+  }
 }
 
 .book .book-body .page-wrapper .page-inner section.normal {
-  & code.ltx_lstlisting {
+  & .ltx_listing>.ltx_listingline>code {
     font-size: inherit;
-    white-space: pre;
     &::after, &::before {
       content: none;
     }
+    padding-left: 0.7em;
+    padding-right: 0.7em;
   }
 }
 
@@ -647,14 +715,19 @@ mjx-container[jax="SVG"][display="true"] {
 .ltx_listing_data {
   font-size: small;
   user-select: none;
-  &>button {
+  & button {
     appearance: none;
     background: transparent;
     border: none;
   }
 
-  &>a[download=""] {
+  & a[download=""] {
     display: none;
+  }
+
+  &>*>span {
+    position: sticky;
+    right: 0;
   }
 }
 

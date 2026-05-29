@@ -1,0 +1,150 @@
+\documentclass{article}
+
+\usepackage[boxed,commentsnumbered]{algorithm2e}
+
+\newcommand{\algocfversion}{release 5.2}
+\title{BookML test: algorithm2e.sty --- package for algorithms\\ {\large\algocfversion}}
+\author{(c) 1995-1997 Christophe Fiorio, Tu-Berlin, Germany\\
+(c) 1998-2017 Christophe Fiorio, LIRMM, Montpellier University, France} \date{July 18 2017}
+
+\input{test-info}
+
+\begin{document}
+
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \KwData{this text}
+  \KwResult{how to write algorithm with \LaTeX2e }
+
+  initialization\;
+  \While{not at end of this document}{
+    read current section\;
+    \eIf{understand}{
+      go to next section\;
+      current section becomes this one\;
+      }{
+      go back to the beginning of current section\;
+      }
+    }
+  \caption{How to write algorithms}
+\end{algorithm}
+
+\RestyleAlgo{boxed}\LinesNumbered
+\IncMargin{1em}
+\begin{algorithm}
+  \SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
+  \SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
+  \SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+
+  \Input{A bitmap $Im$ of size $w\times l$}
+  \Output{A partition of the bitmap}
+  \BlankLine
+  \emph{special treatment of the first line}\;
+  \For{$i\leftarrow 2$ \KwTo $l$}{
+    \emph{special treatment of the first element of line $i$}\;
+    \For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
+      \Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
+      \Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
+      \This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
+      \If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
+        \lIf{\Left $<$ \This}{\Union{\Left,\This}}
+        \lElse{\Union{\This,\Left}}
+      }
+      \If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
+        \lIf{\Up $<$ \This}{\Union{\Up,\This}}
+        \tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
+        \lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
+      }
+    }
+    \lForEach{element $e$ of the line $i$}{\FindCompress{p}}
+  }
+  \caption{disjoint decomposition}\label{algo_disjdecomp}
+\end{algorithm}\DecMargin{1em}
+
+{\RestyleAlgo{algoruled}\SetAlgoVlined\LinesNotNumbered
+\begin{algorithm}
+\DontPrintSemicolon
+\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+\KwResult{$G'=(X,V)$ with $V\subseteq U$ such that $G'^{tc}$ is an
+interval order.}
+\Begin{
+  $V \longleftarrow U$\;
+  $S \longleftarrow \emptyset$\;
+  \For{$x\in X$}{
+    $NbSuccInS(x) \longleftarrow 0$\;
+    $NbPredInMin(x) \longleftarrow 0$\;
+    $NbPredNotInMin(x) \longleftarrow |ImPred(x)|$\;
+    }
+  \For{$x \in X$}{
+    \If{$NbPredInMin(x) = 0$ {\bf and} $NbPredNotInMin(x) = 0$}{
+      $AppendToMin(x)$}
+    }
+    \nl\While{$S \neq \emptyset$}{\label{InRes1}
+    \nlset{REM} remove $x$ from the list of $T$ of maximal index\;\label{InResR}
+    \lnl{InRes2}\While{$|S \cap  ImSucc(x)| \neq |S|$}{
+      \For{$ y \in  S-ImSucc(x)$}{
+        \{ remove from $V$ all the arcs $zy$ : \}\;
+        \For{$z \in  ImPred(y) \cap  Min$}{
+          remove the arc $zy$ from $V$\;
+          $NbSuccInS(z) \longleftarrow NbSuccInS(z) - 1$\;
+          move $z$ in $T$ to the list preceding its present list\;
+          \{i.e. If $z \in T[k]$, move $z$ from $T[k]$ to
+           $T[k-1]$\}\;
+          }
+        $NbPredInMin(y) \longleftarrow 0$\;
+        $NbPredNotInMin(y) \longleftarrow 0$\;
+        $S \longleftarrow S - \{y\}$\;
+        $AppendToMin(y)$\;
+        }
+      }
+    $RemoveFromMin(x)$\;
+    }
+  }
+\caption{IntervalRestriction\label{IR}}
+\end{algorithm}}
+
+\def\theAlgoLine{\arabic{AlgoLine}}
+\SetKwProg{Fn}{Function}{}{end}\SetKwFunction{FRecurs}{FnRecursive}%
+\newcommand{\forcond}{$i=0$ \KwTo $n$}
+\begin{algorithm}\SetAlgoLongEnd
+  \caption{Generic example with most classical expressions derived in pseudo-code}%
+  \label{algo:pseudocode}
+\Fn(\tcc*[h]{algorithm as a recursive function}){\FRecurs{some args}}{
+  \KwData{Some input data\\these inputs can be displayed on several lines and one
+    input can be wider than line's width.}
+  \KwResult{Same for output data}
+  \tcc{this is a comment to tell you that we will now really start code}
+  \If(\tcc*[h]{a simple if but with a comment on the same line}){this is true}{
+    we do that, else nothing\;
+    \tcc{we will include other if so you can see this is possible}
+    \eIf{we agree that}{
+      we do that\;
+    }{
+      else we will do a more complicated if using else if\;
+      \uIf{this first condition is true}{
+        we do that\;
+      }
+      \uElseIf{this other condition is true}{
+        this is done\tcc*[r]{else if}
+      }
+      \Else{
+        in other case, we do this\tcc*[r]{else}
+      }
+    }
+  }
+  \tcc{now loops}
+  \For{\forcond}{
+    a for loop\;
+  }
+  \While{$i<n$}{
+    a while loop including a repeat--until loop\;
+    \Repeat{this end condition}{
+      do this things\;
+    }
+  }
+  They are many other possibilities and customization possible that you have to
+  discover by reading the documentation.
+}
+\end{algorithm}
+
+\end{document}

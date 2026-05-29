@@ -9,7 +9,7 @@ jobs:
     name: Create release
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -28,7 +28,7 @@ jobs:
         run: |
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title="$tag" --notes "$notes" --draft *.zip
       - name: Cache release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release
           path: release.zip
@@ -48,19 +48,19 @@ jobs:
         scheme: [basic, small, medium, mediumextra, full]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: make
           version: 1.0
       - name: Download cached release
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release
           path: docker-ctx
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Set up containerd snapshotter
         uses: depot/use-containerd-snapshotter-action@v1
       - name: Log in to GitHub registry
@@ -82,19 +82,19 @@ jobs:
         scheme: [basic, small, medium, mediumextra, full]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: make
           version: 1.0
       - name: Download cached release
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release
           path: docker-ctx
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Set up containerd snapshotter
         uses: depot/use-containerd-snapshotter-action@v1
       - name: Log in to GitHub registry
@@ -112,7 +112,7 @@ jobs:
     needs: [docker-amd64, docker-arm64]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -121,7 +121,7 @@ jobs:
       - name: Log in to GitHub registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Push manifests
         env:
           version: ${{ github.ref_name }}

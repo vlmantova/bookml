@@ -178,6 +178,15 @@ mtext {
   user-select: none;
 }
 
+/* adjust horizontal rule positioning and padding */
+.ltx_rule {
+  vertical-align: baseline;
+}
+
+.ltx_rule.ltx_framed {
+  padding: 0;
+}
+
 /* MathML polyfills */
 
 /* not needed on Firefox */

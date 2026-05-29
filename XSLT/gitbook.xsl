@@ -69,11 +69,14 @@
 
   <!-- inject @color, @mathcolor into @class (may generate duplicate classes, but we do not care) -->
   <xsl:template match="/*//*/@class" mode="bml-colors" />
-  <xsl:template match="/*//*[@class | @color | @mathcolor]" mode="bml-colors">
+  <xsl:template match="/*//*[@class | @color | @mathcolor | @backgroundcolor]" mode="bml-colors">
     <xsl:variable name="class">
       <xsl:value-of select="@class" />
       <xsl:for-each select="@color | @mathcolor">
         bml_color_<xsl:value-of select="substring-after(.,'#')" />
+      </xsl:for-each>
+      <xsl:for-each select="@backgroundcolor">
+        bml_background-color_<xsl:value-of select="substring-after(.,'#')" />
       </xsl:for-each>
     </xsl:variable>
     <xsl:copy>

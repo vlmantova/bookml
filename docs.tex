@@ -2,7 +2,7 @@
 
 \usepackage[T1]{fontenc}
 
-\usepackage[british]{babel}
+\usepackage{babel}
 \usepackage{bookml/bookml}
 
 % Google Search Console verification file
@@ -33,7 +33,7 @@
 
 \hypersetup{pdfsubject={BookML is a fully automated solution for the production of accessible HTML content straight from LaTeX, based on LaTeXML for the widest LaTeX compatibility and bookdown for a modern and accessible look. Integration with Overleaf is provided via a GitHub action. Outputs are also packaged as SCORM for ease of use in higher education. Created by and maintained for maths lecturers at the University of Leeds.}}
 
-\usepackage[dvipsnames]{xcolor}
+\usepackage[dvipsnames,table]{xcolor}
 \usepackage{geometry}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.6em}
@@ -119,7 +119,7 @@
 \title{\texorpdfstring{BookML\@: \LaTeX{} to \HTML, made easy(ish). \\ Powered by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML}.}{BookML: LaTeX to HTML, made easy(ish). Powered by LaTeXML.}}
 \author{Vincenzo Mantova}
 
-\date{27\textsuperscript{th} May 2026}
+\date{1\textsuperscript{st} June 2026}
 
 \begin{document}
 
@@ -184,22 +184,27 @@ BookML key features are:
 When all goes well, you should see an output like the following:
 
 \begin{tabularx}{\textwidth}[h]{>{\color{MidnightBlue}\tt}r@{\texttt{\ }}>{\tt}X}
+\cellcolor{red}\color{white} Required\phantom{:} & \cellcolor{red} \\
   Main files:    & \textcolor{OliveGreen}{template.tex}                                          \\
   BookML:        & \textcolor{OliveGreen}{\BookMLversion{} OK}                                   \\
   GNU Make:      & \textcolor{OliveGreen}{4.4.1 OK}                                              \\
   TeX:           & \textcolor{OliveGreen}{MiKTeX 25.4 OK}                                        \\
   perl:          & \textcolor{OliveGreen}{v5.42.0 OK}                                            \\
   LaTeXML:       & \textcolor{OliveGreen}{0.8.8 OK}                                              \\
-  Image::Magick: & \textcolor{red}{NOT FOUND} (required for any image handling)                  \\
-  Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS to SVG; may be required for PDF to SVG) \\
-  mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (required for PDF to SVG if using PDFTOSVG\_CONVERTER=mutool (current value `mutool')) \\
-  dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (required for BookML images, EPS to SVG, PDF to SVG if using PDFTOSVG\_CONVERTER=dvisvgm (current value `mutool')) \\
-  dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (required for BookML images, EPS to SVG, PDF to SVG if using PDFTOSVG\_CONVERTER=dvisvgm (current value `mutool'))  \\
   latexmk:       & \textcolor{OliveGreen}{4.87 OK}                                               \\
-  texfot:        & \textcolor{OliveGreen}{1.48 OK} (optional, for hiding some LaTeX messages)    \\
-  preview.sty:   & \textcolor{OliveGreen}{14.0.6 OK} (required for BookML images)                \\
   zip:           & \textcolor{OliveGreen}{3.1b OK}                                               \\
-  curl:          & \textcolor{OliveGreen}{8.13.0 OK} (required for updating with `make update')
+\cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{for any image handling, including BookML images} \\
+  Image::Magick: & \textcolor{red}{NOT FOUND}                                                    \\
+\multicolumn{2}{l}{\textcolor{magenta}{\tt -{}-{}- PDFTOSVG\_CONVERTER is set to `mutool' -{}-{}-}} \\
+  Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS to SVG, PDF to SVG via dvisvgm) \\
+  mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (PDF to SVG via mutool) \\
+  dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (PDF to SVG via mutool)) \\
+  dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS to SVG, PDF to SVG via dvisvgm)  \\
+\cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{BookML images (\textbackslash{}bmlImageEnvironment and \textbackslash{}begin\{bmlimage\})} \\
+  preview.sty:   & \textcolor{OliveGreen}{14.0.6 OK}                                             \\
+\cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{misc} \\
+  texfot:        & \textcolor{OliveGreen}{1.48 OK} (hide irrelevant LaTeX messages)    \\
+  curl:          & \textcolor{OliveGreen}{8.13.0 OK} (update BookML with `make update')
 \end{tabularx}
 
 The first line shows which files BookML will try to compile: every \texttt{.tex} file in the current folder that contains the string \ltxinline|\documentclass| (even if commented out!). The rest informs you on which software you may need to install or update. \textbf{Not everything is necessary:} the output of \cmdinline{make detect} will tell you what functionality requires a particular program. The \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide} has detailed installation instructions for various platforms, many specific to the University of Leeds.

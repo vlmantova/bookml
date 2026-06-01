@@ -91,6 +91,12 @@
     <func:result select="concat($prefix,generate-id($node))" />
   </func:function>
 
+  <func:function name="b:id">
+    <xsl:param name="node" select="." />
+    <xsl:param name="prefix" select="$BMLAUTOIDPREFIX" />
+    <func:result select="f:if($node/@fragid,$node/@fragid,concat($prefix,generate-id($node)))" />
+  </func:function>
+
   <!-- alter $fragment by overriding mode="bml-alter" -->
   <xsl:template name="bml-alter">
     <xsl:param name="fragment"/>

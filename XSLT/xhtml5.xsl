@@ -590,8 +590,8 @@
           <xsl:when test="svg:svg/@aria-label | svg:svg/@aria-labelledby" />
           <xsl:when test="svg:svg/svg:title">
             <xsl:for-each select="svg:svg/svg:title">
-              <xsl:attribute name="aria-labelledby"><xsl:value-of select="f:if(@id,@id,b:generate-id())"/></xsl:attribute>
-              <svg:title id="{f:if(@id,@id,b:generate-id())}">
+              <xsl:attribute name="aria-labelledby"><xsl:value-of select="f:if(@id,@id,b:id())"/></xsl:attribute>
+              <svg:title id="{f:if(@id,@id,b:id())}">
                 <xsl:apply-templates select="@*" mode="copy-attribute" />
                 <xsl:apply-templates select="node()" />
               </svg:title>
@@ -624,12 +624,12 @@
     <xsl:choose>
       <xsl:when test="ltx:title/ltx:tag">
         <xsl:attribute name="aria-labelledby">
-          <xsl:value-of select="b:generate-id(ltx:title/ltx:tag)" />
+          <xsl:value-of select="b:id(ltx:title/ltx:tag)" />
         </xsl:attribute>
       </xsl:when>
       <xsl:when test="ltx:title">
         <xsl:attribute name="aria-labelledby">
-          <xsl:value-of select="b:generate-id(ltx:title)" />
+          <xsl:value-of select="b:id(ltx:title)" />
         </xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
@@ -642,10 +642,10 @@
   <xsl:template match="ltx:theorem/ltx:title/ltx:tag" mode="begin">
     <xsl:param name="context" />
     <xsl:apply-imports />
-    <xsl:attribute name="aria-hidden">true</xsl:attribute>
+    <xsl:attribute name="id"><xsl:value-of select="b:id()"/></xsl:attribute>
   </xsl:template>
 
-  <xsl:template match="ltx:theorem/ltx:title[not(ltx:tag)] | ltx:proof/ltx:title[not(ltx:tag)]">
+  <xsl:template match="ltx:theorem/ltx:title | ltx:proof/ltx:title">
     <xsl:param name="context" />
     <xsl:text>&#x0A;</xsl:text>
     <!-- use <div> instead of <h6> -->
@@ -653,6 +653,9 @@
       <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
       <xsl:call-template name="add_id" />
       <xsl:call-template name="add_attributes" />
+      <xsl:if test="not(ltx:tag)">
+        <xsl:attribute name="id"><xsl:value-of select="b:id()"/></xsl:attribute>
+      </xsl:if>
       <xsl:apply-templates select="." mode="begin">
         <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
@@ -663,16 +666,6 @@
         <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
     </xsl:element>
-  </xsl:template>
-
-  <!-- avoid reading the tag twice, but out of precaution, only if the tag is pure text  -->
-  <xsl:template match="ltx:theorem/ltx:title/ltx:tag | ltx:proof/ltx:title/ltx:tag | ltx:theorem/ltx:title[not(ltx:tag)] | ltx:proof/ltx:title[not(ltx:tag)]" mode="begin">
-    <xsl:param name="context" />
-    <xsl:apply-imports />
-    <xsl:attribute name="id"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
-    <xsl:if test="not(*[not(self::ltx:text)])">
-      <xsl:attribute name="aria-hidden">true</xsl:attribute>
-    </xsl:if>
   </xsl:template>
 
   <!-- improve table layout of equation groups using CSS grids -->
@@ -1095,7 +1088,7 @@
         <xsl:when test="not(.//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags) and ltx:tags">
           <xsl:variable name="tag" select="ltx:tags/ltx:tag[not(@role)][1]" />
           <xsl:attribute name="role">region</xsl:attribute>
-          <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id($tag)" /></xsl:attribute>
+          <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:id($tag)" /></xsl:attribute>
           <xsl:apply-templates select="$tag" mode="bml-equation">
             <xsl:with-param name="context" select="$context" />
           </xsl:apply-templates>
@@ -1151,7 +1144,7 @@
       </xsl:apply-templates>
     </xsl:variable>
     <xsl:text>&#x0A;</xsl:text>
-    <span class="ltx_eqn_eqno" id="{b:generate-id()}" aria-hidden="true">
+    <span class="ltx_eqn_eqno" id="{b:id()}">
       <xsl:call-template name="add_attributes">
         <xsl:with-param name="extra_classes">ltx_eqn_eqno</xsl:with-param>
         <xsl:with-param name="extra_style" select="$extra_style" />

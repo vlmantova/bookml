@@ -49,7 +49,10 @@
     <ref name="xmlelem"/>
   </define>
   <define name="Misc.class" combine="choice">
-    <ref name="xmlinlineelem"/>
+    <choice>
+      <ref name="xmlinlineelem"/>
+      <ref name="rule" />
+    </choice>
   </define>
   <define name="rawhtml" combine="choice">
     <element name="rawhtml">

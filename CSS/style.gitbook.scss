@@ -351,10 +351,19 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
 }
 
-.book .book-body .page-wrapper .page-inner section.normal {
-  color: #292929;
+.book .book-body {
   --bml-color: #292929;
   --bml-background-color: #fff;
+}
+
+.book.color-theme-1 .book-body {
+  --bml-color: #704214;
+  --bml-background-color: #f3eacb;
+}
+
+.book.color-theme-2 .book-body {
+  --bml-color: #bdcadb;
+  --bml-background-color: #1c1f2b;
 }
 
 .book .book-summary ul.summary li span {
@@ -798,6 +807,22 @@ svg foreignObject {
 
 .book.font-size-4 {
   --bml-font-size: 30;
+}
+
+/* Adjust rules */
+.ltx_rule {
+  height: calc(0.04rem * var(--bml-font-size) / 12 * 1.6);
+  width: calc(0.04rem * var(--bml-font-size) / 12 * 1.6);
+  background-color: var(--bml-color);
+}
+
+.book .book-body .page-wrapper .page-inner section.normal {
+  & hr.bml_hrule {
+    margin: 0;
+  }
+  & p:has(+ hr.bml_hrule) {
+    margin-bottom: 0;
+  }
 }
 
 /* Automatic colors */

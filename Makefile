@@ -34,6 +34,7 @@ else
   SASS    = sass
   UNZIP   = unzip -o $1 -d $2
 endif
+SASSFLAGS ?= --style=compressed
 
 
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
@@ -182,4 +183,4 @@ gitbook/js/plugin-search.js: $(GITBOOK_SOURCE)/js/plugin-search.js plugin-search
 	patch -p1 <plugin-search.js.patch
 
 CSS/%.css: CSS/%.scss
-	$(SASS) "$<" "$@"
+	$(SASS) $(SASSFLAGS) "$<" "$@"

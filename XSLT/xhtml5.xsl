@@ -19,18 +19,19 @@
 
 -->
 <xsl:stylesheet
-    version   = "1.0"
-    xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-    xmlns:ltx = "http://dlmf.nist.gov/LaTeXML"
-    xmlns:f   = "http://dlmf.nist.gov/LaTeXML/functions"
-    xmlns:b   = "https://vlmantova.github.io/bookml/functions"
-    xmlns:svg = "http://www.w3.org/2000/svg"
+    version     = "1.0"
+    xmlns:xsl   = "http://www.w3.org/1999/XSL/Transform"
+    xmlns:ltx   = "http://dlmf.nist.gov/LaTeXML"
+    xmlns:func  = "http://exslt.org/functions"
+    xmlns:f     = "http://dlmf.nist.gov/LaTeXML/functions"
+    xmlns:b     = "https://vlmantova.github.io/bookml/functions"
+    xmlns:svg   = "http://www.w3.org/2000/svg"
     xmlns:xlink = "http://www.w3.org/1999/xlink"
     xmlns:xhtml = "http://www.w3.org/1999/xhtml"
-    xmlns:exsl = "http://exslt.org/common"
-    xmlns:m   = "http://www.w3.org/1998/Math/MathML"
-    xmlns     = "http://www.w3.org/1999/xhtml"
-    extension-element-prefixes = "exsl"
+    xmlns:exsl  = "http://exslt.org/common"
+    xmlns:m     = "http://www.w3.org/1998/Math/MathML"
+    xmlns       = "http://www.w3.org/1999/xhtml"
+    extension-element-prefixes = "exsl func"
     exclude-result-prefixes = "ltx f b svg xlink m">
 
   <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
@@ -516,58 +517,119 @@
 
   <!-- recreate missing viewBox attribute -->
   <xsl:template match="ltx:picture[b:max-version('0.8.8') and svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
-    <svg:svg>
-      <!-- copy id, class from parent ltx:picture, but do NOT derive css style from size -->
-      <xsl:call-template name="add_id" />
-      <xsl:call-template name="add_classes" />
-      <xsl:call-template name="copy_foreign_attributes" />
-      <xsl:apply-templates select="." mode="add_RDFa" />
-      <!-- but copy other svg:svg attributes -->
-      <xsl:for-each select="svg:svg/@*">
-        <xsl:apply-templates select="." mode="copy-attribute" />
-      </xsl:for-each>
-      <xsl:variable name="width" select="svg:svg/@width" />
-      <xsl:variable name="height" select="svg:svg/@height" />
-      <xsl:choose>
-        <!-- SVGs created by pgfsys-latexml.def.ltxml (always "0 0 $width $height" in v0.8.7, v0.8.8) -->
-        <xsl:when test="starts-with(svg:svg/svg:g/@transform,'translate(')">
-          <xsl:variable name="translate" select="substring-before(substring-after(svg:svg/svg:g/@transform,'translate('),')')" />
-          <xsl:variable name="minx" select="-number(substring-before($translate,','))" />
-          <xsl:variable name="miny" select="number(substring-after($translate,','))-$height" />
-          <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' ',$miny,' ',$width,' ',$height)" /></xsl:attribute>
-        </xsl:when>
-        <!-- SVGs created by xy.tex.ltxml -->
-        <xsl:when test="starts-with(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 ') and not(svg:svg/@style)">
-          <xsl:variable name="matrix" select="substring-before(substring-after(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 '),')')" />
-          <xsl:variable name="minx" select="number(substring-before($matrix,' '))" />
-          <!-- here $miny is used for vertical alignment -->
-          <xsl:variable name="miny" select="number(substring-after($matrix,' '))-$height" />
-          <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' 0 ',$width,' ',$height)" /></xsl:attribute>
-          <xsl:attribute name="style">vertical-align: <xsl:value-of select="$miny" />px;</xsl:attribute>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:if test="@description">
-        <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
-        <svg:title id="{b:generate-id()}">
-          <xsl:value-of select="@description" />
-        </svg:title>
-      </xsl:if>
-      <xsl:apply-templates select="svg:svg/*"/>
-    </svg:svg>
+    <!-- Wrap in inline-block, to ensure CSS works (eg, mtext in Firefox) -->
+    <span class="ltx_inline-block">
+      <svg:svg>
+        <!-- copy id, class from parent ltx:picture, but do NOT derive css style from size -->
+        <xsl:call-template name="add_id" />
+        <xsl:call-template name="add_classes" />
+        <xsl:call-template name="copy_foreign_attributes" />
+        <xsl:apply-templates select="." mode="add_RDFa" />
+        <!-- but copy other svg:svg attributes -->
+        <xsl:for-each select="svg:svg/@*">
+          <xsl:apply-templates select="." mode="copy-attribute" />
+        </xsl:for-each>
+        <xsl:variable name="width" select="svg:svg/@width" />
+        <xsl:variable name="height" select="svg:svg/@height" />
+        <xsl:choose>
+          <!-- SVGs created by pgfsys-latexml.def.ltxml (always "0 0 $width $height" in v0.8.7, v0.8.8) -->
+          <xsl:when test="starts-with(svg:svg/svg:g/@transform,'translate(')">
+            <xsl:variable name="translate" select="substring-before(substring-after(svg:svg/svg:g/@transform,'translate('),')')" />
+            <xsl:variable name="minx" select="-number(substring-before($translate,','))" />
+            <xsl:variable name="miny" select="number(substring-after($translate,','))-$height" />
+            <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' ',$miny,' ',$width,' ',$height)" /></xsl:attribute>
+          </xsl:when>
+          <!-- SVGs created by xy.tex.ltxml -->
+          <xsl:when test="starts-with(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 ') and not(svg:svg/@style)">
+            <xsl:variable name="matrix" select="substring-before(substring-after(svg:svg/svg:g/@transform,'matrix(1 0 0 -1 '),')')" />
+            <xsl:variable name="minx" select="number(substring-before($matrix,' '))" />
+            <!-- here $miny is used for vertical alignment -->
+            <xsl:variable name="miny" select="number(substring-after($matrix,' '))-$height" />
+            <xsl:attribute name="viewBox"><xsl:value-of select="concat($minx,' 0 ',$width,' ',$height)" /></xsl:attribute>
+            <xsl:attribute name="style">vertical-align: <xsl:value-of select="$miny" />px;</xsl:attribute>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:choose>
+          <xsl:when test="svg:svg/@aria-label | svg:svg/@aria-labelledby" />
+          <xsl:when test="svg:svg/svg:title">
+            <xsl:for-each select="svg:svg/svg:title">
+              <xsl:attribute name="aria-labelledby"><xsl:value-of select="f:if(@id,@id,b:generate-id())"/></xsl:attribute>
+              <svg:title id="{f:if(@id,@id,b:generate-id())}">
+                <xsl:apply-templates select="@*" mode="copy-attribute" />
+                <xsl:apply-templates select="node()" />
+              </svg:title>
+            </xsl:for-each>
+          </xsl:when>
+          <xsl:when test="@description">
+            <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
+            <svg:title id="{b:generate-id()}">
+              <xsl:value-of select="@description" />
+            </svg:title>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:apply-templates select="svg:svg/*[not(self::svg:title)]"/>
+      </svg:svg>
+    </span>
   </xsl:template>
 
-  <!-- replace <h6> with role="region" for theorems -->
+  <!-- add @description to SVG -->
+  <xsl:template match="ltx:picture" mode="as-svg">
+    <!-- Wrap in inline-block, to ensure CSS works (eg, mtext in Firefox) -->
+    <span class="ltx_inline-block">
+      <svg:svg>
+        <!-- copy id, class from parent ltx:picture, but do NOT derive css style from size -->
+        <xsl:call-template name="add_id"/>
+        <xsl:call-template name="add_classes"/>
+        <xsl:call-template name="copy_foreign_attributes"/>
+        <xsl:apply-templates select="." mode="add_RDFa"/>
+        <!-- but copy other svg:svg attributes -->
+        <xsl:for-each select="svg:svg/@*">
+          <xsl:apply-templates select="." mode="copy-attribute"/>
+        </xsl:for-each>
+        <xsl:choose>
+          <xsl:when test="svg:svg/@aria-label | svg:svg/@aria-labelledby" />
+          <xsl:when test="svg:svg/svg:title">
+            <xsl:for-each select="svg:svg/svg:title">
+              <xsl:attribute name="aria-labelledby"><xsl:value-of select="f:if(@id,@id,b:generate-id())"/></xsl:attribute>
+              <svg:title id="{f:if(@id,@id,b:generate-id())}">
+                <xsl:apply-templates select="@*" mode="copy-attribute" />
+                <xsl:apply-templates select="node()" />
+              </svg:title>
+            </xsl:for-each>
+          </xsl:when>
+          <xsl:when test="@description">
+            <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
+            <svg:title id="{b:generate-id()}">
+              <xsl:value-of select="@description" />
+            </svg:title>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:apply-templates select="svg:svg/*[not(self::svg:title)]"/>
+      </svg:svg>
+    </span>
+  </xsl:template>
+
+  <!-- apply ARIA attributes to theorems and proofs -->
   <xsl:template match="ltx:theorem | ltx:proof" mode="begin">
     <xsl:param name="context" />
     <xsl:apply-imports />
-    <xsl:attribute name="role">region</xsl:attribute>
+    <xsl:variable name="role">
+      <xsl:choose>
+        <!-- announce *numbered* theorems as landmarks, rest simply as groups -->
+        <xsl:when test="ltx:tags/ltx:tag[@role='refnum']">region</xsl:when>
+        <xsl:otherwise>group</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:attribute name="role"><xsl:value-of select="$role"/></xsl:attribute>
     <xsl:choose>
+      <xsl:when test="ltx:title/ltx:tag">
+        <xsl:attribute name="aria-labelledby">
+          <xsl:value-of select="b:generate-id(ltx:title/ltx:tag)" />
+        </xsl:attribute>
+      </xsl:when>
       <xsl:when test="ltx:title">
         <xsl:attribute name="aria-labelledby">
-          <xsl:choose>
-            <xsl:when test="ltx:title/@fragid"><xsl:value-of select="ltx:title/@fragid" /></xsl:when>
-            <xsl:otherwise><xsl:value-of select="b:generate-id(ltx:title)" /></xsl:otherwise>
-          </xsl:choose>
+          <xsl:value-of select="b:generate-id(ltx:title)" />
         </xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
@@ -577,16 +639,20 @@
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="ltx:theorem/ltx:title | ltx:proof/ltx:title">
+  <xsl:template match="ltx:theorem/ltx:title/ltx:tag" mode="begin">
+    <xsl:param name="context" />
+    <xsl:apply-imports />
+    <xsl:attribute name="aria-hidden">true</xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="ltx:theorem/ltx:title[not(ltx:tag)] | ltx:proof/ltx:title[not(ltx:tag)]">
     <xsl:param name="context" />
     <xsl:text>&#x0A;</xsl:text>
+    <!-- use <div> instead of <h6> -->
     <xsl:element name="div" namespace="{$html_ns}">
       <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
       <xsl:call-template name="add_id" />
       <xsl:call-template name="add_attributes" />
-      <xsl:if test="not(@fragid)">
-        <xsl:attribute name="id"><xsl:value-of select="b:generate-id()" /></xsl:attribute>
-      </xsl:if>
       <xsl:apply-templates select="." mode="begin">
         <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
@@ -597,6 +663,16 @@
         <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
     </xsl:element>
+  </xsl:template>
+
+  <!-- avoid reading the tag twice, but out of precaution, only if the tag is pure text  -->
+  <xsl:template match="ltx:theorem/ltx:title/ltx:tag | ltx:proof/ltx:title/ltx:tag | ltx:theorem/ltx:title[not(ltx:tag)] | ltx:proof/ltx:title[not(ltx:tag)]" mode="begin">
+    <xsl:param name="context" />
+    <xsl:apply-imports />
+    <xsl:attribute name="id"><xsl:value-of select="b:generate-id()"/></xsl:attribute>
+    <xsl:if test="not(*[not(self::ltx:text)])">
+      <xsl:attribute name="aria-hidden">true</xsl:attribute>
+    </xsl:if>
   </xsl:template>
 
   <!-- improve table layout of equation groups using CSS grids -->
@@ -986,6 +1062,15 @@
     - everything else is wrapped in a cell
   -->
 
+  <func:function name="b:countrows">
+    <xsl:param name="equation" select="." />
+    <func:result select="count($equation/ancestor-or-self::ltx:equationgroup[position()=1][ltx:tags]/descendant::ltx:equation/ltx:MathFork/ltx:MathBranch[1]/ltx:tr
+                               | $equation/ancestor-or-self::ltx:equationgroup[position()=1][ltx:tags]/descendant::ltx:equation[ltx:MathFork/ltx:MathBranch[1]/ltx:td]
+                               | $equation/ancestor-or-self::ltx:equationgroup[position()=1][ltx:tags]/descendant::ltx:equation[ltx:Math or ltx:MathFork/ltx:MathBranch[not(ltx:tr or ltx:td)]]
+                               | $equation/ancestor-or-self::ltx:equationgroup[position()=1][ltx:tags]/descendant::ltx:equation/ltx:constraint
+                               )" />
+  </func:function>
+
   <xsl:template match="ltx:equationgroup[b:bmlalignedequations() and (b:gitbook() or b:plain())]
                        | ltx:equation[b:bmlalignedequations() and (b:gitbook() or b:plain())]">
     <xsl:param name="context" />
@@ -1004,15 +1089,28 @@
       <xsl:call-template name="add_attributes">
         <xsl:with-param name="extra_classes" select="concat('bml_',local-name(),f:if($isContainer,' bml_equation_container',''),' ltx_align_baseline')" />
       </xsl:call-template>
-      <!-- add ARIA attributes if this is a numbered equation -->
-      <xsl:if test="not(.//ltx:equation/ltx:tags) and ltx:tags">
-        <xsl:variable name="tag" select="ltx:tags/ltx:tag[not(@role)][1]" />
-        <xsl:attribute name="role">region</xsl:attribute>
-        <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id($tag)" /></xsl:attribute>
-        <xsl:apply-templates select="$tag" mode="bml-equation">
-          <xsl:with-param name="context" select="$context" />
-        </xsl:apply-templates>
-      </xsl:if>
+      <!-- add ARIA attributes -->
+      <xsl:choose>
+        <!-- numbered equation(group) with no nested numbered equations -->
+        <xsl:when test="not(.//ltx:equationgroup/ltx:tags | .//ltx:equation/ltx:tags) and ltx:tags">
+          <xsl:variable name="tag" select="ltx:tags/ltx:tag[not(@role)][1]" />
+          <xsl:attribute name="role">region</xsl:attribute>
+          <xsl:attribute name="aria-labelledby"><xsl:value-of select="b:generate-id($tag)" /></xsl:attribute>
+          <xsl:apply-templates select="$tag" mode="bml-equation">
+            <xsl:with-param name="context" select="$context" />
+          </xsl:apply-templates>
+        </xsl:when>
+        <!-- (unnumbered) equation nested in an equation group with multiple equations -->
+        <xsl:when test="self::ltx:equation[count(parent::ltx:equationgroup//ltx:equation) &gt; 1]">
+          <xsl:attribute name="role">group</xsl:attribute>
+          <xsl:attribute name="aria-label">equation</xsl:attribute>
+        </xsl:when>
+        <!-- (unnumbered) equation with more than one column or more than one row -->
+        <xsl:when test="self::ltx:equation[f:countcolumns() &gt; 1 or b:countrows() &gt; 1]">
+          <xsl:attribute name="role">group</xsl:attribute>
+          <xsl:attribute name="aria-label">equation</xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
       <!-- as LaTeXML does: all content of equationgroup, equation except Meta and EquationMeta (and tags) -->
       <xsl:apply-templates select="ltx:equationgroup | ltx:equation | ltx:p
                                    | ltx:Math | ltx:MathFork | ltx:text
@@ -1031,13 +1129,7 @@
   <!-- emit equation numbers twice to ensure perfect centering -->
   <xsl:template match="ltx:tag" mode="bml-equation">
     <xsl:param name="context" />
-    <xsl:variable name="numrows"
-                  select="count(
-                          ../../descendant-or-self::ltx:equation/ltx:MathFork/ltx:MathBranch[1]/ltx:tr
-                          | ../../descendant-or-self::ltx:equation[ltx:MathFork/ltx:MathBranch[1]/ltx:td]
-                          | ../../descendant-or-self::ltx:equation[ltx:Math or ltx:MathFork/ltx:MathBranch[not(ltx:tr or ltx:td)]]
-                          | ../../descendant-or-self::ltx:equation/ltx:constraint
-                          )" />
+    <xsl:variable name="numrows" select="b:countrows()" />
     <!-- TODO use CSS custom properties rather than inline code (but careful about inheritance!) -->
     <xsl:variable name="extra_style">
       <xsl:if test="$numrows &gt; 1">
@@ -1059,14 +1151,14 @@
       </xsl:apply-templates>
     </xsl:variable>
     <xsl:text>&#x0A;</xsl:text>
-    <span class="ltx_eqn_eqno" id="{b:generate-id()}">
+    <span class="ltx_eqn_eqno" id="{b:generate-id()}" aria-hidden="true">
       <xsl:call-template name="add_attributes">
         <xsl:with-param name="extra_classes">ltx_eqn_eqno</xsl:with-param>
         <xsl:with-param name="extra_style" select="$extra_style" />
       </xsl:call-template>
       <span class="bml_sr_only">
         <xsl:text>equation</xsl:text>
-        <xsl:if test="self::ltx:equationgroup">s</xsl:if>
+        <xsl:if test="self::ltx:equationgroup[count(.//ltx:equation) &gt; 1]">s</xsl:if>
         <xsl:text> </xsl:text>
       </span>
       <xsl:copy-of select="$tag" />
@@ -1192,33 +1284,40 @@
     </xsl:element>
   </xsl:template>
 
-  <!-- remove unnecessary non-breaking space from rules -->
-  <xsl:template match="ltx:rule[b:gitbook() or b:plain()]">
-    <xsl:param name="context"/>
-    <xsl:element name="span" namespace="{$html_ns}">
-      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-      <xsl:call-template name="add_id"/>
-      <xsl:call-template name="add_attributes"/>
+  <!-- improve the implementation of \rule/\hrule/\vrule -->
+  <xsl:template match="ltx:rule">
+    <xsl:param name="context" />
+    <xsl:element name="{f:if(b:has-class('bml_hrule'),f:blockelement($context,'hr'),'span')}" namespace="{$html_ns}">
+      <xsl:variable name="innercontext" select="'inline'" /><!-- override -->
+      <xsl:call-template name="add_id" />
+      <xsl:call-template name="add_attributes" />
       <xsl:apply-templates select="." mode="begin">
-        <xsl:with-param name="context" select="$innercontext"/>
+        <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
       <xsl:apply-templates select="." mode="end">
-        <xsl:with-param name="context" select="$innercontext"/>
+        <xsl:with-param name="context" select="$innercontext" />
       </xsl:apply-templates>
       <!-- <xsl:if test="string(@width)!='0.0pt' and string(@height)='100%'">&#x200B;</xsl:if> -->
     </xsl:element>
   </xsl:template>
 
-  <xsl:template match="ltx:rule[b:gitbook() or b:plain()]" mode="styling">
-    <xsl:param name="context"/>
-    <xsl:apply-templates select="." mode="base-styling"/>
-    <xsl:choose>
-      <xsl:when test="@color">
-        <xsl:value-of select="concat('--ltx-border-color:',@color,';display:inline-block;')"/>
-      </xsl:when>
-      <!-- Note: width doesn't affect an inline element, but we don't want to be a block -->
-      <xsl:otherwise>--ltx-border-color:black;display:inline-block;</xsl:otherwise>
-    </xsl:choose>
+  <xsl:template match="ltx:rule[b:gitbook()]" mode="styling">
+    <xsl:param name="context" />
+    <xsl:apply-templates select="." mode="base-styling" />
+    <xsl:text>background-color:var(--bml-color);</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="ltx:rule" mode="styling">
+    <xsl:param name="context" />
+    <xsl:apply-templates select="." mode="base-styling" />
+    <xsl:text>--ltx-background-color:</xsl:text>
+    <xsl:value-of select="f:if(@color,@color,'black')" />
+    <xsl:text>;background-color:var(--ltx-background-color);</xsl:text>
+  </xsl:template>
+
+  <xsl:template match="ltx:rule[b:has-class('bml_algo_rule')]" mode="styling">
+    <xsl:param name="context" />
+    <xsl:apply-templates select="." mode="base-styling" />
   </xsl:template>
 
 </xsl:stylesheet>

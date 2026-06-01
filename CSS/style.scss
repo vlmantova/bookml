@@ -181,10 +181,30 @@ mtext {
 /* adjust horizontal rule positioning and padding */
 .ltx_rule {
   vertical-align: baseline;
-}
+  height: 0.04rem; // 0.4pt in nominal font unit 10pt
+  width: 0.04rem;
+  background-color: black;
+  display: inline-block;
 
-.ltx_rule.ltx_framed {
-  padding: 0;
+  &.bml_hrule {
+    display: block;
+    /* remove default <hr> styling */
+    border-style: none;
+    margin: 0;
+  }
+
+  &.bml_vrule {
+    height: 1cap;
+  }
+
+  &.bml_algo_rule {
+    height: 1lh;
+    vertical-align: bottom;
+  }
+
+  &.ltx_framed {
+    padding: 0;
+  }
 }
 
 /* MathML polyfills */

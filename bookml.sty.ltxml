@@ -390,6 +390,10 @@ sub BMLHTMLEnvironment {
       my $innercontext = $opts{innercontext} // '';
       my $elem         = "ltx:xml${innercontext}elem";
 
+      if ($innercontext eq 'inline' && !inSVG) {
+        my $node = $document->getElement;
+        $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
+
       my $node = $document->openElement($elem,
         ns   => 'http://www.w3.org/1999/xhtml',
         name => $name, innercontext => $opts{innercontext});
@@ -786,5 +790,69 @@ DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID', meaning => 'empty
 
 if ($LaTeXML::VERSION < v0.8.8) {
   DefMathI('*', undef, "\x{2217}", role => 'MULOP', meaning => 'times'); }
+
+# various fixes
+{
+  my $relativize = sub {
+    my ($document, $whatsit) = @_;
+    my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('rwidth', 'cheight', 'rdepth');
+    my $em = $STATE->lookupValue('font')->getEMWidth;
+    ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
+    $whatsit->setProperty('rwidth', $w) if defined $w;
+    $whatsit->setProperty('rheight', $h) if defined $h;
+    $whatsit->setProperty('rdepth', $d) if defined $d;
+  };
+
+  my $hrule = LookupDefinition(T_CS('\hrule'));
+  my $vrule = LookupDefinition(T_CS('\vrule'));
+  my $rule = LookupDefinition(T_CS('\rule'));
+
+  # relativise the rule sizes
+  push(@{ $$hrule{beforeConstruct} }, $relativize);
+  push(@{ $$vrule{beforeConstruct} }, $relativize);
+
+  # add CSS classes
+  push(@{ $$hrule{afterConstruct} }, sub {
+    my ($document, $whatsit) = @_;
+    if (!$whatsit->getProperty('isHorizontal') && !inSVG()) {
+      my $node = $document->getLastChildElement($document->getElement);
+      $document->addClass($node, 'bml_hrule'); }
+  });
+
+  push(@{ $$vrule{afterConstruct} }, sub {
+    my ($document, $whatsit) = @_;
+    if (!$whatsit->getProperty('invisible') && !$whatsit->getProperty('isVertical') && !inSVG()) {
+      my $node = $document->getLastChildElement($document->getElement);
+      $document->addClass($node, 'bml_vrule'); }
+  });
+
+  # \hrule switches to vertical mode: close the parent ltx:p element, unconditionally
+  push(@{ $$hrule{beforeConstruct} }, sub {
+    $_[0]->maybeCloseElement('ltx:p');
+  });
+
+  # \vrule switches to horizontal mode: open an inline context (see \hbox for reference)
+  push(@{ $$vrule{beforeConstruct} }, sub {
+    my ($document) = @_;
+    if (!inSVG) {
+      my $node = $document->getElement;
+      $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
+  });
+
+  push(@{ $$rule{beforeConstruct} }, sub {
+    my ($document, $whatsit) = @_;
+    my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('width', 'height', 'offset');
+    my $em = $STATE->lookupValue('font')->getEMWidth;
+    ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
+    $whatsit->setProperty('width', $w) if defined $w;
+    $whatsit->setProperty('height', $h) if defined $h;
+    $whatsit->setProperty('offset', $d) if defined $d;
+  });
+
+  AtBeginDocument(sub {
+    DefConstructor('\lx@algo@rule', "<ltx:rule class='bml_vrule bml_algo_rule' />") if LookupDefinition(T_CS('\lx@algo@rule'));
+    return;
+  });
+}
 
 1;

@@ -533,13 +533,3 @@ msup>mo {
 msup>mo.ltx_font_mathscript {
   font-variant-alternates: styleset(sup, roundhand);
 }
-
-/* ltx:rule adjustments */
-.ltx_rule {
-  border-left: solid 1px;
-  border-bottom: solid 1px;
-
-  &[style*="height:100%"]::before {
-    content: "\200B";
-  }
-}

@@ -21,6 +21,7 @@
         <choice>
           <ref name="Block.model"/>
           <ref name="Para.model"/>
+          <ref name="xmlinlineelem"/>
         </choice>
       </zeroOrMore>
     </element>
@@ -48,11 +49,11 @@
   <define name="Block.class" combine="choice">
     <ref name="xmlelem"/>
   </define>
+  <define name="Inline.class" combine="choice">
+    <ref name="xmlinlineelem" />
+  </define>
   <define name="Misc.class" combine="choice">
-    <choice>
-      <ref name="xmlinlineelem"/>
-      <ref name="rule" />
-    </choice>
+    <ref name="rule" />
   </define>
   <define name="rawhtml" combine="choice">
     <element name="rawhtml">

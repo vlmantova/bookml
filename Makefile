@@ -164,9 +164,9 @@ $(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty
 # fix erratic positioning of the prev/next buttons due to buggy rounding
 gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 	perl -p -e "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g;" \
-	        -e "s/<a>/<button>/;" -e "s/,href:.#.//;"\
+	        -e "s/<a>/<button>/;" -e "s/class:opts.icon/class:opts.icon,'aria-hidden':true/;" -e "s/,href:.#.//;"\
 	        -e "s/(toggleDropdown\(e\){)/\1e.currentTarget.setAttribute('aria-expanded',e.currentTarget.getAttribute('aria-expanded')!=='true');/;" \
-	        -e "s/(.)(\(.\.dropdown-menu.\)\.removeClass\(.open.\))/\1\2;\1('.toggle-dropdown').attr('aria-expanded','false').attr('aria-haspopup','menu')/;" \
+	        -e "s/(.)(\(.\.dropdown-menu.\)\.removeClass\(.open.\))/\1\2;\1('.toggle-dropdown').attr('aria-expanded','false')/;" \
 	        -e "s/(addClass\(.toggle-dropdown.\))/\1.attr('aria-expanded','false')/;" \
 	        -e "s/(,closeDropdown\))/\1;gitbook.keyboard.bind('escape',closeDropdown)/;" \
 	        -e "s/h1/span.bml-separator/g;" \

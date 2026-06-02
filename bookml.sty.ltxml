@@ -390,9 +390,10 @@ sub BMLHTMLEnvironment {
       my $innercontext = $opts{innercontext} // '';
       my $elem         = "ltx:xml${innercontext}elem";
 
-      if ($innercontext eq 'inline' && !inSVG) {
-        my $node = $document->getElement;
-        $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
+      my $curr_qname = $document->getNodeQName($document->getElement);
+      if (!$document->canContain($curr_qname, $elem)) {
+        if (my $wrapper = $document->canContainIndirect($curr_qname, $elem)) {
+          $document->openElement($wrapper); } }
 
       my $node = $document->openElement($elem,
         ns   => 'http://www.w3.org/1999/xhtml',

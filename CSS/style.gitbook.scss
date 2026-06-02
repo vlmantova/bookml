@@ -335,6 +335,22 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
   }
 }
 
+/* improve alignment and spacing of sidebar */
+.book .book-summary ul.summary {
+  padding-inline-start: 0;
+  padding-left: 0 !important;
+
+  &>li:first-child {
+    height: 49px;
+    display: flex;
+    align-items: center;
+
+    & + .divider {
+      margin-top: 0;
+    }
+  }
+}
+
 /* set left/right buttons to same color as the text, for better visibility */
 .book-body .navigation {
   .book & {
@@ -354,16 +370,29 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 .book .book-body {
   --bml-color: #292929;
   --bml-background-color: #fff;
+
+  &, & .page-wrapper .page-inner section.normal {
+    color: var(--bml-color);
+    background-color: var(--bml-background-color);
+  }
 }
 
 .book.color-theme-1 .book-body {
   --bml-color: #704214;
   --bml-background-color: #f3eacb;
+  & .page-wrapper .page-inner section.normal {
+    color: var(--bml-color);
+    background-color: var(--bml-background-color);
+  }
 }
 
 .book.color-theme-2 .book-body {
   --bml-color: #bdcadb;
   --bml-background-color: #1c1f2b;
+  & .page-wrapper .page-inner section.normal {
+    color: var(--bml-color);
+    background-color: var(--bml-background-color);
+  }
 }
 
 .book .book-summary ul.summary li span {
@@ -374,13 +403,28 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 .book .book-header .btn,
 .dropdown-menu .buttons .button,
 .dropdown-menu {
-  color: #717171;
+  color: var(--bml-color);
+}
+
+.book.color-theme-1 .book-header {
+  .btn {
+    color: var(--bml-color);
+  }
+
+  & .dropdown-menu .buttons .button, & .dropdown-menu {
+    color: var(--bml-background-color);
+  }
 }
 
 /* replace <a> with <button> in toolbar, adjust style accordingly */
 .book .book-header .btn {
   border: none;
   background-color: transparent;
+}
+
+/* improve colors of toolbar buttons */
+.book.color-theme-2 .book-header .btn {
+  color: var(--bml-color);
 }
 
 /* replace h1 separator with span.bml-separator */
@@ -728,6 +772,7 @@ mjx-container[jax="SVG"][display="true"] {
     appearance: none;
     background: transparent;
     border: none;
+    color: var(--bml-color);
   }
 
   & a[download=""] {

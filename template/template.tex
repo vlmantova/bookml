@@ -1,12 +1,12 @@
-\documentclass[oneside,11pt]{amsart}
+\documentclass[british,oneside,11pt]{amsart}
 
 %%% RECOMMENDED
 % better accented letters and ligatures in PDF
 \usepackage[T1]{fontenc}
-% set language of outputs
-\usepackage[british]{babel}
+% set language of outputs (due to issues with TeX Live >= 2025 and LaTeXML <= 0.8.8, put 'british' in the *class* options!)
+\usepackage{babel}
 % PDF hyperlinks and metadata
-\usepackage[pdfusetitle]{hyperref}
+\usepackage[pdfusetitle,colorlinks]{hyperref}
 % higher quality variant of Computer Modern
 \usepackage{lmodern}
 % title and author
@@ -29,40 +29,44 @@
 
 \maketitle
 
-You can use this template in the following ways:
+To use this template:
 \begin{enumerate}
-  \item Replace the content of \texttt{template.tex} with your content. To change the file names in the output, rename:
+  \item Replace the content of \texttt{template.tex} with your content. If you rename it to \texttt{NAME.tex}, you must also:
   \begin{itemize}
-      \item \texttt{template.tex} to \texttt{NAME.tex},
-      \item \texttt{template-sans.tex} to \texttt{NAME-sans.tex} (and adjust its content),
-      \item \texttt{template-sans-large.tex} to \texttt{NAME-sans-large.tex} (and adjust its content).
+      \item rename \texttt{template-sans.tex} $\to$ \texttt{NAME-sans.tex};
+      \item rename \texttt{template-sans-large.tex} $\to$ \texttt{NAME-sans-large.tex};
+      \item modify \texttt{NAME-sans.tex} and \texttt{NAME-sans-large.tex} to import \texttt{NAME.tex}.
   \end{itemize}
-  \item Add \LaTeX{} files to the same folder containing \texttt{template.tex}. Any files containing the string \verb|\documentclass| (even commented out) will be compiled separately. You may delete \texttt{template.tex} and accompanying \texttt{sans} and \texttt{sans-large} files if you are not using them.
+  \item Or, add \LaTeX{} files to the same folder containing \texttt{template.tex}. Any files containing the string \verb|\documentclass| (even commented out) will be compiled separately. You may delete \texttt{template.tex} and \texttt{sans} and \texttt{sans-large} variants if you are not using them.
+  \item Run \texttt{make} (\texttt{gmake} on Windows) in the folder containing the files.
 \end{enumerate}
-In all cases, consult \texttt{template.tex} for how to use more advanced BookML functionality (such as providing large print PDFs or setting additional PDF and SCORM metadata).
+Consult \texttt{template.tex} for more advanced BookML functionality (such as providing large print PDFs or setting additional PDF and SCORM metadata).
 
 \bigskip
 
 For use with Overleaf (requires paid account):
 \begin{enumerate}
-  \item Upload the template to a new Overleaf project. Ensure that the \texttt{.github} folder is also included.
-  \item From the Overleaf menu, sync the project with a new (private) GitHub repository. After one or two minutes, you will receive an email announcing that the repository has a new a release containing the various BookML outputs. Follow the link in the email to download them.
+  \item Have you ever linked Overleaf with your GitHub account? If not, open your Overleaf \href{https://www.overleaf.com/user/settings}{account settings} and \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#linking-your-overleaf-account-to-your-github-account}{link your GitHub account} from the `GitHub Sync' entry.
+  \item Upload the template to an existing or new Overleaf project.
+  \item From the Overleaf menu, start \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#creating-a-new-github-repository-from-an-overleaf-project}{synchronizing with a new GitHub repository}. The process is smoother when \textbf{the project name has no spaces}. \textbf{Note:} you should visit the new repository and click the `Watch' icon (next to `Edit Pins', `Fork', `Star').
+  \item Rename the folder \texttt{RENAME\_ME\_TO.github} $\to$ \texttt{.github}.
+  \item Synchronize the project with GitHub again. You may need to grant additional permissions.
+  \item If you clicked on the `Watch' icon, you should receive an email after a few minutes.
   \item Every time you sync your Overleaf changes to GitHub, a new build will start and generate a new release.
-  \item For a moderate speed up, change the \TeX{} Live scheme in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
-  \item If the build is cancelled, increase the timeout in the same file. See the \href{https://github.com/vlmantova/bookml-action}{BookML action documentation} for more details.
+  \item For a moderate speed up, change the \TeX{} Live scheme to \texttt{small} or \texttt{medium} in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
 \end{enumerate}
 
 %%% OPTIONAL
 % footer for HTML output (will not appear in the PDF)
 \begin{lxFooter}
-  Copyright \copyright{} 2025 Author. Compiled with BookML \BookMLversion.
+  Copyright \copyright{} 2026 Author. Compiled with BookML \BookMLversion.
 \end{lxFooter}
 
-% copyright notice for PDF output
+% copyright notice for PDF output (will not appear in the HTML)
 \iflatexml\else
 \bigskip
 \begin{center}
-  {\small Copyright \copyright{} 2025 Author. Compiled with BookML \BookMLversion.}
+  {\small Copyright \copyright{} 2026 Author. Compiled with BookML \BookMLversion.}
 \end{center}
 \fi
 

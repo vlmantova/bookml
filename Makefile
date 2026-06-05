@@ -130,7 +130,7 @@ release.zip: $(RELEASE_OUT)
 
 example.zip template.zip: %.zip: release.zip $$(wildcard %/*.tex) %/GNUmakefile
 	-$(RM) "$(call ospath,$@)"
-	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex) $(wildcard $*/.github)) GNUmakefile --output-file "../$@"
+	cd $* && set TZ=UTC+00 && zip -r "../release.zip" $(patsubst $*/%,%,$(wildcard $*/*.tex) $(wildcard $*/RENAME_ME_TO.github)) GNUmakefile --output-file "../$@"
 
 clean:
 	-$(RMDIR) test-example test-template
@@ -170,17 +170,13 @@ gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
 	        -e "s/(addClass\(.toggle-dropdown.\))/\1.attr('aria-expanded','false')/;" \
 	        -e "s/(,closeDropdown\))/\1;gitbook.keyboard.bind('escape',closeDropdown)/;" \
 	        -e "s/h1/span.bml-separator/g;" \
+	        -e "s/(btn\.text)/\1,...'label' in btn&&{title:btn.label,'aria-label':btn.label}/;" \
 	        "$<" > "$@"
 
-# patch automatic TOC highlighting and scrolling
-gitbook/js/plugin-bookdown.js: $(GITBOOK_SOURCE)/js/plugin-bookdown.js plugin-bookdown.js.patch | $(GITBOOK_DIRS)
+# bookdown javascript patches
+gitbook/js/%.js: $(GITBOOK_SOURCE)/js/%.js %.js.patch | $(GITBOOK_DIRS)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
-	patch -p1 <plugin-bookdown.js.patch
-
-# patch search
-gitbook/js/plugin-search.js: $(GITBOOK_SOURCE)/js/plugin-search.js plugin-search.js.patch | $(GITBOOK_DIRS)
-	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
-	patch -p1 <plugin-search.js.patch
+	patch -p1 <$*.js.patch
 
 CSS/%.css: CSS/%.scss
 	$(SASS) $(SASSFLAGS) "$<" "$@"

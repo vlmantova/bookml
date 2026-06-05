@@ -901,3 +901,19 @@ body {
     background-color: #2d3143;
   }
 }
+
+/* AMS classes */
+.bml_class_amsart {
+
+  .ltx_title_section {
+    font-family: inherit;
+  }
+
+  .book .book-body .page-wrapper .page-inner section.normal {
+    .ltx_title_subsection, .ltx_title_subsubsection {
+      font-size: inherit;
+      font-family: inherit;
+    }
+  }
+
+}

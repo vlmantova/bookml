@@ -1,0 +1,29 @@
+--- a/gitbook/js/plugin-fontsettings.js
++++ b/gitbook/js/plugin-fontsettings.js
+@@ -118,11 +118,13 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+                 [
+                     {
+                         text: 'A',
++                        label: 'Reduce font size',
+                         className: 'font-reduce',
+                         onClick: reduceFontSize
+                     },
+                     {
+                         text: 'A',
++                        label: 'Increase font size',
+                         className: 'font-enlarge',
+                         onClick: enlargeFontSize
+                     }
+@@ -155,10 +157,12 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+                 [
+                     {
+                     className: 'spacing-reduce',
++                    label: 'Reduce line spacing',
+                     text: 'Spacing -',
+                     onClick: e => changeSpacing(e, false)
+                     },
+                     {
++                    label: 'Increase line spacing',
+                     text: 'Spacing +',
+                     onClick: changeSpacing
+                     }

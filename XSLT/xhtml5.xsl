@@ -42,6 +42,14 @@
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template match="/" mode="body-begin">
+    <xsl:apply-imports />
+    <xsl:variable name="class" select="substring-before(substring-after(/processing-instruction('latexml')[starts-with(.,'class=&quot;')],'&quot;'),'&quot;')" />
+    <xsl:if test="$class">
+      <xsl:attribute name="class">bml_class_<xsl:value-of select="$class" /></xsl:attribute>
+    </xsl:if>
+  </xsl:template>
+
   <!-- add BookML resources and preamble raw HTML at the end of the head -->
   <xsl:template match="/" mode="head-end">
     <xsl:apply-templates select="//ltx:resource[@type='text/html']" mode="bml-resource"/>
@@ -1311,6 +1319,24 @@
   <xsl:template match="ltx:rule[b:has-class('bml_algo_rule')]" mode="styling">
     <xsl:param name="context" />
     <xsl:apply-templates select="." mode="base-styling" />
+  </xsl:template>
+
+  <!-- add ARIA label to LaTeXML logo -->
+  <xsl:template match="*[b:has-class('ltx_LaTeXML_logo') or b:has-class('ltx_LaTeX_logo') or b:has-class('ltx_TeX_logo')]" mode="bml-alter">
+    <xsl:variable name="fragment">
+      <xsl:apply-imports />
+    </xsl:variable>
+    <xsl:copy select="exsl:node-set($fragment)/*">
+      <xsl:copy-of select="exsl:node-set($fragment)/*/@*" />
+      <span class="bml_sr_only">
+        <xsl:choose>
+          <xsl:when test="b:has-class('ltx_LaTeXML_logo')">LaTeXML</xsl:when>
+          <xsl:when test="b:has-class('ltx_LaTeX_logo')">LaTeX</xsl:when>
+          <xsl:when test="b:has-class('ltx_TeX_logo')">TeX</xsl:when>
+        </xsl:choose>
+      </span>
+      <span aria-hidden="true"><xsl:copy-of select="exsl:node-set($fragment)/*/node()" /></span>
+    </xsl:copy>
   </xsl:template>
 
 </xsl:stylesheet>

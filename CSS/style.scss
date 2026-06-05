@@ -237,3 +237,11 @@ mtext {
     }
   }
 }
+
+/* AMS classes */
+.bml_class_amsart {
+  .ltx_list_toc .ltx_title_contents {
+    display: block;
+    font-variant: small-caps;
+  }
+}

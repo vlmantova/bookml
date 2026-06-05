@@ -240,7 +240,7 @@ else ifeq ($(PDFTOSVG_CONVERTER),mutool)
     PDFTOSVG_CONVERTER=
   else
     # mutool always add the page number to the file name
-    bml.pdftosvg=$(call bml.cmd,$(MUTOOL) draw $(MUTOOLFLAGS) -F svg "$<" $(bml.svg.page) > $(call bml.ospath,"$@"))
+    bml.pdftosvg=$(call bml.cmd,$(MUTOOL) draw $(MUTOOLFLAGS) -F svg "$<" $(if $(bml.svg.page),$(bml.svg.page),1) > $(call bml.ospath,"$@"))
   endif
 else ifneq ($(PDFTOSVG_CONVERTER),)
 $(warning Option PDFTOSVG_CONVERTER: value '$(PDFTOSVG_CONVERTER)' not recognised. PDF figures will not be automatically converted to SVG.)

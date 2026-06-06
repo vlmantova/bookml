@@ -314,7 +314,7 @@
           </xsl:otherwise>
         </xsl:choose>
       </li>
-      <li class="divider"/>
+      <li class="divider" aria-hidden="true"/>
       <xsl:apply-templates>
         <xsl:with-param name="context" select="$context"/>
       </xsl:apply-templates>

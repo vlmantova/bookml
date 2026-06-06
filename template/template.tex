@@ -40,7 +40,7 @@ To use this template:
   \item Or, add \LaTeX{} files to the same folder containing \texttt{template.tex}. Any files containing the string \verb|\documentclass| (even commented out) will be compiled separately. You may delete \texttt{template.tex} and \texttt{sans} and \texttt{sans-large} variants if you are not using them.
   \item Run \texttt{make} (\texttt{gmake} on Windows) in the folder containing the files.
 \end{enumerate}
-Consult \texttt{template.tex} for more advanced BookML functionality (such as providing large print PDFs or setting additional PDF and SCORM metadata).
+Consult \texttt{template.tex} and the \href{https://vlmantova.gitthub.io/bookml/}{BookML manual} for more advanced functionality (such as adding large print PDFs, or setting SCORM metadata).
 
 \bigskip
 
@@ -48,12 +48,12 @@ For use with Overleaf (requires paid account):
 \begin{enumerate}
   \item Have you ever linked Overleaf with your GitHub account? If not, open your Overleaf \href{https://www.overleaf.com/user/settings}{account settings} and \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#linking-your-overleaf-account-to-your-github-account}{link your GitHub account} from the `GitHub Sync' entry.
   \item Upload the template to an existing or new Overleaf project.
-  \item From the Overleaf menu, start \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#creating-a-new-github-repository-from-an-overleaf-project}{synchronizing with a new GitHub repository}. The process is smoother when \textbf{the project name has no spaces}. \textbf{Note:} you should visit the new repository and click the `Watch' icon (next to `Edit Pins', `Fork', `Star').
+  \item From the Overleaf menu, start \href{https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/github-synchronization#creating-a-new-github-repository-from-an-overleaf-project}{synchronizing with a new GitHub repository}. The process is smoother when \textbf{the project name has no spaces}.
+  \item Visit the new repository and click the `Watch' icon (next to `Edit Pins', `Fork', `Star').
   \item Rename the folder \texttt{RENAME\_ME\_TO.github} $\to$ \texttt{.github}.
-  \item Synchronize the project with GitHub again. You may need to grant additional permissions.
-  \item If you clicked on the `Watch' icon, you should receive an email after a few minutes.
+  \item Synchronize the project with Gitub again. You may need to grant additional permissions. If you clicked on the `Watch' icon, you should receive an email after a few minutes.
   \item Every time you sync your Overleaf changes to GitHub, a new build will start and generate a new release.
-  \item For a moderate speed up, change the \TeX{} Live scheme to \texttt{small} or \texttt{medium} in the file \texttt{.github/workflows/bookml.yaml}. This will download smaller \TeX{} Live images containing fewer packages.
+  \item For a moderate speed up, change the \TeX{} Live scheme to \texttt{small} or \texttt{medium} in the file \texttt{.github/workflows/bookml.yaml}. For more options, read the \href{https://github.com/marketplace/actions/compile-with-bookml}{BookML action documentation}.
 \end{enumerate}
 
 %%% OPTIONAL

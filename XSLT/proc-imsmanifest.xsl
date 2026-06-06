@@ -164,4 +164,12 @@
 
   <xsl:template match="ltx:tags/ltx:tag[position() > 1]" />
 
+  <xsl:template match="ltx:personname//text()">
+    <xsl:value-of select="normalize-space()" />
+  </xsl:template>
+
+  <xsl:template match="ltx:break">
+    <xsl:text>, </xsl:text>
+  </xsl:template>
+
 </xsl:stylesheet>

@@ -163,19 +163,19 @@ mtext {
 
 /* for screen readers only (similar to the assistive MathML of MathJax 3) */
 .bml_sr_only {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  clip: rect(1px, 1px, 1px, 1px);
-  padding: 1px 0px 0px 0px;
-  display: block;
-  overflow: hidden clip;
-  height: 1px;
-  width: 1px;
-  margin-left: -1px;
-  margin-top: -1px;
-  clip-path: inset(50%);
-  user-select: none;
+  position: absolute !important;
+  top: 0px !important;
+  left: 0px !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  padding: 1px 0px 0px 0px !important;
+  display: block !important;
+  overflow: hidden clip !important;
+  height: 1px !important;
+  width: 1px !important;
+  margin-left: -1px !important;
+  margin-top: -1px !important;
+  clip-path: inset(50%) !important;
+  user-select: none !important;
 }
 
 /* adjust horizontal rule positioning and padding */
@@ -223,6 +223,13 @@ mtext {
     padding: 3px;
   }
 
+  /* expand multline MathML */
+  math:has(>mtable.bml_alignment_multline, >semantics>mtable.bml_alignment_multline) {
+    &, &>mtable, &>semantics, &>semantics>mtable {
+      width: 100%;
+    }
+  }
+
   @media (-webkit-transform-2d) {
     menclose[notation=box] {
       border-style: none;
@@ -238,10 +245,94 @@ mtext {
   }
 }
 
+/* align multline rows to the left if fleqn for LaTeXML <= 0.8.8 */
+math:has(>mtable.bml_alignment_multline, >semantics>mtable.bml_alignment_multline) {
+  .ltx_fleqn & {
+
+    &>mtable,
+    &>semantics>mtable {
+      &>mtr>mtd:not(.ltx_align_left):not(.ltx_align_right) {
+        text-align: left;
+        text-align: -webkit-left;
+
+        @media (-webkit-transform-2d) {
+          text-align: left;
+        }
+      }
+    }
+  }
+}
+
 /* AMS classes */
 .bml_class_amsart {
   .ltx_list_toc .ltx_title_contents {
     display: block;
     font-variant: small-caps;
+  }
+}
+
+/* Framed boxes */
+.ltx_framed {
+  padding: initial;
+}
+
+.ltx_lstlisting.ltx_listing.ltx_framed, .bml_framebox {
+  padding: 3pt;
+}
+
+/* adjust framebox in maths */
+
+/* horizontal alignment (WebKit, MathJax 3, 4) */
+.bml_framebox, mjx-menclose.bml_framebox>mjx-box>mjx-mpadded>mjx-block {
+  text-align: center;
+  text-align: -webkit-center;
+  @each $side in left center right justify {
+    &.ltx_align_#{$side} {
+      text-align: #{$side};
+      text-align: -webkit-#{$side};
+    }
+  }
+  &.ltx_align_justified {
+    text-align: justify;
+    text-align: -webkit-justify;
+  }
+}
+
+.mjx-menclose.ltx_framed_rectangle {
+  border: none;
+  padding: initial;
+  &>.mjx-box>.mjx-mrow>.mjx-mpadded {
+    padding: 3pt;
+  }
+}
+
+mjx-menclose.bml_framebox {
+  padding: initial;
+  &>mjx-box {
+    padding: 3pt;
+  }
+}
+
+/* Blink: switch to display inline-flex */
+@supports (zoom: initial) and (not (-moz-appearance: none)) {
+  mpadded.bml_framebox {
+    display: inline-flex;
+    justify-content: center;
+  }
+
+  @each $side in left center right {
+    mpadded.bml_framebox.ltx_align_#{$side} {
+      justify-content: #{$side};
+    }
+  }
+
+  mpadded.bml_framebox.ltx_align_justify, mpadded.bml_framebox.ltx_align_justified, mpadded.bml_framebox.ltx_align_stretch {
+    justify-content: left;
+  }
+
+  @media (-webkit-transform-2d) {
+    mpadded.bml_framebox {
+      display: initial;
+    }
   }
 }

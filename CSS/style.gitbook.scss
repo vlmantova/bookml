@@ -272,8 +272,8 @@ mtext {
   overflow-y: revert;
 }
 
-/* Fix odd overlap between toolbar and body */
 @media (max-width: 600px) {
+  /* Fix odd overlap between toolbar and body */
   .book .book-body.fixed {
     top: 50px;
   }
@@ -555,6 +555,9 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
       padding: 0;
     }
     line-height: normal;
+    &>div.MathJax_Display, &>div.MathJax_SVG_Display, &>div.MathJax_MathML, &>div.MathJax_PlainSource_Display, &>span.MathJax_Preview>span.MJXp-display, &>div.MathJax_PHTML_Display>span.MathJax_PHTML>span.MJXp-display, &>span.MJXc-display {
+      margin: 0em;
+    }
   }
 }
 
@@ -635,8 +638,10 @@ mjx-container[jax="SVG"][display="true"] {
 }
 
 /* disallow line breaks in aligned equations */
-.ltx_eqn_table mjx-container[jax="CHTML"] mjx-break {
-  white-space: nowrap;
+.ltx_eqn_table, .bml_equation_container {
+  & mjx-container[jax="CHTML"] mjx-break {
+    white-space: nowrap;
+  }
 }
 
 /* lxFooter */
@@ -678,6 +683,10 @@ mjx-container[jax="SVG"][display="true"] {
 .bml_listing {
   --bml-background-color-parent: var(--bml-background-color);
   overflow: auto;
+
+  *:has(+&:has(.ltx_listing_data)) {
+    margin-bottom: 0;
+  }
 }
 
 .ltx_listing {
@@ -768,6 +777,8 @@ mjx-container[jax="SVG"][display="true"] {
 .ltx_listing_data {
   font-size: small;
   user-select: none;
+  height: 1em;
+
   & button {
     appearance: none;
     background: transparent;

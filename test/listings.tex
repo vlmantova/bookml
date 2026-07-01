@@ -1,7 +1,7 @@
 \documentclass{article}
 
 \usepackage{xcolor}
-\usepackage{imakeidx}
+\usepackage{makeidx}
 \makeindex
 \usepackage{listings}
 
@@ -21,6 +21,7 @@
 
 \lstset{language=Pascal,numbers=left,frame=tblr}
 
+{\lstset{frame=lines}
 \lstinline!var i:integer;!, \lstinline$var i:integer;$
 
 \begin{lstlisting}
@@ -31,7 +32,7 @@ end;
 
 Write('Case insensitive ');
 WritE('Pascal keywords.');
-\end{lstlisting}
+\end{lstlisting}}
 
 \begin{lstlisting}[numbers=none]
 for i:=maxint to 0 do

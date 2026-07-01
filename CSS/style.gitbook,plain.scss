@@ -257,12 +257,38 @@ th > .ltx_p:last-child {
       grid-column: leqno / reqno;
     }
   }
+
+  /* for single column, remove padding and let MathML/MathJax figure out the situation */
+  &:not(.ltx_eqn_align):not(:has(.bml_eqn_cell + .bml_eqn_cell)) {
+    --bml-eqn-columns: 1fr;
+    --bml-eqn-leftpad: 0;
+    --bml-eqn-rightpad: 0;
+
+    /* mimic \multlinegap */
+    &:has(.bml_eqn_cell>math>mtable.bml_alignment_multline, .bml_eqn_cell>math>semantics>mtable.bml_alignment_multline,
+      .bml_eqn_cell>mjx-container>mjx-math>mjx-mtable.bml_alignment_multline, .bml_eqn_cell>mjx-container>mjx-math>mjx-semantics>mjx-mtable.bml_alignment_multline,
+      .bml_eqn_cell>span.MJXc-display>span.MathJax_CHTML>span.mjx-math>span.mjx-mrow>span.mjx-mtable.bml_alignment_multline, .bml_eqn_cell>span.MJXc-display>span.MathJax_CHTML>span.mjx-math>span.mjx-mrow>span.mjx-semantics>span.mjx-mtable.bml_alignment_multline,
+      .bml_eqn_cell>div.MathJax_MathML>span.MathJax_MathContainer>span>math>mtable.bml_alignment_multline, .bml_eqn_cell>div.MathJax_MathML>span.MathJax_MathContainer>span>math>semantics>mtable.bml_alignment_multline) {
+      &:has(.ltx_eqn_eqno) {
+        --bml-eqn-leftpad: minmax(0,1em); /* default \multlinegap is 10pt */
+        --bml-eqn-rightpad: minmax(0,1em);
+      }
+
+      .ltx_fleqn & {
+        --bml-eqn-columns: 1fr;
+      }
+    }
+
+    .ltx_fleqn & {
+      --bml-eqn-columns: auto;
+    }
+  }
 }
 
 .bml_equation::before {
-    content: "";
-    display: flex; /* Chrome complains otherwise, not sure why */
-    grid-column: leftpad;
+  content: "";
+  display: flex; /* Chrome complains otherwise, not sure why */
+  grid-column: leftpad;
 }
 
 .bml_eqn_row {

@@ -68,6 +68,10 @@
     <func:result select="$PLAIN" />
   </func:function>
 
+  <func:function name="b:nomathjax">
+    <func:result select="not($MATHJAX2 or $MATHJAX3 or $MATHJAX4)" />
+  </func:function>
+
   <func:function name="b:mathjax2">
     <func:result select="$MATHJAX2" />
   </func:function>

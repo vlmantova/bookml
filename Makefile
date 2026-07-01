@@ -38,10 +38,11 @@ SASSFLAGS ?= --style=compressed
 
 
 GITBOOK_SOURCE := bookdown/inst/resources/gitbook
-GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-search.css plugin-bookdown.css plugin-fontsettings.css fontawesome/fontawesome-webfont.ttf)
+GITBOOK_CSS    := $(patsubst %,$(GITBOOK_SOURCE)/css/%,style.css plugin-table.css plugin-search.css plugin-bookdown.css plugin-fontsettings.css)
+GITBOOK_TTF    := $(GITBOOK_SOURCE)/css/fontawesome/fontawesome-webfont.ttf
 GITBOOK_JS     := $(patsubst %,$(GITBOOK_SOURCE)/js/%,app.min.js jquery.highlight.js plugin-search.js plugin-fontsettings.js plugin-bookdown.js)
 GITBOOK_DIRS   := gitbook $(patsubst %,gitbook/%,css css/fontawesome js)
-GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_JS))
+GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_TTF:.ttf=.woff2) $(GITBOOK_JS))
 
 CSS          := $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
 BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
@@ -139,7 +140,7 @@ clean:
 $(GITBOOK_SOURCE):
 	git submodule update --init bookdown
 
-$(GITBOOK_CSS) $(GITBOOK_JS): $(GITBOOK_SOURCE)
+$(GITBOOK_CSS) $(GITBOOK_TTF) $(GITBOOK_JS): $(GITBOOK_SOURCE)
 
 $(BOOKML_DIRS) $(GITBOOK_DIRS) $(TEST_DIRS):
 	$(MKDIR) "$(call ospath,$@)"
@@ -162,21 +163,22 @@ $(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty
 	perl -pe "s!\@DATE@!$(BOOKML_DATE)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
-gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js | $(GITBOOK_DIRS)
-	perl -p -e "s/parseInt(\([^;]*\)\.css(\"width\"),10)/\1[0].getBoundingClientRect().width/g;" \
-	        -e "s/<a>/<button>/;" -e "s/class:opts.icon/class:opts.icon,'aria-hidden':true/;" -e "s/,href:.#.//;"\
-	        -e "s/(toggleDropdown\(e\){)/\1e.currentTarget.setAttribute('aria-expanded',e.currentTarget.getAttribute('aria-expanded')!=='true');/;" \
-	        -e "s/(.)(\(.\.dropdown-menu.\)\.removeClass\(.open.\))/\1\2;\1('.toggle-dropdown').attr('aria-expanded','false')/;" \
-	        -e "s/(addClass\(.toggle-dropdown.\))/\1.attr('aria-expanded','false')/;" \
-	        -e "s/(,closeDropdown\))/\1;gitbook.keyboard.bind('escape',closeDropdown)/;" \
-	        -e "s/h1/span.bml-separator/g;" \
-	        -e "s/(btn\.text)/\1,...'label' in btn&&{title:btn.label,'aria-label':btn.label}/;" \
-	        "$<" > "$@"
+gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js app.min.js.pl | $(GITBOOK_DIRS)
+	perl -p app.min.js.pl "$<" > "$@"
 
 # bookdown javascript patches
 gitbook/js/%.js: $(GITBOOK_SOURCE)/js/%.js %.js.patch | $(GITBOOK_DIRS)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 	patch -p1 <$*.js.patch
+
+# subset font awesome
+# fa-check, fa-font, fa-search, fa-edit, fa-history, fa-eye, fa-file-pdf-o, fa-download, fa-info, fa-clone, fa-angle-left, fa-angle-right, fa-align-justify
+# f00c, f031, f002, f044, f1da, f06e, f1c1, f019, f129, f24d, f104, f105, f039
+gitbook/%.woff2: $(GITBOOK_SOURCE)/%.ttf | $(GITBOOK_DIRS)
+	pyftsubset "$<" --output-file="$@" --unicodes="f00c,f031,f002,f044,f1da,f06e,f1c1,f019,f129,f24d,f104,f105,f039" --flavor=woff2
+
+gitbook/css/style.css: $(GITBOOK_SOURCE)/css/style.css | $(GITBOOK_DIRS)
+	perl -p -e "s!\./fontawesome/fontawesome-webfont.ttf\?v=4\.7\.0'\) format\('truetype'\)!./fontawesome/fontawesome-webfont.woff2') format('woff2')!" "$<" > "$@"
 
 CSS/%.css: CSS/%.scss
 	$(SASS) $(SASSFLAGS) "$<" "$@"

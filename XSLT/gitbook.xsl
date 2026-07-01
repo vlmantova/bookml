@@ -107,55 +107,18 @@
         <body>
           <xsl:apply-templates select="." mode="body-begin"/>
           <xsl:text>&#x0A;</xsl:text>
-          <div class="book without-animation with-summary font-size-2 font-family-1{$nonavtoc}" data-basepath=".">
+          <div class="book without-animation font-size-2 font-family-1{$nonavtoc}" data-basepath=".">
             <xsl:text>&#x0A;</xsl:text>
             <a href="#bml-main-content" tabindex="0" class="bml-skip-to-content">Skip to content.</a>
             <xsl:text>&#x0A;</xsl:text>
             <div class="book-summary">
               <xsl:apply-templates select="." mode="navbar"/>
             </div>
+            <xsl:text>&#x0A;</xsl:text>
             <xsl:apply-templates select="." mode="body-main"/>
           </div>
           <xsl:text>&#x0A;</xsl:text>
           <xsl:apply-templates select="." mode="body-end"/>
-          <script type="text/javascript">
-            <xsl:text>
-                gitbook.require(["gitbook"], function(gitbook) {
-                gitbook.start({
-                  "fontsettings": {
-                    "theme": "white",
-                    "family": "sans",
-                    "size": 2
-                  },
-                  "download": </xsl:text>
-            <xsl:choose>
-              <xsl:when test="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
-                <xsl:text>[ </xsl:text>
-                <xsl:for-each select="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
-                  <xsl:value-of select="concat('[ &quot;',f:url(@src),'&quot;, &quot;',substring-after(@type,';bmlname='),'&quot; ], ')" />
-                </xsl:for-each>
-                <xsl:text>]</xsl:text>
-              </xsl:when>
-              <xsl:otherwise>null</xsl:otherwise>
-            </xsl:choose>
-            <xsl:text>,
-                  "search": </xsl:text>
-            <xsl:choose>
-              <xsl:when test="$BMLSEARCH='yes'"><xsl:text>{
-                    "engine": "fuse"
-                  }</xsl:text>
-              </xsl:when>
-              <xsl:otherwise>false</xsl:otherwise>
-            </xsl:choose>
-            <xsl:text>,
-                  "toc": {
-                    "collapse": "none"
-                  }
-                });
-              });
-            </xsl:text>
-          </script>
-          <xsl:text>&#x0A;</xsl:text>
         </body>
         <xsl:text>&#x0A;</xsl:text>
       </xsl:when>
@@ -205,6 +168,55 @@
           <xsl:text>&#x0A;</xsl:text>
           <div class="ltx_page_content page-inner" id="bml-main-content">
             <xsl:apply-templates select="." mode="body-content-begin"/>
+            <xsl:text>&#x0A;</xsl:text>
+            <script src="bookml/gitbook/js/app.min.js" />
+            <xsl:text>&#x0A;</xsl:text>
+            <script src="bookml/gitbook/js/jquery.highlight.js" />
+            <xsl:text>&#x0A;</xsl:text>
+            <script src="bookml/gitbook/js/plugin-search.js" />
+            <xsl:text>&#x0A;</xsl:text>
+            <script src="bookml/gitbook/js/plugin-fontsettings.js" />
+            <xsl:text>&#x0A;</xsl:text>
+            <script src="bookml/gitbook/js/plugin-bookdown.js" />
+            <xsl:text>&#x0A;</xsl:text>
+            <script type="text/javascript">
+              <xsl:text>
+                  gitbook.require(["gitbook"], function(gitbook) {
+                  gitbook.start({
+                    "fontsettings": {
+                      "theme": "white",
+                      "family": "sans",
+                      "size": 2
+                    },
+                    "download": </xsl:text>
+              <xsl:choose>
+                <xsl:when test="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
+                  <xsl:text>[ </xsl:text>
+                  <xsl:for-each select="//ltx:resource[contains(@type,';bmllocation=download;bmlname=')]">
+                    <xsl:value-of select="concat('[ &quot;',f:url(@src),'&quot;, &quot;',substring-after(@type,';bmlname='),'&quot; ], ')" />
+                  </xsl:for-each>
+                  <xsl:text>]</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>null</xsl:otherwise>
+              </xsl:choose>
+              <xsl:text>,
+                    "search": </xsl:text>
+              <xsl:choose>
+                <xsl:when test="$BMLSEARCH='yes'"><xsl:text>{
+                      "engine": "fuse"
+                    }</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>false</xsl:otherwise>
+              </xsl:choose>
+              <xsl:text>,
+                    "toc": {
+                      "collapse": "none"
+                    }
+                  });
+                });
+              </xsl:text>
+            </script>
+            <xsl:text>&#x0A;</xsl:text>
             <xsl:apply-templates/>
             <xsl:apply-templates select="." mode="body-content-end"/>
             <xsl:text>&#x0A;</xsl:text>

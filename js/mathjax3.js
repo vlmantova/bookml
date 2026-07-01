@@ -91,6 +91,26 @@ MathJax = {
       };
 
       mmlFilters.add((args) => {
+        const nodes = document.evaluate('.//m:mpadded[contains(concat(" ",@class," "),"bml_framebox")]', args.data,
+          () => 'http://www.w3.org/1998/Math/MathML', XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
+        const menclose = document.createElementNS('http://www.w3.org/1998/Math/MathML', 'menclose');
+        menclose.setAttribute('notation', 'box');
+        for (let i = 0; i < nodes.snapshotLength; i++) {
+          const n = nodes.snapshotItem(i);
+          const m = menclose.cloneNode(true);
+          m.setAttribute('class', n.getAttribute('class'));
+          m.classList.remove('ltx_framed_rectangle');
+          n.removeAttribute('class');
+          if (n.hasAttribute('style')) {
+            m.setAttribute('style', n.getAttribute('style'));
+            n.removeAttribute('style');
+          }
+          n.before(m);
+          m.appendChild(n);
+        }
+      });
+
+      mmlFilters.add((args) => {
         let nodes = document.evaluate('.//m:mi | .//m:mn | .//m:mo | .//m:ms', args.data,
           () => 'http://www.w3.org/1998/Math/MathML', XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
         for (let i = 0; i < nodes.snapshotLength; i++) {
@@ -104,6 +124,26 @@ MathJax = {
           }
         }
       });
+
+      mmlFilters.add((args) => {
+        const nodes = document.evaluate('.//m:mtext[*]', args.data,
+          () => 'http://www.w3.org/1998/Math/MathML', XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
+        if (nodes.snapshotLength > 0) {
+          const sem = document.createElementNS('http://www.w3.org/1998/Math/MathML', 'semantics');
+          const ann = document.createElementNS('http://www.w3.org/1998/Math/MathML', 'annotation-xml');
+          ann.setAttribute('encoding', document.contentType);
+          ann.setAttribute('style', 'display:block');
+          sem.append(ann);
+          for (let i = 0; i < nodes.snapshotLength; i++) {
+            const n = nodes.snapshotItem(i);
+            const children = Array.from(n.childNodes);
+            const semClone = sem.cloneNode(true);
+            const annClone = semClone.firstElementChild;
+            n.prepend(semClone);
+            children.forEach((c) => { annClone.appendChild(c); });
+          }
+        }
+      });
     }
   }
 };
@@ -113,7 +153,5 @@ MathJax = {
   // CHTML on WebKit misaligns characters by one pixel due to rounding issues
   script.setAttribute('src', 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-' +
     (window.matchMedia('(-webkit-transform-2d)').matches ? 'svg' : 'chtml') + '.js');
-  script.setAttribute('async', '');
-  script.setAttribute('id', 'MathJax-script');
-  document.body.appendChild(script);
+  document.head.appendChild(script);
 }

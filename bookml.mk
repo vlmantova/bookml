@@ -315,6 +315,7 @@ clean-zip:
 ifdef BOOKML_VERSION
 check-for-update:
 	@$(if $(call ver.lt,@VERSION@,$(BOOKML_VERSION)),$(call bml.echo,$(bml.yellow)BookML update $(BOOKML_VERSION) available$(bml.comma) run `update` to install it.))
+	@:
 update:
 	@$(call bml.echo,$(bml.yellow)Replacing BookML @VERSION@ with $(BOOKML_VERSION).)
 	@$(call bml.cmd,$(UNZIP) $(UNZIPFLAGS) /release.zip)
@@ -324,6 +325,7 @@ check-for-update:
 	@$(eval bookml_release:=$(if $(CURL),$(shell $(CURL) -s https://api.github.com/repos/vlmantova/bookml/releases/latest)))
 	@$(eval bookml_version:=$(if $(CURL),$(word 3,$(subst ", ,$(filter "tag_name":_%,$(subst "tag_name": ,"tag_name":_,$(bookml_release)))))))
 	@$(if $(CURL),$(call bml.echo,$(bml.yellow)$(if $(call ver.lt,@VERSION@,$(bookml_version)),BookML $(bookml_version) is newer than @VERSION@. Run `update` to install it.,BookML @VERSION@ is already up to date.)))
+	@:
 
 update: | $(AUX_DIR)
 	@$(if $(CURL),,$(call bml.echo,$(bml.red)Updating requires curl, aborting. Visit https://github.com/vlmantova/bookml/releases to find the latest release.)exit 1)

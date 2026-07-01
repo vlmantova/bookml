@@ -68,11 +68,12 @@ if (!defined &ProgressSpinup) {
 my $bml_resource_options = {
   type => 1, location => 1, content => 1, name => 1 };
 my $bml_resource_types = {
-  css  => 'text/css',
-  js   => 'text/javascript',
-  ttf  => 'font/ttf',
-  pdf  => 'application/pdf',
-  epub => 'application/epub+zip'
+  css   => 'text/css',
+  js    => 'text/javascript',
+  ttf   => 'font/ttf',
+  woff2 => 'font/woff2',
+  pdf   => 'application/pdf',
+  epub  => 'application/epub+zip'
 };
 
 sub BMLRequireResource {
@@ -162,21 +163,18 @@ if ($bml_style eq 'gitbook') {
     bookml/gitbook/js/plugin-search.js
     bookml/gitbook/js/plugin-fontsettings.js
     bookml/gitbook/js/plugin-bookdown.js
-  )) { BMLRequireResource($res, location => 'body'); }
+  )) { RequireResource($res, type => 'application/octet-stream'); }
 
   # additional files to be copied over
-  RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.ttf', type => 'font/ttf');
+  RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.woff2', type => 'font/woff2');
 }
 
 if ($bml_mathjax == 3) {
-  BMLRequireResource('bookml/js/mathjax3.js', location => 'body'); }
+  RequireResource('bookml/js/mathjax3.js', type => 'application/octet-stream'); }
 elsif ($bml_mathjax == 4) {
-  BMLRequireResource('bookml/js/mathjax4.js', location => 'body'); }
+  RequireResource('bookml/js/mathjax4.js', type => 'application/octet-stream'); }
 elsif ($bml_mathjax == 2) {
-  BMLRequireResource('bookml/js/mathjax2.js', location => 'body'); }
-
-if ($bml_mathjax) {
-  AssignMapping('DOCUMENT_CLASSES', "bml_mathjax$bml_mathjax" => 1); }
+  RequireResource('bookml/js/mathjax2.js', type => 'application/octet-stream'); }
 
 # CSS files
 DefConstructorI('\bml@css', undef, sub {
@@ -185,9 +183,9 @@ DefConstructorI('\bml@css', undef, sub {
         preprocess => sub { sort @_; },
         no_chdir   => 1,
         wanted     => sub {
-          if (-f $_ && m/\.css$/i) {
+          if (-f $_ && m/\.(?:css|js|ttf|woff|woff2)$/i) {
             my $styles = ',_all,';
-            if ($_ =~ /\.([^.]+)\.css$/i) {
+            if ($_ =~ /\.([^.]+)\.[^.]+$/i) {
               $styles = ",$1,"; }
             if ($styles =~ /,(?:_all|\Q$bml_style\E|\Q$bml_style-$bml_jobname\E),/) {
               RequireResource($_); } }
@@ -208,7 +206,7 @@ DefPrimitive('\bmlAltFormat OptionalKeyVals {} {}', sub {
     $path = ToString(Expand($path));
     $name = ToString(Expand($name));
     BMLRequireResource($path, location => 'download', name => $name, $kv ? $kv->getHash : ()) if $name;
-    @bml_download = grep { ! ($_ eq $path) } @bml_download;
+    @bml_download = grep { !($_ eq $path) } @bml_download;
     return;
 });
 
@@ -306,7 +304,7 @@ DefConstructorI('\bml@colors', undef, sub {
     for my $node ($document->findnodes('//*[@_font]')) {
       my $color = $document->getNodeFont($node)->getColor;
       $color = '000000' if $color eq 'black';    # $LaTeXML::Common::Font::DEFCOLOR
-      my $class = genColors('color', $color);
+      my $class   = genColors('color', $color);
       my $bgcolor = $document->getNodeFont($node)->getBackground;
       $class .= ' ' . genColors('background-color', $bgcolor) if defined $bgcolor; }
 
@@ -794,65 +792,257 @@ if ($LaTeXML::VERSION < v0.8.8) {
 
 # various fixes
 {
-  my $relativize = sub {
-    my ($document, $whatsit) = @_;
-    my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('rwidth', 'cheight', 'rdepth');
-    my $em = $STATE->lookupValue('font')->getEMWidth;
-    ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
-    $whatsit->setProperty('rwidth', $w) if defined $w;
-    $whatsit->setProperty('rheight', $h) if defined $h;
-    $whatsit->setProperty('rdepth', $d) if defined $d;
-  };
 
-  my $hrule = LookupDefinition(T_CS('\hrule'));
-  my $vrule = LookupDefinition(T_CS('\vrule'));
-  my $rule = LookupDefinition(T_CS('\rule'));
+  ### Rules
 
-  # relativise the rule sizes
-  push(@{ $$hrule{beforeConstruct} }, $relativize);
-  push(@{ $$vrule{beforeConstruct} }, $relativize);
+  if ($LaTeXML::VERSION <= v0.8.8) {
+    my $relativize = sub {
+      my ($document, $whatsit) = @_;
+      my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('rwidth', 'cheight', 'rdepth');
+      my $em = $STATE->lookupValue('font')->getEMWidth;
+      ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
+      $whatsit->setProperty('rwidth',  $w) if defined $w;
+      $whatsit->setProperty('rheight', $h) if defined $h;
+      $whatsit->setProperty('rdepth',  $d) if defined $d;
+    };
 
-  # add CSS classes
-  push(@{ $$hrule{afterConstruct} }, sub {
-    my ($document, $whatsit) = @_;
-    if (!$whatsit->getProperty('isHorizontal') && !inSVG()) {
-      my $node = $document->getLastChildElement($document->getElement);
-      $document->addClass($node, 'bml_hrule'); }
-  });
+    my $hrule = LookupDefinition(T_CS('\hrule'));
+    my $vrule = LookupDefinition(T_CS('\vrule'));
+    my $rule  = LookupDefinition(T_CS('\rule'));
 
-  push(@{ $$vrule{afterConstruct} }, sub {
-    my ($document, $whatsit) = @_;
-    if (!$whatsit->getProperty('invisible') && !$whatsit->getProperty('isVertical') && !inSVG()) {
-      my $node = $document->getLastChildElement($document->getElement);
-      $document->addClass($node, 'bml_vrule'); }
-  });
+    # relativise the rule sizes
+    push(@{ $$hrule{beforeConstruct} }, $relativize);
+    push(@{ $$vrule{beforeConstruct} }, $relativize);
 
-  # \hrule switches to vertical mode: close the parent ltx:p element, unconditionally
-  push(@{ $$hrule{beforeConstruct} }, sub {
-    $_[0]->maybeCloseElement('ltx:p');
-  });
+    # add CSS classes
+    push(@{ $$hrule{afterConstruct} }, sub {
+        my ($document, $whatsit) = @_;
+        if (!$whatsit->getProperty('isHorizontal') && !inSVG()) {
+          my $node = $document->getLastChildElement($document->getElement);
+          $document->addClass($node, 'bml_hrule'); }
+    });
 
-  # \vrule switches to horizontal mode: open an inline context (see \hbox for reference)
-  push(@{ $$vrule{beforeConstruct} }, sub {
-    my ($document) = @_;
-    if (!inSVG) {
-      my $node = $document->getElement;
-      $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
-  });
+    push(@{ $$vrule{afterConstruct} }, sub {
+        my ($document, $whatsit) = @_;
+        if (!$whatsit->getProperty('invisible') && !$whatsit->getProperty('isVertical') && !inSVG()) {
+          my $node = $document->getLastChildElement($document->getElement);
+          $document->addClass($node, 'bml_vrule'); }
+    });
 
-  push(@{ $$rule{beforeConstruct} }, sub {
-    my ($document, $whatsit) = @_;
-    my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('width', 'height', 'offset');
-    my $em = $STATE->lookupValue('font')->getEMWidth;
-    ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
-    $whatsit->setProperty('width', $w) if defined $w;
-    $whatsit->setProperty('height', $h) if defined $h;
-    $whatsit->setProperty('offset', $d) if defined $d;
-  });
+    # \hrule switches to vertical mode: close the parent ltx:p element, unconditionally
+    push(@{ $$hrule{beforeConstruct} }, sub {
+        # not perfect yet: the paragraph after \hrule is intended, meaning it should start a new ltx:para
+        $_[0]->floatToElement('ltx:block') unless inSVG;
+    });
+
+    # \vrule switches to horizontal mode: open an inline context (see \hbox for reference)
+    push(@{ $$vrule{beforeConstruct} }, sub {
+        my ($document) = @_;
+        if (!inSVG) {
+          my $node = $document->getElement;
+          $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
+    });
+
+    push(@{ $$rule{beforeConstruct} }, sub {
+        my ($document, $whatsit) = @_;
+        my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('width', 'height', 'offset');
+        my $em = $STATE->lookupValue('font')->getEMWidth;
+        ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
+        $whatsit->setProperty('width',  $w) if defined $w;
+        $whatsit->setProperty('height', $h) if defined $h;
+        $whatsit->setProperty('offset', $d) if defined $d;
+    });
+
+    AtBeginDocument(sub {
+        DefConstructor('\lx@algo@rule', "<ltx:rule class='bml_vrule bml_algo_rule' />") if LookupDefinition(T_CS('\lx@algo@rule'));
+        return;
+    });
+  }
+
+  ### Framed boxes
+
+  if ($LaTeXML::VERSION <= v0.8.8) {
+    my $framebox = LookupDefinition(T_CS('\@framebox'));
+    push(@{ $$framebox{afterConstruct} }, sub {
+        my ($document) = @_;
+        my $node = $document->getNode->lastChild;
+        $document->addClass($node, 'bml_framebox');
+        return;
+    });
+  }
 
   AtBeginDocument(sub {
-    DefConstructor('\lx@algo@rule', "<ltx:rule class='bml_vrule bml_algo_rule' />") if LookupDefinition(T_CS('\lx@algo@rule'));
-    return;
+      if ($LaTeXML::VERSION <= v0.8.8 && (my $boxedtext = LookupDefinition(T_CS('\boxed@text')))) {
+        $$boxedtext{properties} = sub {
+          my $sep = LookupRegister('\fboxsep')->toAttribute;
+          (framecolor => LookupValue('font')->getColor,
+            ($sep ne '3.0pt' ? (cssstyle => 'padding:' . $sep) : ()));
+        };
+
+        push(@{ $$boxedtext{afterConstruct} }, sub {
+            my ($document, $whatsit) = @_;
+            my $node = $document->getNode->lastChild;
+            $document->addClass('bml_framebox');
+            $document->setAttribute('framecolor', $whatsit->getProperty('framecolor'));
+            $document->setAttribute('cssstyle',   $whatsit->getProperty('cssstyle'));
+            return;
+        });
+      }
+
+      if ($LaTeXML::VERSION <= v0.8.8 && (my $fcolorbox = LookupDefinition(T_CS('\fcolorbox')))) {
+        $$fcolorbox{properties} = sub {
+          my $sep = LookupRegister('\fboxsep')->toAttribute;
+          $sep ne '3.0pt' ? (cssstyle => 'padding:' . $sep) : ();
+        };
+
+        push(@{ $$fcolorbox{afterConstruct} }, sub {
+            my ($document, $whatsit) = @_;
+            my $node = $document->getNode->lastChild;
+            $document->addClass('bml_framebox');
+            $document->setAttribute('cssstyle', $whatsit->getProperty('cssstyle'));
+            return;
+        });
+      }
+
+      if ($LaTeXML::VERSION <= v0.8.8 && (my $lstframe = LookupDefinition(T_CS('\lst@@@set@frame')))) {
+        push(@{ $$lstframe{beforeConstruct} }, sub {
+            my ($document, $whatsit) = @_;
+            if ($document->getNodeQName($document->getElement) eq 'ltx:text') {
+              $whatsit->setProperty(frame => ''); }
+        });
+      }
+
+      if ($LaTeXML::VERSION <= v0.8.8 && (my $beginAlignment = LookupDefinition(T_CS('\@start@alignment')))) {
+        push(@{ $$beginAlignment{afterConstruct} }, sub {
+            my ($document, $whatsit) = @_;
+            my $alignment = $whatsit->getProperty('alignment');
+            my $name      = ToString($$alignment{properties}{attributes}{name});
+            if ($name) {
+              my $node = $document->getLastChildElement($document->getElement);
+              $document->addClass($node, "bml_alignment_$name"); }
+        });
+      }
+
+      # amsmath fixes
+      # - semantically correct \hdotsfor
+      # - add an empty identifiers to get the correct spacing of +, - starting an equation
+      # - fix multline alignment
+      if ($LaTeXML::VERSION <= v0.8.8 && LookupValue('amsmath.sty.ltxml_loaded')) {
+        DefMacro('\hdotsfor[Number]{Number}', sub {
+            my $cols = $_[2]->valueOf;
+            $cols = 1 if $cols < 1;
+            (map { T_CS('\hdots'), T_ALIGN } 1 .. $cols - 1), T_CS('\hdots'); });
+
+        # empty identifier, followed by clean up routine to minimize the chances of spurious invisible times
+        DefConstructor('\@bml@ams@absent', '<ltx:XMTok meaning="absent"/>', reversion => '{}', alias => '');
+        DefConstructorI('\@bml@ams@absent@cleanup', undef, '', reversion => '', alias => '', beforeConstruct => sub {
+            my ($document) = @_;
+            my $cell       = $document->findnode('ancestor-or-self::ltx:XMath', $document->getElement);
+            my $absent     = $document->getFirstChildElement($cell);
+            my $node       = $document->findnode('node()[2]', $cell);
+            if ($node) {
+              my $role = $node->getAttribute('role');
+              if (!defined $role) {
+                my $tag = $document->getModel->getNodeQName($node);
+                # TODO resolve XMRef (is it possible at this stage?)
+                if ($tag eq 'ltx:XMDual') {
+                  my ($content, $presentation) = element_nodes($node);
+                  $role = $content->getAttribute('role') || $presentation->getAttribute('role') || ''; } }
+              $role = '' unless $role;
+              # remove the empty identifier if it is not followed by a possible binary operator
+              if (!grep { $role eq $_ } ('RELOP', 'ARROW', 'METARELOP', 'MODIFIEROP', 'ADDOP', 'MULOP', 'BINOP', 'APPLYOP', 'COMPOSEOP')) {
+                $document->replaceNode($absent, ()); } }
+        });
+
+        # identical to LaTeXML except for the addition of the empty identifier + cleanup
+        DefPrimitive('\@ams@align@bindings', sub {
+            my $col1 = { before => Tokens(T_CS('\hfil'), T_MATH, T_CS('\displaystyle')),
+              after => Tokens(T_MATH) };
+            my $col2 = { before => Tokens(T_MATH, T_CS('\displaystyle'), T_CS('\@bml@ams@absent')),
+              after => Tokens(T_CS('\@bml@ams@absent@cleanup'), T_MATH, T_CS('\hfil')) };
+            amsRearrangeableBindings(LaTeXML::Core::Alignment::Template->new(repeated => [$col1, $col2]),
+              attributes => { class => 'ltx_eqn_align', colsep => '0pt' });
+        });
+        DefPrimitive('\@ams@aligned@bindings', sub {
+            my $col1 = { before => Tokens(T_CS('\hfil'),
+                T_CS('\displaystyle')) };
+            my $col2 = { before => Tokens(T_CS('\displaystyle'), T_CS('\@bml@ams@absent')),
+              after => Tokens(T_CS('\@bml@ams@absent@cleanup'), T_CS('\hfil')) };
+            my $template = LaTeXML::Core::Alignment::Template->new(repeated => [$col1, $col2]);
+            amsAlignmentBindings($template, (name => 'aligned', colsep => '0pt'));
+            DefMacro('\lx@alignment@row@before', '');
+            DefMacro('\lx@alignment@row@after',  '');
+            return; });
+        DefPrimitiveI('\@ams@multirow@bindings', 'RequiredKeyVals:multirow OptionalKeyVals', sub {
+            my ($stomach, $attributes, $options) = @_;
+            my %attr    = $attributes->getPairs;
+            my %options = ($options ? $options->getPairs : ());
+            if (my $va = $attr{vattach}) {
+              $attr{vattach} = translateAttachment($va) || ToString($va); }
+            if ($attr{width} && $attr{width}->valueOf == 0) {
+              delete $attr{width}; }
+            my $before = $options{before_row};
+            my $after  = $options{after_row};
+            my $col1   = {
+              before => Tokens(T_CS('\hfil'), T_CS('\displaystyle'), T_CS('\@bml@ams@absent'),
+                ($before ? (T_CS('\text'), T_BEGIN, $before, T_END) : ())),
+              after => Tokens(($after ? (T_CS('\text'), T_BEGIN, $after, T_END) : ()), T_CS('\@bml@ams@absent@cleanup')) };
+            my $template = LaTeXML::Core::Alignment::Template->new(repeated => [$col1]);
+            amsAlignmentBindings($template, %attr);
+            return; });
+
+        # patch multline to center middle entries, right align if there is a single row
+        # use environment to enable implementation of \shoveleft, \shoveright
+        foreach my $multline (LookupDefinition(T_CS('\@@multline')), LookupDefinition(T_CS('\@@multlinestar')), LookupDefinition(T_CS('\@@AmS@multline'))) {
+          unshift(@{ $$multline{beforeDigest} }, sub {
+              # add space to 0 so it gets sorted *before* -1, matching the behaviour of amsmath
+              AssignValue('MULTIROW_ALIGNMENT_RULE' => { 'default' => 'center', '0' => 'left', '-1' => 'right' });
+          });
+          push(@{ $$multline{afterDigest} }, sub {
+              my ($document, $whatsit) = @_;
+              $whatsit->setProperty('MULTIROW_ALIGNMENT_RULE' => LookupValue('MULTIROW_ALIGNMENT_RULE'));
+          });
+        }
+
+        # reimplement \shoveleft, \shoveright
+        sub amsShove {
+          my ($shove_dir) = @_;
+          my $alignment = LookupValue('Alignment') or return;
+
+          my $attributes = $$alignment{properties}{attributes} or return;
+          my $name       = $$attributes{name}                  or return;
+
+          # \shove* do not change alignment outside of multline, multline*, multlined
+          if (ToString($name) =~ m/^multline/ && (my $rowalignment = LookupValue('MULTIROW_ALIGNMENT_RULE'))) {
+            my $cur_row_num = $alignment->currentRowNumber - 1;
+            $$rowalignment{$cur_row_num} = $shove_dir;
+          }
+
+          return;
+        }
+
+        DefConstructor('\lx@ams@shoveleft{}', '#1', beforeDigest => sub { amsShove('left'); return; }, reversion => '#1');
+        DefConstructor('\lx@ams@shoveright{}', '#1', beforeDigest => sub { amsShove('right'); return; }, reversion => '#1');
+
+        Let('\shoveleft',  '\lx@ams@shoveleft');
+        Let('\shoveright', '\lx@ams@shoveright');
+
+        if (LookupValue('mathtools.sty.ltxml_loaded')) {
+          DefMacro('\shoveleft[]{}', sub {
+              my ($gullet, $dim, $eqn) = @_;
+              $dim = readExpression($gullet, 'dimen', $dim) if defined $dim;
+              return (T_CS('\lx@ams@shoveleft'), T_BEGIN, ($dim ? (T_CS('\kern'), Tokenize($dim->toString)) : ()), $eqn, T_END);
+          });
+
+          DefMacro('\shoveright[]{}', sub {
+              my ($gullet, $dim, $eqn) = @_;
+              $dim = readExpression($gullet, 'dimen', $dim) if defined $dim;
+              return (T_CS('\lx@ams@shoveright'), T_BEGIN, $eqn, ($dim ? (T_CS('\kern'), Tokenize($dim->toString)) : ()), T_END);
+          });
+        }
+      }
+
+      return;
   });
 }
 

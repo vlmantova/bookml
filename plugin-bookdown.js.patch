@@ -1,4 +1,6 @@
---- a/gitbook/js/plugin-bookdown.js
+diff --git a/bookdown/inst/resources/gitbook/js/plugin-bookdown.js b/gitbook/js/plugin-bookdown.js
+index 0080966..336913f 100644
+--- a/bookdown/inst/resources/gitbook/js/plugin-bookdown.js
 +++ b/gitbook/js/plugin-bookdown.js
 @@ -78,29 +78,24 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
      }
@@ -42,7 +44,17 @@
      var summary = $('ul.summary'), chaps = summary.find('li.chapter');
      if (li.length === 0) li = chaps.first();
      li.addClass('active');
-@@ -162,22 +157,22 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+@@ -147,7 +142,8 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
+     if (typeof pos !== 'undefined') summary.scrollTop(pos);
+ 
+     // highlight the TOC item that has same text as the heading in view as scrolling
+-    if (toc && toc.scroll_highlight !== false && li.length > 0) (function() {
++    var scrollHandler;
++    if (toc && toc.scroll_highlight !== false && li.length > 0) $(document).ready(function() {
+       // scroll the current TOC item into viewport
+       var ht = $(window).height(), rect = li[0].getBoundingClientRect();
+       if (rect.top >= ht || rect.top <= 0 || rect.bottom <= 0) {
+@@ -162,36 +158,40 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
        }
        if (m === 0) return;
        // all section titles on current page
@@ -51,11 +63,13 @@
 +      var hs = bookInner.find('.page-inner').find('h1,h2,h3,h4,h5').children('span[class^="ltx_tag"]'), n = hs.length,
 +          ts = hs.map(function(i, el) { return ($(el).closest('section').attr('id') ? '#' + $(el).closest('section').attr('id') : ''); });
        if (n === 0) return;
-       var scrollHandler = function(e) {
-         var ht = $(window).height();
-         clearTimeout($.data(this, 'scrollTimer'));
-         $.data(this, 'scrollTimer', setTimeout(function() {
+-      var scrollHandler = function(e) {
+-        var ht = $(window).height();
+-        clearTimeout($.data(this, 'scrollTimer'));
+-        $.data(this, 'scrollTimer', setTimeout(function() {
 -          // find the first visible title in the viewport
++      var ht = $(window).height();
++      scrollHandler = function(e) {
 +          // find the last section starting by the middle of the viewport
            for (var i = 0; i < n; i++) {
              var rect = hs[i].getBoundingClientRect();
@@ -71,8 +85,24 @@
            }
            if (j === m) j = 0;  // highlight the chapter title
            // search bottom-up for a visible TOC item to highlight; if an item is
-@@ -191,7 +186,7 @@ gitbook.require(["gitbook", "lodash", "jQuery"], function(gitbook, _, $) {
-     })();
+           // hidden, we check if its parent is visible, and so on
+           while (j > 0 && items.eq(j).is(':hidden')) j--;
+           items.eq(j).addClass('active');
+-        }, 250));
+       };
+-      bookInner.on('scroll.bookdown', scrollHandler);
+-      bookBody.on('scroll.bookdown', scrollHandler);
+-    })();
++    });
++    var bmlScrollHandler = function(e) {
++      clearTimeout($.data(this, 'scrollTimer'));
++      $.data(this, 'scrollTimer', setTimeout(function () {
++        scrollHandler ? scrollHandler(e) : null;
++        saveScrollPos();
++      }, 250));
++    };
++    bookInner.on('scroll.bookdown', bmlScrollHandler);
++    bookBody.on('scroll.bookdown', bmlScrollHandler);
  
      // do not refresh the page if the TOC item points to the current page
 -    $('a[href="' + href + '"]').parent('li.chapter').children('a')

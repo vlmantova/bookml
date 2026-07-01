@@ -29,9 +29,10 @@
     xmlns:xlink = "http://www.w3.org/1999/xlink"
     xmlns:xhtml = "http://www.w3.org/1999/xhtml"
     xmlns:exsl  = "http://exslt.org/common"
+    xmlns:str   = "http://exslt.org/strings"
     xmlns:m     = "http://www.w3.org/1998/Math/MathML"
     xmlns       = "http://www.w3.org/1999/xhtml"
-    extension-element-prefixes = "exsl func"
+    extension-element-prefixes = "exsl func str"
     exclude-result-prefixes = "ltx f b svg xlink m">
 
   <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
@@ -54,6 +55,16 @@
   <xsl:template match="/" mode="head-end">
     <xsl:apply-templates select="//ltx:resource[@type='text/html']" mode="bml-resource"/>
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=head')]" mode="bml-resource"/>
+    <xsl:if test="not(b:nomathjax())">
+      <xsl:variable name="mjx-version">
+        <xsl:choose>
+          <xsl:when test="b:mathjax2()">2</xsl:when>
+          <xsl:when test="b:mathjax3()">3</xsl:when>
+          <xsl:when test="b:mathjax4()">4</xsl:when>
+        </xsl:choose>
+      </xsl:variable>
+      <script src="bookml/js/mathjax{$mjx-version}.js" defer="" />
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="ltx:resource[@type='text/html']" mode="bml-resource">
@@ -61,7 +72,7 @@
     <xsl:apply-templates mode="copy-foreign"/>
   </xsl:template>
 
-  <!-- add BookML resources at the end of the body, including MathJax -->
+  <!-- add BookML resources at the end of the body -->
   <xsl:template match="/" mode="body-end">
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=body')]" mode="bml-resource"/>
   </xsl:template>
@@ -436,18 +447,6 @@
       <xsl:value-of select="substring-before($content,'width:100%;')" />
       <xsl:value-of select="substring-after($content,'width:100%;')" />
     </xsl:attribute>
-  </xsl:template>
-
-  <!-- MathJax workaround for non-text content in <mtext> (not needed with MathJax v4) -->
-  <xsl:template match="m:math[not(b:in-list(@class,'bml_disable_mathjax',' ')) and (b:mathjax3() or b:mathjax2())]//m:mtext[*]">
-    <m:semantics>
-      <xsl:for-each select="@*">
-        <xsl:apply-templates select="." mode="copy-attribute"/>
-      </xsl:for-each>
-      <m:annotation-xml encoding="application/xhtml+xml" style="display: block;">
-        <xsl:apply-templates/>
-      </m:annotation-xml>
-    </m:semantics>
   </xsl:template>
 
   <!-- modify listings to use <code> tags and follow LaTeX layout -->
@@ -1017,7 +1016,64 @@
     <xsl:apply-templates select="." mode="bml-styling" />
   </xsl:template>
 
+  <xsl:template match="*" mode="classes">
+    <xsl:apply-imports />
+    <xsl:apply-templates select="." mode="bml-classes" />
+  </xsl:template>
+
+  <xsl:template match="*" mode="bml-classes" />
+
+  <xsl:template match="/" mode="classes">
+    <xsl:call-template name="add_attribute">
+      <xsl:with-param name="name" select="'class'" />
+      <xsl:with-param name="value">
+        <xsl:apply-templates select="." mode="bml-classes" />
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+
+  <xsl:template match="/" mode="styling">
+    <xsl:attribute name="style">
+      <xsl:apply-templates select="." mode="bml-styling" />
+    </xsl:attribute>
+  </xsl:template>
+
   <xsl:template match="*" mode="bml-styling" />
+
+  <xsl:template match="/" mode="begin">
+    <xsl:apply-imports />
+    <xsl:apply-templates select="/" mode="styling" />
+    <xsl:apply-templates select="/" mode="classes" />
+  </xsl:template>
+
+  <xsl:template match="/" mode="bml-styling">
+    <xsl:variable name="font-size" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'bml-font-size=&quot;')],'bml-font-size=&quot;'),'&quot;')" />
+    <xsl:variable name="dpi" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'DPI=&quot;')],'DPI=&quot;'),'&quot;')" />
+    <xsl:if test="$font-size">
+      <xsl:text>--bml-ltx-font-size:</xsl:text>
+      <xsl:value-of select="$font-size" />
+      <xsl:text>;</xsl:text>
+    </xsl:if>
+    <xsl:if test="$dpi">
+      <xsl:text>--bml-ltxml-dpi:</xsl:text>
+      <xsl:value-of select="$dpi" />
+      <xsl:text>;</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="/" mode="bml-classes">
+    <xsl:choose>
+      <xsl:when test="$MATHJAX2">
+        <xsl:text>bml_mathjax2</xsl:text>
+      </xsl:when>
+      <xsl:when test="$MATHJAX3">
+        <xsl:text>bml_mathjax3</xsl:text>
+      </xsl:when>
+      <xsl:when test="$MATHJAX4">
+        <xsl:text>bml_mathjax4</xsl:text>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:template>
 
   <!-- improve MathML vertical alignment -->
   <xsl:template match="mtable/@align[string()='bottom1']" mode="bml-alter">
@@ -1041,6 +1097,17 @@
     mode="bml-alter">
     <xsl:value-of select="." />
     <xsl:text>&#xFE00;</xsl:text>
+  </xsl:template>
+
+  <!-- expand multline to full width -->
+  <xsl:template match="mtable[b:has-class('bml_alignment_multline')]" mode="bml-alter">
+    <xsl:copy>
+      <xsl:apply-templates select="@*" mode="bml-alter" />
+      <xsl:if test="not(@width)">
+        <xsl:attribute name="width">100%</xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates select="node()" mode="bml-alter" />
+    </xsl:copy>
   </xsl:template>
 
   <!--

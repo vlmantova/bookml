@@ -223,13 +223,6 @@ mtext {
     padding: 3px;
   }
 
-  /* expand multline MathML */
-  math:has(>mtable.bml_alignment_multline, >semantics>mtable.bml_alignment_multline) {
-    &, &>mtable, &>semantics, &>semantics>mtable {
-      width: 100%;
-    }
-  }
-
   @media (-webkit-transform-2d) {
     menclose[notation=box] {
       border-style: none;
@@ -242,6 +235,13 @@ mtext {
         text-align: #{$side};
       }
     }
+  }
+}
+
+/* expand multline MathML */
+math:has(>mtable.bml_alignment_multline, >semantics>mtable.bml_alignment_multline) {
+  &, &>mtable, &>semantics, &>semantics>mtable {
+    width: 100%;
   }
 }
 

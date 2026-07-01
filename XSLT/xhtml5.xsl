@@ -1106,6 +1106,15 @@
       <xsl:if test="not(@width)">
         <xsl:attribute name="width">100%</xsl:attribute>
       </xsl:if>
+      <xsl:if test="not(@align)">
+        <xsl:attribute name="align">
+          <xsl:text>baseline </xsl:text>
+          <xsl:choose>
+            <xsl:when test="ancestor::*[b:has-class('ltx_leqno',.)]">1</xsl:when>
+            <xsl:otherwise>-1</xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:apply-templates select="node()" mode="bml-alter" />
     </xsl:copy>
   </xsl:template>

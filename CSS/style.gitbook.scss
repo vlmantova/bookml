@@ -683,8 +683,10 @@ mjx-container[jax="SVG"][display="true"] {
 .bml_listing {
   --bml-background-color-parent: var(--bml-background-color);
   overflow: auto;
+}
 
-  *:has(+&:has(.ltx_listing_data)) {
+.book .book-body .page-wrapper .page-inner section.normal blockquote,.book .book-body .page-wrapper .page-inner section.normal dl,.book .book-body .page-wrapper .page-inner section.normal ol,.book .book-body .page-wrapper .page-inner section.normal p,.book .book-body .page-wrapper .page-inner section.normal table,.book .book-body .page-wrapper .page-inner section.normal ul, * {
+  &:has(+ .bml_listing .ltx_listing_data) {
     margin-bottom: 0;
   }
 }

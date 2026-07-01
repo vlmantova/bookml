@@ -40,7 +40,7 @@
 
 \usepackage{tabularx}
 % \renewcommand\tabularxcolumn[1]{m{#1}}% for vertical centering text in X columns
-\renewcommand\tabularxcolumn[1]{>{\raggedright\arraybackslash}p{#1}}% for vertical centering text in X columns
+% \renewcommand\tabularxcolumn[1]{>{\raggedright\arraybackslash}p{#1}}% for vertical centering text in X columns
 
 \usepackage[all]{xy}
 
@@ -83,22 +83,17 @@
 }
 
 \lstdefinelanguage{LaTeX}[LaTeX]{TeX}{
-  moretexcs={chapter,text,RequirePackage,includegraphics,bf}
+  moretexcs={chapter,text,RequirePackage,includegraphics,bf,xymatrix,ltxinline,href,RequirePackage}
 }
 
 \lstdefinestyle{latexml}{language=LaTeX,
   texcsstyle=*{\color{blue}\bfseries},
   texcsstyle=*[2]{\color{MidnightBlue}\bfseries},
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,
-    lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,ldsHTML,bmlRawHTML,
-    bmlImageEnvironment,bmlDescription,bmlHTMLEnvironment,bmlHTMLInlineEnvironment,bmlDisableMathJax,<,}
+  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter}
 }
 
-\lstdefinestyle{bookml}{language=[LaTeX]TeX,
-  texcsstyle=*{\color{blue}\bfseries},
-  texcsstyle=*[2]{\color{MidnightBlue}\bfseries},
-  moretexcs={xymatrix,ltxinline,href,RequirePackage},
-  moretexcs=[2]{LaTeXML,iflatexml,lxAddClass,lxWithClass,lxBeginTableHead,lxEndTableHead,lxFcn,lxID,lxPunct,lxContextTOC,lxNavbar,lxHeader,lxFooter,bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat}
+\lstdefinestyle{bookml}{style=latexml,
+  moretexcs=[2]{bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat,<}
 }
 
 \lstdefinestyle{yaml}{
@@ -119,7 +114,7 @@
 \title{\texorpdfstring{BookML\@: \LaTeX{} to \HTML, made easy(ish). \\ Powered by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML}.}{BookML: LaTeX to HTML, made easy(ish). Powered by LaTeXML.}}
 \author{Vincenzo Mantova}
 
-\date{2\textsuperscript{nd} June 2026}
+\date{1\textsuperscript{st} July 2026}
 
 \begin{document}
 
@@ -184,7 +179,7 @@ BookML key features are:
 When all goes well, you should see an output like the following:
 
 \begin{tabularx}{\textwidth}[h]{>{\color{MidnightBlue}\tt}r@{\texttt{\ }}>{\tt}X}
-\cellcolor{red}\color{white} Required\phantom{:} & \cellcolor{red}\phantom{:} \\
+\cellcolor{red}\color{white} Required\phantom{:} & \cellcolor{red}\bmlRawHTML{} \\
   Main files:    & \textcolor{OliveGreen}{template.tex}                                          \\
   BookML:        & \textcolor{OliveGreen}{\BookMLversion{} OK}                                   \\
   GNU Make:      & \textcolor{OliveGreen}{4.4.1 OK}                                              \\
@@ -195,7 +190,7 @@ When all goes well, you should see an output like the following:
   zip:           & \textcolor{OliveGreen}{3.1b OK}                                               \\
 \cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{for any image handling, including BookML images} \\
   Image::Magick: & \textcolor{red}{NOT FOUND}                                                    \\
-\multicolumn{2}{l}{\textcolor{magenta}{\tt -{}-{}- PDFTOSVG\_CONVERTER is set to `mutool' -{}-{}-}} \\
+\multicolumn{2}{X}{\textcolor{magenta}{\tt -{}-{}- PDFTOSVG\_CONVERTER is set to `mutool' -{}-{}-}} \\
   Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS to SVG, PDF to SVG via dvisvgm) \\
   mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (PDF to SVG via mutool) \\
   dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (PDF to SVG via mutool)) \\
@@ -642,12 +637,12 @@ The following targets can be used as arguments when calling \texttt{make}, for i
 \item[\texttt{zip}] Compile all \makeinline|SOURCES| to zip. The outputs will be in the current directory.
 \end{description}
 
-\subsection{Custom \CSS}\label{custom-css}
-The \CSS{} files in the folder \texttt{bmluser} are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles.
+\subsection{Custom \CSS, Javascript, \ldots}\label{custom-css}
+The \CSS{} files in the folder \texttt{bmluser} are automatically included at the end of the \htmlinline|<head>| tag and will override the previous styles. You may also include Javascript files (file extension \texttt{js}) and fonts (file extensions \texttt{ttf}, \texttt{woff}, \texttt{woff2})
 
 If the file name ends with \texttt{.style1,style2-jobname.css}, then that file will be used only when \ltxinline|style=style1| is passed, or when \ltxinline|style=style2| is passed and the main file being compiled is called \texttt{jobname.tex}. You can use \texttt{.\_all.css} to ensure that the file is included in every style.
 
-Custom \CSS{} can also be added using \ltxinline|\bmlRawHTML{<style> ... </style>}| to the preamble.
+Custom \CSS{} can also be added using \ltxinline|\bmlRawHTML{<style> ... </style>}| to the preamble, and likewise for \ltxinline|\bmlRawHTML{<script> ... </script>}|.
 
 For instance, the \href{https://vlmantova.github.io/bookml/index.plain.html}{plain} version of this manual has been compiled with \href{https://vlmantova.github.io/bookml/bmluser/latin-modern.plain.css}{\texttt{latin-modern.plain.css}} that sets the font to Latin Modern.
 

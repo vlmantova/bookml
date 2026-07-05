@@ -1099,20 +1099,34 @@
     <xsl:text>&#xFE00;</xsl:text>
   </xsl:template>
 
-  <!-- expand multline to full width -->
-  <xsl:template match="mtable[b:has-class('bml_alignment_multline')]" mode="bml-alter">
+  <!-- improve mtable's -->
+  <xsl:template match="mtable" mode="bml-alter">
     <xsl:copy>
       <xsl:apply-templates select="@*" mode="bml-alter" />
-      <xsl:if test="not(@width)">
-        <xsl:attribute name="width">100%</xsl:attribute>
+      <!-- expand multline to full width -->
+      <xsl:if test="b:has-class('bml_alignment_multline')">
+        <xsl:if test="not(@width)">
+          <xsl:attribute name="width">100%</xsl:attribute>
+        </xsl:if>
+        <xsl:if test="not(@align)">
+          <xsl:attribute name="align">
+            <xsl:text>baseline </xsl:text>
+            <xsl:choose>
+              <xsl:when test="ancestor::*[b:has-class('ltx_leqno',.)]">1</xsl:when>
+              <xsl:otherwise>-1</xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+        </xsl:if>
       </xsl:if>
-      <xsl:if test="not(@align)">
-        <xsl:attribute name="align">
-          <xsl:text>baseline </xsl:text>
-          <xsl:choose>
-            <xsl:when test="ancestor::*[b:has-class('ltx_leqno',.)]">1</xsl:when>
-            <xsl:otherwise>-1</xsl:otherwise>
-          </xsl:choose>
+      <!-- add row/columnspacing to CSS -->
+      <xsl:if test="@rowspacing | @columnspacing">
+        <xsl:attribute name="style">
+          <xsl:text>border-spacing:</xsl:text>
+          <xsl:value-of select="f:if(@columnspacing,@columnspacing,'0')" />
+          <xsl:text> </xsl:text>
+          <xsl:value-of select="f:if(@rowspacing,@rowspacing,'0')" />
+          <xsl:text>;</xsl:text>
+          <xsl:value-of select="@style" />
         </xsl:attribute>
       </xsl:if>
       <xsl:apply-templates select="node()" mode="bml-alter" />

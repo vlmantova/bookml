@@ -928,18 +928,37 @@ if ($LaTeXML::VERSION < v0.8.8) {
       # - add an empty identifiers to get the correct spacing of +, - starting an equation
       # - fix multline alignment
       if ($LaTeXML::VERSION <= v0.8.8 && LookupValue('amsmath.sty.ltxml_loaded')) {
-        DefMacro('\hdotsfor[Number]{Number}', sub {
+        DefMacro('\hdotsfor[]{Number}', sub {
             my $cols = $_[2]->valueOf;
             $cols = 1 if $cols < 1;
             (map { T_CS('\hdots'), T_ALIGN } 1 .. $cols - 1), T_CS('\hdots'); });
 
         # empty identifier, followed by clean up routine to minimize the chances of spurious invisible times
-        DefConstructor('\@bml@ams@absent', '<ltx:XMTok meaning="absent"/>', reversion => '{}', alias => '');
-        DefConstructorI('\@bml@ams@absent@cleanup', undef, '', reversion => '', alias => '', beforeConstruct => sub {
-            my ($document) = @_;
-            my $cell       = $document->findnode('ancestor-or-self::ltx:XMath', $document->getElement);
-            my $absent     = $document->getFirstChildElement($cell);
-            my $node       = $document->findnode('node()[2]', $cell);
+        my $absentCounter = 0;
+        DefConstructor('\@bml@ams@absent', '<ltx:XMTok meaning="absent" xml:id="#id"/>',
+          afterDigest => sub {
+            my ($stomach, $whatsit) = @_;
+            my $id = 'bml-ams-absent-' . ($absentCounter++);
+            AssignValue('BML_AMS_ABSENT_ID' => $id);
+            $whatsit->setProperty(id => $id);
+            return; },
+          reversion => '{}', alias => '');
+        DefConstructorI('\@bml@ams@absent@cleanup', undef, '', reversion => '',
+          afterDigest => sub {
+            my ($stomach, $whatsit) = @_;
+            my $id = LookupValue('BML_AMS_ABSENT_ID') or return;
+            AssignValue('BML_AMS_ABSENT_ID' => undef);
+            $whatsit->setProperty(id => $id);
+            return; },
+          beforeConstruct => sub {
+            my ($document, $whatsit) = @_;
+            my $id = $whatsit->getProperty('id') or return;
+            my $absent = $document->findnode("ancestor-or-self::*//ltx:XMTok[\@xml:id='$id' and \@meaning='absent']", $document->getElement);
+            if (!$absent) {
+              Warning('expected', 'absent', $document, 'could not find the auto-inserted empty identifier');
+              return; }
+            $absent->removeAttribute('xml:id');
+            my $node = $absent->nextNonBlankSibling;
             if ($node) {
               my $role = $node->getAttribute('role');
               if (!defined $role) {
@@ -950,7 +969,7 @@ if ($LaTeXML::VERSION < v0.8.8) {
                   $role = $content->getAttribute('role') || $presentation->getAttribute('role') || ''; } }
               $role = '' unless $role;
               # remove the empty identifier if it is not followed by a possible binary operator
-              if (!grep { $role eq $_ } ('RELOP', 'ARROW', 'METARELOP', 'MODIFIEROP', 'ADDOP', 'MULOP', 'BINOP', 'APPLYOP', 'COMPOSEOP')) {
+              if (!grep { $role eq $_ } ('VERTBAR', 'RELOP', 'ARROW', 'METARELOP', 'MODIFIEROP', 'ADDOP', 'MULOP', 'BINOP', 'APPLYOP', 'COMPOSEOP')) {
                 $document->replaceNode($absent, ()); } }
         });
 

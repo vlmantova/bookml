@@ -108,11 +108,7 @@ my $bml_jobname    = ToString(Expand(T_CS('\jobname')));
 my $bml_htmlsyn    = 1;
 my @bml_download   = ();
 
-for my $ext ('pdf', 'epub') {
-  if (-f "$bml_jobname.$ext") {
-    Info('found', $ext, undef, "bundling '$bml_jobname.$ext' in the output");
-    push(@bml_download, "$bml_jobname.$ext"); }
-}
+push(@bml_download, "$bml_jobname.pdf");
 
 DeclareOption('style=plain',   sub { $bml_style   = 'plain';   return; });
 DeclareOption('style=gitbook', sub { $bml_style   = 'gitbook'; return; });

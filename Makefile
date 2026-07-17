@@ -49,9 +49,9 @@ BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
 BOOKML_JS    := $(patsubst %,bookml/%,$(wildcard js/*))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
-BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng
-BOOKML_MK    := bookml/bookml.mk bookml/manifest.pl bookml/search_index.pl bookml/xsltproc.pl
-BOOKML_DIRS  := bookml bookml/CSS bookml/js bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
+BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng $(patsubst %,bookml/%,$(wildcard bindings/*/*.ltxml))
+BOOKML_MK    := bookml/bookml.mk bookml/manifest.pl bookml/postpdf.pl bookml/postxml.pl bookml/search_index.pl bookml/xsltproc.pl
+BOOKML_DIRS  := bookml bookml/bindings bookml/bindings/v0.8.8 bookml/CSS bookml/js bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile

@@ -27,6 +27,15 @@ package LaTeXML::Package::Pool;
 use strict;
 use warnings;
 
+use LaTeXML::Util::Pathname;
+
+{
+  my $bindings = "bookml/bindings/v$LaTeXML::VERSION";
+  if (-d $bindings) {
+    PushValue('SEARCHPATHS', pathname_absolute(pathname_canonical($bindings)));
+  }
+}
+
 # bookml/bookml uses AtBeginDocument()! we must load it in the
 # @document@preamble@atend hook which runs *before* @at@begin@document
 PushValue('@document@preamble@atend', Tokenize('\usepackage{bookml/bookml}'));

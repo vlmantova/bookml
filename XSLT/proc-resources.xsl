@@ -37,12 +37,25 @@
     <xsl:if test="$BMLSTYLE='gitbook'">
       <xsl:value-of select="$BML_TARGET" /><xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
     </xsl:if>
-    <xsl:apply-templates select="//ltx:resource | //ltx:graphics/@candidates" />
+    <xsl:value-of select="$BML_TARGET" /><xsl:text>:</xsl:text>
+    <xsl:for-each select="//ltx:resource | //ltx:graphics/@candidates">
+      <xsl:text> \&#x0A;  </xsl:text>
+      <xsl:apply-templates select="." />
+      <xsl:value-of select="@src | ." />
+    </xsl:for-each>
+    <xsl:text>&#x0A;&#x0A;</xsl:text>
+    <xsl:for-each select="//ltx:resource | //ltx:graphics/@candidates">
+      <xsl:apply-templates select="." />
+      <xsl:text>:&#x0A;</xsl:text>
+    </xsl:for-each>
   </xsl:template>
 
   <xsl:template match="ltx:resource">
-    <xsl:value-of select="$BML_TARGET" /><xsl:text>: </xsl:text><xsl:value-of select="@src" /><xsl:text>&#x0A;</xsl:text>
-    <xsl:value-of select="@src" /><xsl:text>:&#x0A;</xsl:text>
+    <xsl:value-of select="@src" />
+  </xsl:template>
+
+  <xsl:template match="ltx:graphics/@candidates">
+    <xsl:value-of select="." />
   </xsl:template>
 
 </xsl:stylesheet>

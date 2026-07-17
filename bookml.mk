@@ -564,7 +564,7 @@ $(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:
 # build XML files
 # (Windows can sometimes set the READONLY attribute on the xml folder,
 #  especially on cloud drives, and this trips LaTeXML)
-$(BMLGOALS.XMLDEPS): $(AUX_DIR)/deps/%.xmldeps: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PREPROCESS) bookml/postxml.pl | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
+$(BMLGOALS.XMLDEPS): $(AUX_DIR)/deps/%.xmldeps: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PREPROCESS) bookml/postxml.pl | $(AUX_DIR)/deps $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
 	@$(call bml.prog,latexml: $< → $*.xml)
 	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
@@ -572,7 +572,7 @@ $(BMLGOALS.XMLDEPS): $(AUX_DIR)/deps/%.xmldeps: %.tex $(BOOKML_DEPS_XML) $(BOOKM
 	@$(PERL) bookml/postxml.pl "$(AUX_DIR)" "$*"
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$(AUX_DIR)/xml/$*.xml" --output "$(AUX_DIR)/xml/$*.xml" --stringparam AUX_DIR "$(AUX_DIR)" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
 
-$(BMLGOALS.XML): $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PREPROCESS) bookml/postxml.pl | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
+$(BMLGOALS.XML): $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PREPROCESS) bookml/postxml.pl | $(AUX_DIR)/deps $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
 	@$(call bml.prog,latexml: $< → $*.xml)
 	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
@@ -583,8 +583,8 @@ $(BMLGOALS.XML): $(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PR
 # build HTML and deps files
 
 # discover postprocessing dependencies (including bmluser/ files, alternative formats, images)
-$(BMLGOALS.HTMLDEPS): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html")
+$(BMLGOALS.HTMLDEPS): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/deps/%.xmldeps $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps
+	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$(AUX_DIR)/xml/$*.xml" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html")
 
 $(BMLGOALS.HTML): $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTML) | $(AUX_DIR)/html
 	@$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html)

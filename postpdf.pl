@@ -61,7 +61,8 @@ sub normalize_path {
 $auxdir = normalize_path($auxdir);
 
 my $pdf     = "$auxdir/pdf/$jobname.pdf";
-my $aux     = "$auxdir/pdfnoxr/$jobname.aux";
+my $aux     = "$auxdir/pdf/$jobname.aux";
+my $auxnoxr = "$auxdir/pdfnoxr/$jobname.aux";
 my $fls     = "$auxdir/pdf/$jobname.fls";
 my $log     = "$auxdir/pdf/$jobname.log";
 my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
@@ -113,19 +114,37 @@ for my $out (keys %outputs) {
 my @noxrinputs = (sort(keys %inputs), sort (keys %xrinputs));
 my @inputs     = (@noxrinputs, sort (keys %xrmissing));
 
-my $makefile = "$pdf $pdfdeps $aux:";
+my $makefile = "$pdf $aux $fls $log $auxnoxr:";
 
 for (@inputs) {
   $makefile .= " \\\n  $_" unless m!^$auxdir/!;
 }
 
-$makefile .= "\n\n$pdf $pdfdeps:";
+$makefile .= "\n\n$pdf $aux $fls $log:";
 
 for (@inputs) {
   $makefile .= " \\\n  $_" if m!^$auxdir/!;
 }
 
-$makefile .= "\n\nBMLGOALS.NOXRAUX += " . join(' ', sort keys %xrinputs) . "\n" if %xrinputs;
+my @xrinputs = sort keys %xrinputs;
+
+if (%xrinputs) {
+  $makefile .= "\n\nBMLGOALS.NOXRAUX += $auxnoxr";
+
+  $makefile .= "\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
+
+  for (@xrinputs) {
+    my $pdfinput = $_ =~ s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/pdf/$1.pdf!r;
+    my $texinput = $_ =~ s!^$auxdir/pdfnoxr/(.*)\.aux$!$1.tex!r;
+    $makefile .= <<"EOM";
+ifneq (,\$(wildcard $texinput))
+BMLGOALS.PDF += $pdfinput
+endif
+EOM
+  }
+
+  $makefile .= "endif\n";
+}
 
 for (@inputs) {
   $makefile .= "\n$_:";

@@ -35,27 +35,33 @@
 
   <xsl:template match="/">
     <xsl:if test="$BMLSTYLE='gitbook'">
-      <xsl:value-of select="$BML_TARGET" /><xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
+      <xsl:text>$(AUX_DIR)/</xsl:text>
+      <xsl:value-of select="$BML_TARGET" />
+      <xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
     </xsl:if>
-    <xsl:value-of select="$BML_TARGET" /><xsl:text>:</xsl:text>
-    <xsl:for-each select="//ltx:resource | //ltx:graphics/@candidates">
+    <xsl:text>$(AUX_DIR)/</xsl:text><xsl:value-of select="$BML_TARGET" /><xsl:text>:</xsl:text>
+    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
       <xsl:text> \&#x0A;  </xsl:text>
-      <xsl:apply-templates select="." />
-      <xsl:value-of select="@src | ." />
+      <xsl:value-of select="." />
     </xsl:for-each>
     <xsl:text>&#x0A;&#x0A;</xsl:text>
-    <xsl:for-each select="//ltx:resource | //ltx:graphics/@candidates">
+    <xsl:text>ifneq (,$(filter $(AUX_DIR)/</xsl:text>
+    <xsl:value-of select="$BML_TARGET" />
+    <xsl:text>,$(BMLGOALS.HTML)))&#x0A;</xsl:text>
+    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
+      <xsl:if test="translate(substring(.,string-length(.) - 3),'PDF','pdf') = '.pdf'">
+        <xsl:text>ifneq (,$(wildcard </xsl:text>
+        <xsl:value-of select="substring(.,1,string-length(.) - 4)" /><xsl:text>.tex</xsl:text>
+        <xsl:text>))&#x0A;BMLGOALS.PDF += $(AUX_DIR)/pdf/</xsl:text>
+        <xsl:value-of select="." />
+        <xsl:text>&#x0A;endif&#x0A;</xsl:text>
+      </xsl:if>
+    </xsl:for-each>
+    <xsl:text>endif&#x0A;&#x0A;</xsl:text>
+    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
       <xsl:apply-templates select="." />
       <xsl:text>:&#x0A;</xsl:text>
     </xsl:for-each>
-  </xsl:template>
-
-  <xsl:template match="ltx:resource">
-    <xsl:value-of select="@src" />
-  </xsl:template>
-
-  <xsl:template match="ltx:graphics/@candidates">
-    <xsl:value-of select="." />
   </xsl:template>
 
 </xsl:stylesheet>

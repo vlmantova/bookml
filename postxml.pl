@@ -74,12 +74,12 @@ while (<$log_fh>) {
     $file = $1;
   } elsif (m/^\((?:Loading RelaxNG [^()]+|Preparsing Bibliography <Unknown>|Processing (?:content|definitions) (?:Literal String|Anonymous String))\.\.\./) {
     next;
-  } elsif (m/^\((?:Processing (?:content|definitions) |Loading |Preparsing Bibliography )([^())]+)\.\.\./){
+  } elsif (m/^\((?:Processing (?:content|definitions) |Loading |Preparsing Bibliography )([^())]+)\.\.\./) {
     $file = $1;
   } else {
     next;
   }
-  $inputs{normalize_path($1)} = 1;
+  $inputs{ normalize_path($file) } = 1;
 }
 
 my @inputs = sort(keys %inputs);

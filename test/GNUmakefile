@@ -29,8 +29,3 @@ $(call test,nomathjax,nomathjax)
 $(call test,mathjax2,mathjax=2)
 $(call test,mathjax3,mathjax=3)
 $(call test,mathjax4,mathjax=4)
-
-$(info BMLGOALS.PDF='$(BMLGOALS.PDF)')
-$(info BMLGOALS.PDFDEPS='$(BMLGOALS.PDFDEPS)')
-#$(info filter: '$(filter $(AUX_DIR)/deps/mathvariants-nomathjax.pdfdeps,$(BMLGOALS.PDFDEPS))')
-#$(info bml.auxdir.pdf.subtree='$(bml.auxdir.pdf.subtree)')

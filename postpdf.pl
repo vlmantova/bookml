@@ -143,15 +143,14 @@ if (my @inputs = (sort(keys %inputs), @xrinputs)) {
   }
 
   if (%xrinputs) {
-    $makefile .= "\n\nBMLGOALS.NOXRAUX += " . join(' ', grep { m!^$auxdir/pdfnoxr/! } @xrinputs);
-    $makefile .= "\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
+    $makefile .= "\n\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
     $makefile .= 'BMLGOALS.PDF += ';
     $makefile .= join(' ', map { s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/pdf/$1.pdf!r } (grep { m!^$auxdir/pdfnoxr/! } @xrinputs));
     $makefile .= "\nendif\n";
   }
 
   for (@inputs) {
-    $makefile .= "\n$_:" unless m!^$auxdir/pdfnoxr/!;
+    $makefile .= "\n$_:";
   }
 
   $makefile .= "\n";

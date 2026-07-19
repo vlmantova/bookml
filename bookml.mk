@@ -167,6 +167,9 @@ bml.xml.recurse  = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS))
 bml.pdf.direct   = $(if $(filter $(AUX_DIR)/deps/$*.pdfdeps,$(BMLGOALS.PDFDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.pdfdeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
 bml.pdf.recurse  = $(if $(filter $(AUX_DIR)/deps/$*.pdfdeps,$(BMLGOALS.PDFDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
 
+# treat the target as 'not intermediate': if the file is missing, it must be rebuilt
+bml.not.intermediate = $(if $(wildcard $@),,FORCE)
+
 ### UTILS
 # cross-platform convenience variables
 bml.openp   := (
@@ -551,7 +554,7 @@ $(bml.auxdir.pdfnoxr.subtree): $(AUX_DIR)/pdfnoxr/%:
 	@$(call bml.mkdir,$@)
 
 # force compiling if pdfnoxr/%.aux is missing, otherwise it is treated as intermediate file
-$(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(if $$(wildcard $$@),,FORCE) | $(AUX_DIR)/pdfnoxr $(bml.auxdir.pdfnoxr.subtree)
+$(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr $(bml.auxdir.pdfnoxr.subtree)
 	@$(call bml.prog,pdflatex: $*.tex → pdfnoxr/$*.aux)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \

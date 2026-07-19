@@ -70,10 +70,9 @@ my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
 open(my $fls_fh, '<', $fls) or die "cannot read '$fls': $!";
 open(my $log_fh, '<', $log) or die "cannot read '$log': $!";
 
-my %inputs    = ();
-my %outputs   = ();
-my %xrinputs  = ();
-my %xrmissing = ();
+my %inputs   = ();
+my %outputs  = ();
+my %xrinputs = ();
 
 while (<$fls_fh>) {
   if (m/^\s*(INPUT|OUTPUT)\s+(.*)$/) {
@@ -91,9 +90,17 @@ my $nextline = 0;
 while (<$log_fh>) {
   if (m/^\s*Package xr Info: IMPORTING LABELS FROM (.*) on input line \d+.\s*$/) {
     my $file = normalize_path($1);
-    delete $inputs{"$auxdir/pdf/$file"};
+    my $tex  = ($file =~ s!^$auxdir/pdf/!!r) =~ s!\.aux$!.tex!r;
     delete $inputs{$file};
-    $file = "$auxdir/pdfnoxr/$file" if !File::Spec->file_name_is_absolute($file);
+    if (!File::Spec->file_name_is_absolute($file)) {
+      # if .aux is in the current directory (e.g. by compiling outside of BookML)
+      $file = "$auxdir/pdf/$file" if $file !~ m!^$auxdir/!;
+      delete $inputs{$file};
+      # we only want the .aux files coming from compilable .tex files
+      # luckily \externaldocument calls \set@curr@file, leaving a trace in .fls
+      next unless $inputs{$tex};
+    }
+    $file =~ s!^$auxdir/pdf/!$auxdir/pdfnoxr/!;
     $xrinputs{$file} = 1;
   } elsif (m/^\s*Package xr Warning:\s*$/) {
     $nextline = 1;
@@ -102,55 +109,53 @@ while (<$log_fh>) {
     if (m/^\s*No file (.*)\s*$/) {
       my $file = normalize_path($1);
       $file = "$auxdir/pdfnoxr/$file" if !File::Spec->file_name_is_absolute($file);
-      $xrmissing{$file} = 1;
+      $xrinputs{$file} = 1;
     }
   }
 }
 
-for my $out (keys %outputs) {
-  delete $inputs{$out};
+my $makefile = "";
+
+if (my @outputs = sort(keys %outputs)) {
+  for (@outputs) {
+    delete $inputs{$_};
+  }
+  # flag that the outputs are regenerated when the PDF is recompiled
+  # exclude .aux, .fls which are grouped with .pdf in bookml.mk
+  # (this won't regenerate missing files, however)
+  @outputs = grep { $_ !~ m!^$auxdir/pdf/$jobname\.(?:aux|fls|pdf)! } @outputs;
+  $makefile .= join(' ', @outputs) . ": $pdf ;\n";
 }
 
-my @noxrinputs = (sort(keys %inputs), sort (keys %xrinputs));
-my @inputs     = (@noxrinputs, sort (keys %xrmissing));
+my @xrinputs = sort(keys %xrinputs);
 
-my $makefile = "$pdf $aux $fls $log $auxnoxr:";
+if (my @inputs = (sort(keys %inputs), @xrinputs)) {
+  $makefile .= "$pdf $aux $fls $log $auxnoxr:";
 
-for (@inputs) {
-  $makefile .= " \\\n  $_" unless m!^$auxdir/!;
-}
-
-$makefile .= "\n\n$pdf $aux $fls $log:";
-
-for (@inputs) {
-  $makefile .= " \\\n  $_" if m!^$auxdir/!;
-}
-
-my @xrinputs = sort keys %xrinputs;
-
-if (%xrinputs) {
-  $makefile .= "\n\nBMLGOALS.NOXRAUX += $auxnoxr";
-
-  $makefile .= "\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
-
-  for (@xrinputs) {
-    my $pdfinput = $_ =~ s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/pdf/$1.pdf!r;
-    my $texinput = $_ =~ s!^$auxdir/pdfnoxr/(.*)\.aux$!$1.tex!r;
-    $makefile .= <<"EOM";
-ifneq (,\$(wildcard $texinput))
-BMLGOALS.PDF += $pdfinput
-endif
-EOM
+  for (@inputs) {
+    $makefile .= " \\\n  $_" unless m!^$auxdir/!;
   }
 
-  $makefile .= "endif\n";
-}
+  $makefile .= "\n\n$pdf $aux $fls $log:";
 
-for (@inputs) {
-  $makefile .= "\n$_:";
-}
+  for (@inputs) {
+    $makefile .= " \\\n  $_" if m!^$auxdir/!;
+  }
 
-$makefile .= "\n";
+  if (%xrinputs) {
+    $makefile .= "\n\nBMLGOALS.NOXRAUX += " . join(' ', grep { m!^$auxdir/pdfnoxr/! } @xrinputs);
+    $makefile .= "\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
+    $makefile .= 'BMLGOALS.PDF += ';
+    $makefile .= join(' ', map { s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/pdf/$1.pdf!r } (grep { m!^$auxdir/pdfnoxr/! } @xrinputs));
+    $makefile .= "\nendif\n";
+  }
+
+  for (@inputs) {
+    $makefile .= "\n$_:" unless m!^$auxdir/pdfnoxr/!;
+  }
+
+  $makefile .= "\n";
+}
 
 open(my $fh_pdfdeps, '>', $pdfdeps) or die "cannot write '$pdfdeps': $!";
 print $fh_pdfdeps $makefile;

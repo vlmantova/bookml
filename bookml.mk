@@ -507,7 +507,7 @@ detect-curl: announce-detect-misc
 
 # create directories
 $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf scorm xml zip): | $(AUX_DIR)
-$(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf scorm xml zip):
+$(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf pdfnoxr scorm xml zip):
 	@$(call bml.mkdir,$@)
 
 # copy PDF and synctex.gz files from $(AUX_DIR) to main folder
@@ -540,7 +540,7 @@ $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.
 $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: %.tex FORCE $$(bml.pdf.recurse)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/pdf/$*.pdf"
 
-$(BMLGOALS.PDFDEPS): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps bookml/postpdf.pl | $(AUX_DIR)/deps
+$(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps bookml/postpdf.pl | $(AUX_DIR)/deps
 	@$(PERL) bookml/postpdf.pl "$(AUX_DIR)" "$*"
 
 # if .tex invokes xr, compile its aux files separately to prevent cyclic dependencies
@@ -550,15 +550,12 @@ bml.auxdir.pdfnoxr.subtree := $(patsubst %,$(AUX_DIR)/pdfnoxr/%,$(bml.subtree))
 $(bml.auxdir.pdfnoxr.subtree): $(AUX_DIR)/pdfnoxr/%:
 	@$(call bml.mkdir,$@)
 
-$(BMLGOALS.NOXRAUX): $(AUX_DIR)/pdfnoxr/%.aux: %.tex | $(AUX_DIR)/pdfnoxr $(bml.auxdir.pdfnoxr.subtree)
+# force compiling if pdfnoxr/%.aux is missing, otherwise it is treated as intermediate file
+$(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(if $$(wildcard $$@),,FORCE) | $(AUX_DIR)/pdfnoxr $(bml.auxdir.pdfnoxr.subtree)
 	@$(call bml.prog,pdflatex: $*.tex → pdfnoxr/$*.aux)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -MP -output-directory="$(AUX_DIR)/pdfnoxr" "$<")
-
-# otherwise just copy the aux files compiled from PDF
-$(AUX_DIR)/pdfnoxr/%.aux: $(AUX_DIR)/pdf/%.aux | $(AUX_DIR)/pdfnoxr $(bml.auxdir.pdfnoxr.subtree)
-	@$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$@)"
 
 ##### TODO:
 # (1) new pdfdeps.pl: add backslashes, duplicate .pdf prerequisites for .aux, .xml

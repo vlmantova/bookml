@@ -61,7 +61,7 @@ sub normalize_path {
 $auxdir = normalize_path($auxdir);
 
 my $xml     = "$auxdir/xml/$jobname.xml";
-my $log     = "$auxdir/latexmlaux/$jobname.latexml.log";
+my $log     = "$auxdir/latexmlaux/$jobname.latexml.logdeps";
 my $xmldeps = "$auxdir/deps/$jobname.xmldeps";
 
 open(my $log_fh, '<', $log) or die "cannot read '$log': $!";
@@ -84,7 +84,7 @@ while (<$log_fh>) {
 
 my @inputs = sort(keys %inputs);
 
-my $makefile = "$xml $xmldeps:";
+my $makefile = "$xml $log:";
 
 for (@inputs) {
   $makefile .= " \\\n  $_";

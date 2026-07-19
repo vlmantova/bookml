@@ -64,7 +64,7 @@ my $pdf     = "$auxdir/pdf/$jobname.pdf";
 my $aux     = "$auxdir/pdf/$jobname.aux";
 my $auxnoxr = "$auxdir/pdfnoxr/$jobname.aux";
 my $fls     = "$auxdir/pdf/$jobname.fls";
-my $log     = "$auxdir/pdf/$jobname.log";
+my $log     = "$auxdir/pdf/$jobname.logdeps";
 my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
 
 open(my $fls_fh, '<', $fls) or die "cannot read '$fls': $!";

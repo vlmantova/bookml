@@ -37,6 +37,7 @@ bml.grep = $(findstring $1,$(call bml.file,$2))
 # Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
 # (1) where to store auxiliary files (*.aux, *.d, *.toc,...)
 AUX_DIR ?= auxdir
+export AUX_DIR
 # (2) latexmk command and options
 LATEXMK      ?= latexmk
 LATEXMKFLAGS ?=
@@ -566,6 +567,7 @@ $(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr $(
 # (3) pdfdeps.pl: parse log for 'Package xr Info: IMPORTING LABELS FROM ... on input line', 'Package xr Warning:\nNo file ...', add files to BMLGOALS.AUX
 # (4) in pdf recipe: save old .aux file, restore it if content has not changed
 # (5) for each file in BMLGOALS.AUX, make the pdf depend on its aux file to avoid race conditions (but remove -g to avoid recompiling?)
+# (6) compile each PDF in auxdir/pdf/%/output.pdf so that xr is forced to look up auxdir/pdfnoxr
 
 # mirror folder tree under $(AUX_DIR)/pdf to support including files from subfolders
 $(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:

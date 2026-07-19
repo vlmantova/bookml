@@ -111,10 +111,9 @@ PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm))
 ### END CONFIGURATION
 
 ### INTERNAL VARIABLES
+BOOKML_DEPS_PDF         = bookml/latexmk.rc
 BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/search_index.pl bookml/XSLT/proc-text.xsl)
-BOOKML_DEPS_XML         = $(wildcard bookml/*.ltxml bookml/*.rng) \
-  bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
-BOOKML_DEPS_PREPROCESS  = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
+BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
 BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
 BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
 BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
@@ -529,7 +528,7 @@ $(bml.auxdir.pdf.subtree): $(AUX_DIR)/pdf/%:
 
 # if .pdfdeps is already being rebuilt via BMLGOALS.PDFDEPS, compile normally
 # typo LATEKMKFLAGS preserved for backwards compatibility
-$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: %.tex bookml/latexmk.rc $$(bml.pdf.direct) | $(AUX_DIR)/pdf $(bml.auxdir.pdf.subtree)
+$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: %.tex $(BOOKML_DEPS_PDF) $$(bml.pdf.direct) | $(AUX_DIR)/pdf $(bml.auxdir.pdf.subtree)
 	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
@@ -575,7 +574,7 @@ $(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:
 # build XML files
 # (Windows can sometimes set the READONLY attribute on the xml folder,
 #  especially on cloud drives, and this trips LaTeXML)
-$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEPS_XML) $(BOOKML_DEPS_PREPROCESS) $$(bml.xml.direct) | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
+$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEPS_XML) $$(bml.xml.direct) | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
 	@$(call bml.prog,latexml: $< → $*.xml)
 	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \

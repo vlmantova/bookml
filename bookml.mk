@@ -161,12 +161,12 @@ BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(patsubst %.aux,
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS.PDF))
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 
-bml.html.direct  = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.html.recurse = $(if $(bml.html.direct),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.xml.direct   = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.xml.recurse  = $(if $(bml.xml.direct),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.pdf.direct   = $(if $(filter $(AUX_DIR)/deps/$*.pdfdeps,$(BMLGOALS.PDFDEPS)),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.pdf.recurse  = $(if $(bml.pdf.direct),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.html.direct  = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.htmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.html.recurse = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.xml.direct   = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.xmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.xml.recurse  = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.pdf.direct   = $(if $(filter $(AUX_DIR)/deps/$*.pdfdeps,$(BMLGOALS.PDFDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.pdfdeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.pdf.recurse  = $(if $(filter $(AUX_DIR)/deps/$*.pdfdeps,$(BMLGOALS.PDFDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
 
 ### UTILS
 # cross-platform convenience variables
@@ -341,6 +341,7 @@ clean-html:
 	$(call bml.rmdir,$(AUX_DIR)/html)
 clean-pdf:
 	-$(call bml.rmdir,$(AUX_DIR)/pdf)
+	-$(call bml.rmdir,$(AUX_DIR)/pdfnoxr)
 	-$(RM) $(call bml.ospath,$(TARGETS.PDF) $(TARGETS.PDF:.pdf=.synctex) $(TARGETS.PDF:.pdf=.synctex.gz))
 clean-scorm:
 	-$(call bml.rmdir,$(AUX_DIR)/scorm)

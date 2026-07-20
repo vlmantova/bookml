@@ -159,7 +159,6 @@ BMLGOALS.XMLDEPS += $(filter $(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS)) $(patsubst $
 
 BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(patsubst %/,%,$(dir $(BMLGOALS.PDF))))
-$(error PDF='$(BMLGOALS.PDF)')
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 
 bml.html.direct  = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.htmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
@@ -257,6 +256,7 @@ ifeq ($(bml.is.win),true)
   bml.mkdir    = if not exist "$(call bml.ospath,$1/)" $(MKDIR) "$(call bml.ospath,$1/)"
   bml.rm       = if exist "$(call bml.ospath,$1)" $(RM) "$(call bml.ospath,$1)"
   bml.rmdir    = if exist "$(call bml.ospath,$1/)" $(RMDIR) "$(call bml.ospath,$1/)"
+  bml.cp       = if exist "$(call bml.ospath,$1)" $(CP) "$(call bml.ospath,$1)" "$(call bml.ospath,$2)"
 else
   SHELL       := bash
   bml.ospath   = $1
@@ -268,6 +268,7 @@ else
   bml.mkdir    = $(MKDIR) "$1/"
   bml.rm       = $(RM) "$1"
   bml.rmdir    = $(RMDIR) "$1"
+  bml.cp       = [ ! -f "$1" ] || $(CP) "$1" "$2"
 endif
 
 # friendly message checking for minimum and recommended version number
@@ -512,9 +513,11 @@ detect-curl: announce-detect-misc
 	@:
 
 # create directories
-# $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf scorm xml zip): | $(AUX_DIR)
-# $(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf pdfnoxr scorm xml zip):
-# 	@$(call bml.mkdir,$@)
+# for .pdf, remove existing .pdf files, to remain compatible with the previous builds
+$(AUX_DIR)/pdf/%.pdf/./:
+	$(call bml.rm,$(@:/./=))
+	@$(call bml.mkdir,$@)
+
 $(AUX_DIR)/%/./:
 	@$(call bml.mkdir,$@)
 
@@ -522,8 +525,8 @@ $(AUX_DIR)/%/./:
 # use relative paths is possible (with extra work if there are spaces)
 $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/$$*.pdf/$$(*F).pdf
 	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$*.pdf)")
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex.gz)" "$(call bml.ospath,$*.synctex.gz)" $(bml.null)
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex)" "$(call bml.ospath,$*.synctex)" $(bml.null)
+	@$(call bml.cp,$(AUX_DIR)/pdf/$*.synctex.gz,$*.synctex.gz)
+	@$(call bml.cp,$(AUX_DIR)/pdf/$*.synctex,$*.synctex)
 
 # build PDF and deps files in $(AUX_DIR)
 
@@ -531,9 +534,6 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/$$*.pdf/$$(*F).pdf
 bml.subtree := $(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.)))
 bml.auxdir.pdf.subtree = $(patsubst %,$(AUX_DIR)/pdf/$(*D)/%/./,$(bml.subtree))
 bml.auxdir.pdfnoxr.subtree = $(patsubst %,$(AUX_DIR)/pdf/$(*D)/%/./,$(bml.subtree))
-
-$(AUX_DIR)/pdf/%/./:
-	$(call bml.mkdir,$@)
 
 # if .pdfdeps is already being rebuilt via BMLGOALS.PDFDEPS, compile normally
 # typo LATEKMKFLAGS preserved for backwards compatibility
@@ -557,9 +557,7 @@ $(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/$$*.pdf/$
 # if .tex invokes xr, compile its aux files separately to prevent cyclic dependencies
 # TODO: replicate .pdfdeps mechanism
 # TODO: can we detect cyclic dependencies from Make?
-bml.auxdir.pdfnoxr.subtree := $(patsubst %,$(AUX_DIR)/pdfnoxr/%,$(bml.subtree))
-$(bml.auxdir.pdfnoxr.subtree): $(AUX_DIR)/pdfnoxr/%:
-	@$(call bml.mkdir,$@)
+bml.auxdir.pdfnoxr.subtree := $(patsubst %,$(AUX_DIR)/pdfnoxr/%/./,$(bml.subtree))
 
 # force compiling if pdfnoxr/%.aux is missing, otherwise it is treated as intermediate file
 $(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr/./ $(bml.auxdir.pdfnoxr.subtree)
@@ -575,10 +573,6 @@ $(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr/./
 # (4) in pdf recipe: save old .aux file, restore it if content has not changed
 # (5) for each file in BMLGOALS.AUX, make the pdf depend on its aux file to avoid race conditions (but remove -g to avoid recompiling?)
 # (6) compile each PDF in auxdir/pdf/%/output.pdf so that xr is forced to look up auxdir/pdfnoxr
-
-# mirror folder tree under $(AUX_DIR)/pdf to support including files from subfolders
-$(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:
-	@$(call bml.mkdir,$@)
 
 # build XML files
 # (Windows can sometimes set the READONLY attribute on the xml folder,

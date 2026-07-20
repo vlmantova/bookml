@@ -60,11 +60,11 @@ sub normalize_path {
 
 $auxdir = normalize_path($auxdir);
 
-my $pdf     = "$auxdir/pdf/$jobname.pdf";
-my $aux     = "$auxdir/pdf/$jobname.aux";
+my $pdf     = "$auxdir/pdf/$jobname.pdf/$jobname.pdf";
+my $aux     = "$auxdir/pdf/$jobname.pdf/$jobname.aux";
 my $auxnoxr = "$auxdir/pdfnoxr/$jobname.aux";
-my $fls     = "$auxdir/pdf/$jobname.fls";
-my $log     = "$auxdir/pdf/$jobname.logdeps";
+my $fls     = "$auxdir/pdf/$jobname.pdf/$jobname.fls";
+my $log     = "$auxdir/pdf/$jobname.pdf/$jobname.logdeps";
 my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
 
 open(my $fls_fh, '<', $fls) or die "cannot read '$fls': $!";

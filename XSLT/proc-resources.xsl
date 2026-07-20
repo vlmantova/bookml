@@ -50,6 +50,8 @@
         <xsl:if test="translate(substring(.,string-length(.) - 3),'PDF','pdf') = '.pdf' and not(starts-with(.,'/')) and not(starts-with(.,'../')) and not(substring(.,2,1) = ':')">
           <xsl:text> $(AUX_DIR)/pdf/</xsl:text>
           <xsl:value-of select="." />
+          <xsl:text>/</xsl:text>
+          <xsl:value-of select="str:split(.,'/')[last()]" />
         </xsl:if>
       </xsl:for-each>
     </xsl:variable>

@@ -207,6 +207,21 @@ mtext {
   }
 }
 
+/* improve logo alignment a little */
+.ltx_TeX_logo, .ltx_LaTeX_logo, .ltx_LaTeXML_logo {
+  &>span[aria-hidden="true"] {
+    display: inline-block;
+    text-box: trim-start cap alphabetic;
+  }
+}
+
+/* clear floats between terms in description lists */
+dl.ltx_description>dd::has(+dt) {
+  content: "";
+  display: block;
+  clear: both;
+}
+
 /* MathML polyfills */
 
 /* not needed on Firefox */

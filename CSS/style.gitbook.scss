@@ -304,6 +304,7 @@ object[type="image/svg+xml" i], iframe[src$=".svg" i], img {
 /* Fix <dt> margin (a GitBook bug?) */
 .book .book-body .page-wrapper .page-inner section.normal dl dt {
   margin-top: 0;
+  font-style: inherit; /* and LaTeX does not do italic here */
 }
 
 /* Tweak listings */

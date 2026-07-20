@@ -526,6 +526,11 @@ th > .ltx_p:last-child {
   }
 }
 
+/* as far as I can tell, LaTeX does not change font size in descriptions */
+dl.ltx_description>dt {
+  font-size: inherit;
+}
+
 /* plain MathML improvements */
 math {
   font-family: 'STIX Two Math', 'Latin Modern Math', 'Cambria Math', math;

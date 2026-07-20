@@ -56,7 +56,7 @@ ifndef SOURCES
   ifndef BMLGOALS
 	  bml.allsources := $(wildcard *.tex)
     $(if $(filter-out %.tex,$(bml.allsources)),$(warning Some .tex files have spaces in their names, which is not supported!))
-    SOURCES := $(foreach f,$(filter %.tex,$(bml.allsources)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
+    SOURCES := $(sort $(foreach f,$(filter %.tex,$(bml.allsources)),$(if $(call bml.grep,\documentclass,$(f)),$(f))))
   endif
 endif
 # (7) formats: possible values are pdf, scorm, zip

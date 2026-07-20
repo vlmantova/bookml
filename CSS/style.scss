@@ -216,7 +216,7 @@ mtext {
 }
 
 /* clear floats between terms in description lists */
-dl.ltx_description>dd::has(+dt) {
+dl.ltx_description>dd:has(+dt)::after {
   content: "";
   display: block;
   clear: both;

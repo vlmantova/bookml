@@ -119,6 +119,11 @@ BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
 BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
 BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
 
+### default target
+all:
+	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
+.PHONY: all
+
 ### determine, as best as we can, which files need to be compiled
 BMLGOALS ?= $(MAKECMDGOALS)
 ifneq (,$(filter html,$(MAKECMDGOALS)))
@@ -317,11 +322,6 @@ endif
 # force recompilation
 .PHONY: FORCE
 
-# default targets
-all:
-	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
-.PHONY: all
-
 all:
 html:  TARGETS=$(TARGETS.HTML)
 pdf:   TARGETS=$(TARGETS.PDF)
@@ -515,7 +515,7 @@ detect-curl: announce-detect-misc
 
 # create directories
 # for .pdf, remove existing .pdf files, to remain compatible with the previous builds
-$(AUX_DIR)/pdf/%.pdf/./:
+$(AUX_DIR)/pdf/%.pdf/./: | %.tex
 	@$(call bml.rm,$(@:/./=))
 	@$(call bml.mkdir,$@)
 

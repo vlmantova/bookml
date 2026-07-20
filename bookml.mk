@@ -62,8 +62,8 @@ endif
 # (7) formats: possible values are pdf, scorm, zip
 FORMATS ?= scorm zip
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
-TARGETS.PDF   ?= $(SOURCES:.tex=.pdf)
-TARGETS.XML   ?= $(patsubst %.tex,$(AUX_DIR)/xml/%.xml,$(SOURCES))
+TARGETS.PDF   ?= $(sort $(SOURCES:.tex=.pdf))
+TARGETS.XML   ?= $(patsubst %.tex,$(AUX_DIR)/xml/%.xml,$(sort $(SOURCES)))
 TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))

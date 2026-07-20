@@ -25,12 +25,19 @@
 use warnings;
 use strict;
 use Cwd;
-use Encode qw(decode_utf8);
+use Encode qw(decode decode_utf8 encode);
+use Encode::Locale;
 use File::Spec;
+
+use open ':std', ':encoding(UTF-8)';
+binmode(STDERR, ':encoding(UTF-8)');
+binmode(STDOUT, ':encoding(UTF-8)');
 
 BEGIN {
   require Win32 if $^O eq 'MSWin32';
 }
+
+Encode::Locale::decode_argv(Encode::FB_CROAK);
 
 my $auxdir  = $ARGV[0];
 my $jobname = $ARGV[1];
@@ -38,7 +45,7 @@ my $jobname = $ARGV[1];
 die 'you must specify exactly one directory and a jobname' if !$auxdir || @ARGV != 2;
 
 # ignore PWD from .fls as it may be garbled, we know it is the current directory
-my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode_utf8(Cwd::getcwd);
+my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('locale_fs', Cwd::getcwd, Encode::FB_CROAK);
 
 sub normalize_path {
   my ($file) = @_;
@@ -67,8 +74,8 @@ my $fls     = "$auxdir/pdf/$jobname.pdf/$jobname.fls";
 my $log     = "$auxdir/pdf/$jobname.pdf/$jobname.logdeps";
 my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
 
-open(my $fls_fh, '<', $fls) or die "cannot read '$fls': $!";
-open(my $log_fh, '<', $log) or die "cannot read '$log': $!";
+open(my $fls_fh, '<', encode('locale_fs', $fls, Encode::FB_CROAK)) or die "cannot read '$fls': $!";
+open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK)) or die "cannot read '$log': $!";
 
 my %inputs   = ();
 my %outputs  = ();
@@ -166,5 +173,5 @@ if (my @inputs = (sort(keys %inputs), @xrinputs)) {
   $makefile .= "\n";
 }
 
-open(my $fh_pdfdeps, '>', $pdfdeps) or die "cannot write '$pdfdeps': $!";
+open(my $fh_pdfdeps, '>', encode('locale_fs', $pdfdeps, Encode::FB_CROAK)) or die "cannot write '$pdfdeps': $!";
 print $fh_pdfdeps $makefile;

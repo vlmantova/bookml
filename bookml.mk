@@ -588,7 +588,7 @@ $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEP
 $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex FORCE $$(bml.xml.recurse)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/xml/$*.xml"
 
-$(sort $(BMLGOALS.XMLDEPS)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps | $(AUX_DIR)/deps/./
+$(sort $(BMLGOALS.XMLDEPS)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps bookml/postxml.pl | $(AUX_DIR)/deps/./
 	@$(PERL) bookml/postxml.pl "$(AUX_DIR)" "$*"
 
 # build HTML and deps files

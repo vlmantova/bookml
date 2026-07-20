@@ -25,12 +25,20 @@
 use warnings;
 use strict;
 use Cwd;
-use Encode qw(decode_utf8);
+use Encode qw(decode decode_utf8 encode);
+use Encode::Locale;
 use File::Spec;
+
+use utf8;
+use open ':std', ':encoding(UTF-8)';
+binmode(STDERR, ':encoding(UTF-8)');
+binmode(STDOUT, ':encoding(UTF-8)');
 
 BEGIN {
   require Win32 if $^O eq 'MSWin32';
 }
+
+Encode::Locale::decode_argv(Encode::FB_CROAK);
 
 my $auxdir  = $ARGV[0];
 my $jobname = $ARGV[1];
@@ -38,11 +46,13 @@ my $jobname = $ARGV[1];
 die 'you must specify exactly one directory and a jobname' if !$auxdir || @ARGV != 2;
 
 # ignore PWD from .fls as it may be garbled, we know it is the current directory
-my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode_utf8(Cwd::getcwd);
+my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('locale_fs', Cwd::getcwd, Encode::FB_CROAK);
 
 sub normalize_path {
   my ($file) = @_;
-  $file = File::Spec->canonpath($file);
+  # LaTeXML 0.8.8 forgets to decode the output of Cwd so we do this here
+  # TODO if LaTeXML fixes this issue, remove the workaround
+  $file = File::Spec->canonpath(decode('locale_fs', $file, Encode::FB_CROAK));
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);
     if (!File::Spec->file_name_is_absolute($relfile)) {
@@ -64,7 +74,7 @@ my $xml     = "$auxdir/xml/$jobname.xml";
 my $log     = "$auxdir/latexmlaux/$jobname.latexml.logdeps";
 my $xmldeps = "$auxdir/deps/$jobname.xmldeps";
 
-open(my $log_fh, '<', $log) or die "cannot read '$log': $!";
+open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK)) or die "cannot read '$log': $!";
 
 my %inputs = ();
 
@@ -98,5 +108,5 @@ for (@inputs) {
 
 $makefile .= "\n";
 
-open(my $fh_xmldeps, '>', $xmldeps) or die "cannot write '$xmldeps': $!";
+open(my $fh_xmldeps, '>', encode('locale_fs', $xmldeps, Encode::FB_CROAK)) or die "cannot write '$xmldeps': $!";
 print $fh_xmldeps $makefile;

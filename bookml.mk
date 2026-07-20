@@ -125,7 +125,7 @@ ifneq (,$(filter html,$(MAKECMDGOALS)))
 BMLGOALS += $(TARGETS.HTML)
 endif
 ifneq (,$(filter pdf,$(MAKECMDGOALS)))
-BMLGOALS += $(patsubst %,$(AUX_DIR)/pdf/%,$(join $(TARGETS.PDF),$(addprefix /,$(notdir $(TARGETS.PDF)))))
+BMLGOALS += $(patsubst %,$(AUX_DIR)/pdf/%,$(join $(TARGETS.PDF:=/),$(notdir $(TARGETS.PDF))))
 endif
 ifneq (,$(filter scorm,$(MAKECMDGOALS)))
 BMLGOALS += $(TARGETS.SCORM)
@@ -157,8 +157,9 @@ BMLGOALS.XML     += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_
 BMLGOALS.XMLDEPS += $(filter $(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS.XML))
 -include $(sort $(BMLGOALS.XMLDEPS) $(wildcard $(AUX_DIR)/deps/*.xmldeps))
 
-BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter %.pdf,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
+BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(patsubst %/,%,$(dir $(BMLGOALS.PDF))))
+$(error PDF='$(BMLGOALS.PDF)')
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 
 bml.html.direct  = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.htmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)

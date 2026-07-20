@@ -183,7 +183,8 @@ endef
 
 # recursively list all files and folders, or just files, within a directory (after https://stackoverflow.com/a/18258352)
 bml.reclist      = $(foreach d,$(wildcard $(1:=/*)),$(call bml.reclist,$d) $d)
-bml.reclist.dir  = $(foreach d,$(wildcard $(1:=/*/./)),$(call bml.reclist.dir,$(d:/./=)) $(d:/./=))
+# list leaf folders only to speed up folder creation
+bml.reclist.dir  = $(foreach d,$(wildcard $(1:=/*/./)),$(eval _x:=$(call bml.reclist.dir,$(d:/./=)))$(if $(_x),$(_x),$(d:/./=)))
 bml.reclist.file = $(foreach d,$(wildcard $(1:=/*)),$(eval _x:=$(call bml.reclist.file,$d))$(if $(_x),$(_x),$d)) # BUG: empty folders are interpreted as files
 
 # painful version comparison

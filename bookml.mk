@@ -157,7 +157,7 @@ BMLGOALS.XML     += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_
 BMLGOALS.XMLDEPS += $(filter $(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS.XML))
 -include $(sort $(BMLGOALS.XMLDEPS) $(wildcard $(AUX_DIR)/deps/*.xmldeps))
 
-BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
+BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter %.pdf,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS.PDF))
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 

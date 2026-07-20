@@ -150,14 +150,15 @@ BMLGOALS.SCORM += $(filter SCORM.%.zip,$(BMLGOALS))
 BMLGOALS.ZIP   += $(filter %.zip,$(filter-out SCORM.%.zip,$(BMLGOALS)))
 
 BMLGOALS.HTML     += $(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)) $(patsubst SCORM.%.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.SCORM)) $(patsubst %.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.ZIP))
+BMLGOALS.XML     += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(AUX_DIR)/xml/%.xml,$(filter $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(BMLGOALS))) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/xml/%.xml,$(BMLGOALS.HTML))
+BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
+
 BMLGOALS.HTMLDEPS += $(filter $(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS.HTML))
 -include $(sort $(BMLGOALS.HTMLDEPS) $(wildcard $(AUX_DIR)/deps/*.htmldeps))
 
-BMLGOALS.XML     += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(AUX_DIR)/xml/%.xml,$(filter $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(BMLGOALS))) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/xml/%.xml,$(BMLGOALS.HTML))
 BMLGOALS.XMLDEPS += $(filter $(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS.XML))
 -include $(sort $(BMLGOALS.XMLDEPS) $(wildcard $(AUX_DIR)/deps/*.xmldeps))
 
-BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(patsubst %/,%,$(dir $(BMLGOALS.PDF))))
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 
@@ -515,11 +516,11 @@ detect-curl: announce-detect-misc
 # create directories
 # for .pdf, remove existing .pdf files, to remain compatible with the previous builds
 $(AUX_DIR)/pdf/%.pdf/./:
-	$(call bml.rm,$(@:/./=))
+	@$(call bml.rm,$(@:/./=))
 	@$(call bml.mkdir,$@)
 
 $(AUX_DIR)/%/./:
-	@$(call bml.mkdir,$@)
+	$(call bml.mkdir,$@)
 
 # copy PDF and synctex.gz files from $(AUX_DIR) to main folder
 # use relative paths is possible (with extra work if there are spaces)
@@ -533,7 +534,7 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/$$*.pdf/$$(*F).pdf
 # generate all possible subfolders so that \include{subfolder/...} can write its aux files
 bml.subtree := $(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.)))
 bml.auxdir.pdf.subtree = $(patsubst %,$(AUX_DIR)/pdf/$(*D)/%/./,$(bml.subtree))
-bml.auxdir.pdfnoxr.subtree = $(patsubst %,$(AUX_DIR)/pdf/$(*D)/%/./,$(bml.subtree))
+bml.auxdir.pdfnoxr.subtree = $(patsubst %,$(AUX_DIR)/pdfnoxr/%/./,$(bml.subtree))
 
 # if .pdfdeps is already being rebuilt via BMLGOALS.PDFDEPS, compile normally
 # typo LATEKMKFLAGS preserved for backwards compatibility
@@ -557,7 +558,6 @@ $(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/$$*.pdf/$
 # if .tex invokes xr, compile its aux files separately to prevent cyclic dependencies
 # TODO: replicate .pdfdeps mechanism
 # TODO: can we detect cyclic dependencies from Make?
-bml.auxdir.pdfnoxr.subtree := $(patsubst %,$(AUX_DIR)/pdfnoxr/%/./,$(bml.subtree))
 
 # force compiling if pdfnoxr/%.aux is missing, otherwise it is treated as intermediate file
 $(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr/./ $(bml.auxdir.pdfnoxr.subtree)

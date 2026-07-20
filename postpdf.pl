@@ -116,7 +116,7 @@ while (<$log_fh>) {
 
 my $makefile = "";
 
-if (my @outputs = sort(keys %outputs)) {
+if (my @outputs = grep { $_ !~ m!^$auxdir/pdf/$jobname\.(?:aux|fls|pdf)! } (sort(keys %outputs))) {
   for (@outputs) {
     delete $inputs{$_};
   }
@@ -136,18 +136,28 @@ if (my @inputs = (sort(keys %inputs), @xrinputs)) {
     $makefile .= " \\\n  $_" unless m!^$auxdir/!;
   }
 
-  $makefile .= "\n\n$pdf $aux $fls $log:";
+  if (my @noxrinputs = sort(grep { m!^$auxdir/pdfnoxr/! } @inputs)) {
+    $makefile .= "\n\n$pdf $aux $fls $log:";
 
-  for (@inputs) {
-    $makefile .= " \\\n  $_" if m!^$auxdir/!;
+    for (@noxrinputs) {
+      $makefile .= " \\\n  $_";
+    }
   }
 
   if (%xrinputs) {
     $makefile .= "\n\nifneq (,\$(filter $pdf,\$(BMLGOALS.PDF)))\n";
+    my @auxs = grep { m!^$auxdir/pdfnoxr/! } @xrinputs;
+    for (@auxs) {
+      my $pdfnoxr = $_ =~ s!^$auxdir/pdfnoxr/((?:.*/)?)([^/]*)\.aux$!$auxdir/pdf/$1$2.pdf/$2.pdf!r;
+      my $deps    = $_ =~ s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/deps/$1.pdfdeps!r;
+      $makefile .= "ifeq (,\$(filter $pdfnoxr,\$(BMLGOALS.PDF))\$(wildcard $deps))\n-include $deps\nendif\n";
+    }
     $makefile .= 'BMLGOALS.PDF += ';
-    $makefile .= join(' ', map { s!^$auxdir/pdfnoxr/(.*)\.aux$!$auxdir/pdf/$1.pdf!r } (grep { m!^$auxdir/pdfnoxr/! } @xrinputs));
-    $makefile .= "\nendif\n";
+    $makefile .= join(' ', map { s!^$auxdir/pdfnoxr/((?:.*/)?)([^/]*)\.aux$!$auxdir/pdf/$1$2.pdf/$2.pdf!r } (grep { m!^$auxdir/pdfnoxr/! } @xrinputs));
+    $makefile .= "\nendif";
   }
+
+  $makefile .= "\n";
 
   for (@inputs) {
     $makefile .= "\n$_:";

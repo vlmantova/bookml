@@ -53,6 +53,7 @@ sub normalize_path {
   # LaTeXML 0.8.8 forgets to decode the output of Cwd so we do this here
   # TODO if LaTeXML fixes this issue, remove the workaround
   $file = File::Spec->canonpath(decode('locale_fs', $file, Encode::FB_CROAK));
+  $file = Win32::GetLongPathName($file) if $^O eq 'MSWin32';
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);
     if (!File::Spec->file_name_is_absolute($relfile)) {

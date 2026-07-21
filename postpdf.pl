@@ -49,6 +49,7 @@ my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('l
 
 sub normalize_path {
   my ($file) = @_;
+  $file = Win32::GetLongPathName($file) if $^O eq 'MSWin32';
   $file = File::Spec->canonpath($file);
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);

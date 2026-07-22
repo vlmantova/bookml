@@ -233,7 +233,7 @@ bml.prog = $(call bml.box,$1)
 
 # colors
 ifeq ($(call ver.lt,$(MAKE_VERSION),4.1),true)
-  MAKE_TERMOUT ?= $(if $(bml.is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true))
+  MAKE_TERMOUT ?= $(if $(bml.is.win),,$(shell tput setaf 1 >/dev/null 2>&1 && echo true))
 endif
 ifneq (,$(MAKE_TERMOUT))
   bml.esc     := 
@@ -248,11 +248,13 @@ ifneq (,$(MAKE_TERMOUT))
   bml.white   := $(bml.esc)[97m
   bml.bluebg  := $(bml.esc)[44m
   bml.reset   := $(bml.esc)[0m
+  ifeq ($(bml.is.win),true)
+    __ignore    := $(shell chcp 65001)
+  endif
 endif
 
 ifeq ($(bml.is.win),true)
   SHELL       := cmd.exe
-  __ignore    := $(shell chcp 65001)
   bml.ospath   = $(subst /,$(bml.pathsep),$1)
   bml.pathsep := $(strip \)
   bml.null    := 2>NUL

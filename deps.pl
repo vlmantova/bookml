@@ -77,6 +77,10 @@ sub Message {
   exit 1 if $severity eq 'Fatal';
 }
 
+sub Warn {
+  Message('Warning', @_);
+}
+
 sub Fatal {
   Message('Fatal', @_);
 }
@@ -87,8 +91,14 @@ my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('l
 
 sub normalize_path {
   my ($file) = @_;
-  # if $file does not exist, fall back gracefully
-  $file = Win32::GetLongPathName($file) // $file if $^O eq 'MSWin32';
+  # if $file does not exist (problematic!), fall back gracefully
+  if ($^O eq 'MSWin32') {
+    if (my $long = Win32::GetLongPathName($file)) {
+      $file = $long;
+    } else {
+      Warn('I/O', $file, "could not determine the long file name, changes to '$file' will likely not be detected");
+    };
+  }
   $file = File::Spec->canonpath($file);
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);

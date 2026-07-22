@@ -193,6 +193,12 @@ bml.pdfaux.recurse = $(if $(filter $(AUX_DIR)/deps/$*.pdfauxdeps,$(BMLGOALS.PDFA
 bml.not.intermediate = $(if $(wildcard $@),,FORCE)
 
 ### UTILS
+# per-target configuration variables
+bml.tovarprefix = $(subst /,_,$(subst #,_,$(subst -,_,$(subst =,_,$(subst +,_,$1)))))
+bml.getvar      = $(if $($(call bml.tovarprefix,$1)_$2),$($(call bml.tovarprefix,$1)_$2),$($2))
+bml.var         = $(if $(call bml.getvar $*,$1),$(call bml.getvar $*,$1),$($*))
+bml.flags       = $($*) $(if $(call bml.getvar $*,$1),$(call bml.getvar $*,$1))
+
 # cross-platform convenience variables
 bml.openp   := (
 bml.closedp := )
@@ -558,7 +564,9 @@ bml.auxdir.pdfaux.subtree = $(patsubst %,$(AUX_DIR)/pdfaux/%/./,$(bml.subtree))
 bml.assert.pdf.naming = $(if $(filter-out $(*F).pdf,$(notdir $(*D))),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
 $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: $$(basename $$(*D)).tex $$(bml.assert.pdf.naming) $(BOOKML_DEPS_PDF) $$(bml.pdf.direct) | $$(@D)/./ $$(bml.auxdir.pdf.subtree)
 	@$(call bml.prog,latexmk: $(basename $(*D)).tex → $(*D))
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
+	@$(call bml.cmd,$(call bml.var,TEXFOT) $(call bml.flags,TEXFOTFLAGS) \
+	  $(call bml.var,LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- \
+	  $(if $(call bml.var,SYNCTEX),-synctex=$(call bml.var,SYNCTEX),) $(LATEKMKFLAGS) $(call bml.flags,LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -MP -output-directory="$(@D)" "$<")
 	@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.log)" "$(call bml.ospath,$(AUX_DIR)/pdf/$*.logdeps)"

@@ -469,6 +469,7 @@ detect-imagemagick: announce-detect-image
 	@:
 detect-pdftosvg-converter: announce-detect-image
 	@$(call bml.echo,$(bml.magenta) --- PDFTOSVG_CONVERTER is set to '$(PDFTOSVG_CONVERTER)' ---)
+	@:
 detect-ghostscript: announce-detect-image detect-pdftosvg-converter
 	@$(foreach a, \
 	  $(if $(bml.is.win),gswin64c gswin64 gswin32c gswin32 mgs,gs), \

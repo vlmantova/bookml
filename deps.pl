@@ -128,9 +128,9 @@ for my $log (@logs) {
   print STDERR "log '$log'\n";
   my $logname = normalize_path($log) =~ s!^$auxdir/!!r;
   print STDERR "'$logname'\n";
-  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.log!) {
+  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
     my $jobname = $1;
-  } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|log)$!) {
+  } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|logdeps)$!) {
     my $aux     = $1;
     my $ext     = $3;
     my $jobname = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;

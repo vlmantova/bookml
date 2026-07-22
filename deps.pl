@@ -87,7 +87,8 @@ my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('l
 
 sub normalize_path {
   my ($file) = @_;
-  $file = Win32::GetLongPathName($file) if $^O eq 'MSWin32';
+  # if $file does not exist, fall back gracefully
+  $file = Win32::GetLongPathName($file) // $file if $^O eq 'MSWin32';
   $file = File::Spec->canonpath($file);
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);
@@ -156,13 +157,15 @@ for my $log (@logs) {
         } elsif ($nextline) {
           $nextline = 0;
           if (m/^\s*No file (.*)\.aux\s*$/) {
-            my $file = normalize_path($1);
-            $$deps{"pdf$aux/$jobname"}{XR}{"$file.aux"} = 1;
+            # the .tex file should exist, start from there to properly resolve the file name on Windows
+            my $tex = normalize_path("$1.tex");
+            my $aux_file = $tex =~ s!\.tex$!.aux!r;
+            $$deps{"pdf$aux/$jobname"}{XR}{$aux_file} = 1;
             # pretend that the file actually existed
-            $$deps{"pdf$aux/$jobname"}{INPUT}{"$file.tex"} = 1;
+            $$deps{"pdf$aux/$jobname"}{INPUT}{$tex} = 1;
             if (!$aux) {
-              $file = "$auxdir/pdfaux/$file" if !File::Spec->file_name_is_absolute($file);
-              $$deps{"pdf$aux/$jobname"}{INPUT}{"$file.aux"} = 1;
+              $aux_file = "$auxdir/pdfaux/$aux_file" if !File::Spec->file_name_is_absolute($aux_file);
+              $$deps{"pdf$aux/$jobname"}{INPUT}{$aux_file} = 1;
             }
           }
         }

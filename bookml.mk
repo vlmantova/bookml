@@ -329,6 +329,7 @@ scorm: TARGETS=$(TARGETS.SCORM)
 xml:   TARGETS=$(TARGETS.XML)
 zip:   TARGETS=$(TARGETS.ZIP)
 
+$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(TARGETS)$(if $(MAKE_RESTARTS), ($(MAKE_RESTARTS)x))))$(bml.reset)$(bml.redbg) $(bml.reset))
 announce-targets:
 	@$(call bml.box,Targets: $(TARGETS))
 .PHONY: announce-targets

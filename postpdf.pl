@@ -75,8 +75,8 @@ my $fls     = "$auxdir/pdf/$jobname.pdf/$jobname.fls";
 my $log     = "$auxdir/pdf/$jobname.pdf/$jobname.logdeps";
 my $pdfdeps = "$auxdir/deps/$jobname.pdfdeps";
 
-open(my $fls_fh, '<', encode('locale_fs', $fls, Encode::FB_CROAK)) or die "cannot read '$fls': $!";
-open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK)) or die "cannot read '$log': $!";
+open(my $fls_fh, '<', encode('locale_fs', $fls, Encode::FB_CROAK | Encode::LEAVE_SRC)) or die "cannot read '$fls': $!";
+open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK | Encode::LEAVE_SRC)) or die "cannot read '$log': $!";
 
 my %inputs   = ();
 my %outputs  = ();

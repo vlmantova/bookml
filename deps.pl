@@ -28,6 +28,7 @@ use Cwd;
 use Encode qw(decode decode_utf8 encode);
 use Encode::Locale;
 use File::Spec;
+use Term::ANSIColor qw(colored);
 
 use open ':std', ':encoding(UTF-8)';
 binmode(STDERR, ':encoding(UTF-8)');
@@ -69,12 +70,20 @@ my %color_scheme = (
   fatal   => 'bold red underline',
 );
 
-sub Error {
+sub Message {
   my ($severity, $category, $object, $summary) = @_;
   my $prefix = "$severity:$category:$object";
-  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{lc($severity)}) : $prefix) . " $summary\n");
+  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{ lc($severity) }) : $prefix) . " $summary\n");
   exit 1 if $severity eq 'Fatal';
 }
+
+sub Fatal {
+  Message('Fatal', @_);
+}
+
+my @logs = ();
+my ($auxdir, $output);
+my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('locale_fs', Cwd::getcwd, Encode::FB_CROAK);
 
 sub normalize_path {
   my ($file) = @_;
@@ -95,32 +104,75 @@ sub normalize_path {
   return $file;
 }
 
-my @logs = ();
-my ($auxdir, $output);
-my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('locale_fs', Cwd::getcwd, Encode::FB_CROAK);
-
 while (@ARGV) {
   my $arg = shift @ARGV;
   if ($arg eq '--output' || $arg eq '-o') {
-    $output = (shift @ARGV) or Error('Fatal', 'expected', 'output-file', "argument required after $arg");
-  elsif ($arg eq '--auxdir' || $arg eq '-a') {
-    $auxdir = (shift @ARGV) or Error('Fatal', 'expected', 'aux-dir', "argument required after $arg");
+    $output = (shift @ARGV) or Fatal('expected', 'output', "argument required after $arg");
+  } elsif ($arg eq '--auxdir' || $arg eq '-a') {
+    $auxdir = (shift @ARGV) or Fatal('expected', 'auxdir', "argument required after $arg");
   } elsif ($arg =~ /^-/) {
-    Error('Fatal', 'unexpected', '$arg', 'this minimal script only supports --auxdir, -a, --output, -o');
+    Fatal('unexpected', '$arg', 'this minimal script only supports --auxdir, -a, --output, -o');
   } else {
     push(@logs, $arg);
   }
 }
 
-Error('Fatal', 'expected', 'aux-dir', 'you must specify the aux directory with --auxdir');
+Fatal('expected', 'aux-dir', 'you must specify the aux directory with --auxdir') unless $auxdir;
 
-$output = normalize_path($output) if $output;
 $auxdir = normalize_path($auxdir);
 
-my %deps = ();
+my $deps = {};
+
+for my $log (@logs) {
+  open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK | Encode::LEAVE_SRC)) or Fatal('I/O', $log, "cannot read '$log': $!");
+  print STDERR "log '$log'\n";
+  my $logname = normalize_path($log) =~ s!^$auxdir/!!r;
+  print STDERR "'$logname'\n";
+  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.log!) {
+    my $jobname = $1;
+  } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|log)$!) {
+    my $aux     = $1;
+    my $ext     = $3;
+    my $jobname = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;
+    if ($ext eq 'fls') {
+      while (<$log_fh>) {
+        if (m/^\s*(INPUT|OUTPUT)\s+(.*)$/) {
+          my $type = $1;
+          my $file = normalize_path($2);
+          $$deps{"pdf$aux/$jobname"}{ lc($type) }{$file} = 1;
+        }
+      }
+    } else {
+      my $nextline = 0;
+      while (<$log_fh>) {
+        if (m/^\s*Package xr Info: IMPORTING LABELS FROM (.*) on input line \d+.\s*$/) {
+          my $file = normalize_path($1);
+          $$deps{"pdf$aux/$jobname"}{xr}{$file} = 1;
+        } elsif (m/^\s*Package xr Warning:\s*$/) {
+          $nextline = 1;
+        } elsif ($nextline) {
+          $nextline = 0;
+          if (m/^\s*No file (.*)\s*$/) {
+            my $raw_file = $1;
+            my $file     = normalize_path($1);
+            $file = "$auxdir/pdfaux/$file" if !File::Spec->file_name_is_absolute($raw_file);
+            $$deps{"pdf$aux/$jobname"}{xr}{$file} = 1;
+          }
+        }
+      }
+    }
+  } else {
+    Fatal('malformed', $logname, 'cannot determine source of log');
+  }
+}
+
+use Data::Dumper;
+
+print STDERR Dumper($deps);
 
 exit 1;
 
+my $jobname;
 my $pdf     = "$auxdir/pdf/$jobname.pdf/$jobname.pdf";
 my $aux     = "$auxdir/pdf/$jobname.pdf/$jobname.aux";
 my $auxnoxr = "$auxdir/pdfnoxr/$jobname.aux";

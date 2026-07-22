@@ -60,14 +60,20 @@ ifndef SOURCES
   endif
 endif
 # (7) formats: possible values are pdf, scorm, zip
-FORMATS ?= scorm zip
+FORMATS          ?= scorm zip
+FORMATS.CMD      := $(filter pdf scorm zip,$(MAKECMDGOALS))
+override FORMATS := $(sort $(FORMATS) $(FORMATS.CMD))
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
 TARGETS.PDF   ?= $(sort $(SOURCES:.tex=.pdf))
 TARGETS.XML   ?= $(patsubst %.tex,$(AUX_DIR)/xml/%.xml,$(sort $(SOURCES)))
 TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
-TARGETS       ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
+TARGETS.CMD   := $(filter-out all pdf scorm zip clean clean-% detect detect-%,$(MAKECMDGOALS))
+TARGETS       ?= $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)))
+ifneq (,$(BMLGOALS))
+override TARGETS = $(sort $(BMLGOALS))
+endif
 # (9) texfot (optional, disable with TEXFOT=)
 ifndef TEXFOT
   TEXFOT    := $(if $(call bml.which,texfot),texfot)
@@ -331,12 +337,9 @@ scorm: TARGETS=$(TARGETS.SCORM)
 xml:   TARGETS=$(TARGETS.XML)
 zip:   TARGETS=$(TARGETS.ZIP)
 
-$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(TARGETS)$(if $(MAKE_RESTARTS), ($(MAKE_RESTARTS)x))))$(bml.reset)$(bml.redbg) $(bml.reset))
-announce-targets:
-	@$(call bml.box,Targets: $(TARGETS))
-.PHONY: announce-targets
+$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS))$(if $(MAKE_RESTARTS), (pass number $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),,(recursion level $(MAKELEVEL))))) $(bml.reset))
 
-all html pdf scorm xml zip: announce-targets .WAIT $$(TARGETS)
+all html pdf scorm xml zip: $$(TARGETS)
 .PHONY: all html pdf scorm xml zip
 
 # cleanup targets

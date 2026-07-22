@@ -87,7 +87,8 @@ sub Fatal {
 
 my @logs = ();
 my ($output, $physical_auxdir);
-my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('locale_fs', Cwd::getcwd, Encode::FB_CROAK);
+my $raw_cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : Cwd::getcwd;
+my $cwd = $^O eq 'MSWin32' ? $raw_cwd : decode('locale_fs', $raw_cwd, Encode::FB_CROAK | Encode::LEAVE_SRC);
 my $auxdir = '$(AUX_DIR)';
 
 sub normalize_path {
@@ -123,6 +124,15 @@ sub logic_path {
   return $file;
 }
 
+# LaTeXML 0.8.8 does not decode Cwd::getcwd
+sub fix_latexml_cwd_encoding {
+  my ($file) = @_;
+  if ($^O ne 'Win32') {
+    $file =~ s!^$raw_cwd/!$cwd/!;
+  }
+  return $file;
+}
+
 while (@ARGV) {
   my $arg = shift @ARGV;
   if ($arg eq '--output' || $arg eq '-o') {
@@ -149,10 +159,34 @@ for my $log (@logs) {
 
   if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
     my $jobname = $1;
+    my $targetname = "xml/$jobname";
+    $$deps{$targetname} = {} if ! $$deps{$targetname};
+    my $target_deps = $$deps{$targetname};
+
+    while (<$log_fh>) {
+      my $file;
+      if (m/^\(Loading (?:RelaxNG schema from |compiled schema )([^()]+\.(?:ltxml|latexml|model|rng))\.\.\./) {
+        $file = $1;
+      } elsif (m/^\((?:Loading RelaxNG [^()]+|Preparsing Bibliography <Unknown>|Processing (?:content|definitions) (?:Literal String|Anonymous String))\.\.\./) {
+        next;
+      } elsif (m/^\((?:Processing (?:content|definitions) |Loading |Preparsing Bibliography )([^())]+)\.\.\./) {
+        $file = $1;
+      } else {
+        next;
+      }
+      $file = fix_latexml_cwd_encoding($file);
+      $file = normalize_path($file);
+      # ignore redundant .tex dependency
+      next if $file eq "$jobname.tex";
+      $$target_deps{$file} = 1;
+    }
   } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|logdeps)$!) {
     my $aux     = $1;
     my $ext     = $3;
     my $jobname = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;
+    my $targetname = "pdf$aux/$jobname";
+    $$deps{$targetname} = {} if ! $$deps{$targetname};
+    my $target_deps = $$deps{$targetname};
 
     if ($ext eq 'fls') {
       while (<$log_fh>) {
@@ -162,7 +196,9 @@ for my $log (@logs) {
           my $file = logic_path($1);
           # skip files that could cause cyclic dependencies
           next if $file =~ m!^\Q$auxdir\E/pdf$aux/!;
-          $$deps{"pdf$aux/$jobname"}{INPUT}{$file} = 1;
+          # ignore redundant .tex dependency
+          next if $file eq "$jobname.tex";
+          $$target_deps{INPUT}{$file} = 1;
         }
       }
     } else {
@@ -170,7 +206,7 @@ for my $log (@logs) {
       while (<$log_fh>) {
         if (m/^\s*Package xr Info: IMPORTING LABELS FROM (.*\.aux) on input line \d+.\s*$/) {
           my $file = logic_path($1);
-          $$deps{"pdf$aux/$jobname"}{XR}{$file} = 1;
+          $$target_deps{XR}{$file} = 1;
         } elsif (m/^\s*Package xr Warning:\s*$/) {
           $nextline = 1;
         } elsif ($nextline) {
@@ -180,12 +216,12 @@ for my $log (@logs) {
             # the .tex file should exist, start from there to properly resolve the file name on Windows
             my $tex = logic_path("$1.tex");
             my $aux_file = $tex =~ s!\.tex$!.aux!r;
-            $$deps{"pdf$aux/$jobname"}{XR}{$aux_file} = 1;
+            $$target_deps{XR}{$aux_file} = 1;
             # pretend that the file actually existed
-            $$deps{"pdf$aux/$jobname"}{INPUT}{$tex} = 1 if !$aux;
+            $$target_deps{INPUT}{$tex} = 1 if !$aux;
             if (!$aux) {
               $aux_file = "$auxdir/pdfaux/$aux_file" if !File::Spec->file_name_is_absolute($aux_file);
-              $$deps{"pdf$aux/$jobname"}{INPUT}{$aux_file} = 1;
+              $$target_deps{INPUT}{$aux_file} = 1;
             }
           }
         }
@@ -201,13 +237,23 @@ my $makefile = '';
 for my $target (sort keys %$deps) {
   my $target_deps = $$deps{$target};
 
-  for (keys %{ $$target_deps{INPUT} }) {
-    delete $$target_deps{INPUT}{$_};
-    $_ =~ s!^$auxdir/!\$(AUX_DIR)/!;
-    $$target_deps{INPUT}{$_} = 1;
-  }
+  if ($target =~ m!^xml/(.*)!) {
+    my $fullname = "\$(AUX_DIR)/$target";
 
-  if ($target =~ m!^pdf((?:aux)?)/(.*)$!) {
+    if (my @inputs = sort(keys %$target_deps)) {
+      $makefile .= "$fullname.xml $fullname.logdeps: \\\n  ";
+      $makefile .= join(" \\\n  ", @inputs);
+      $makefile .= "\n\n";
+      $makefile .= join(":\n", @inputs);
+      $makefile .= ":\n";
+    }
+  } elsif ($target =~ m!^pdf((?:aux)?)/(.*)$!) {
+    for (keys %{ $$target_deps{INPUT} }) {
+      delete $$target_deps{INPUT}{$_};
+      $_ =~ s!^$auxdir/!\$(AUX_DIR)/!;
+      $$target_deps{INPUT}{$_} = 1;
+    }
+
     my $aux = $1;
     my $jobname = $2;
 
@@ -215,15 +261,12 @@ for my $target (sort keys %$deps) {
     my $fullname = "\$(AUX_DIR)/$target";
     $fullname .= ".pdf/$jobname" if !$aux;
 
-    # dependency on .tex is redundant
-    delete $$target_deps{INPUT}{"$jobname.tex"};
-
     for my $xr (sort keys %{ $$target_deps{XR} }) {
 # we only care about root .aux files, not subfiles generated by \include, \bibliography, etc
 # root .aux files have a corresponding .tex INPUT line in .fls, thanks to \externaldocument calling \set@curr@file
       my $tex = $xr =~ s!\.aux$!.tex!r;
       if ($$target_deps{INPUT}{$tex}) {
-        # dependency on .tex is redundant
+        # ignore redundant .tex dependency
         delete $$target_deps{INPUT}{$tex};
       } else {
         delete $$target_deps{XR}{$xr};

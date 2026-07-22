@@ -569,7 +569,7 @@ $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.
 	$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/pdf/$*.pdf"
 
 $(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/$$*.pdf/$$*.fls $(AUX_DIR)/pdf/$$*.pdf/$$*.logdeps bookml/deps.pl | $$(@D)/./
-	$(PERL) bookml/deps.pl --auxdir "$(AUX_DIR)" --output "$@" "$(AUX_DIR)/pdf/$*.pdf/$*.fls" "$(AUX_DIR)/pdf/$*.pdf/$*.logdeps"
+	$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$(AUX_DIR)/pdf/$*.pdf/$*.fls" "$(AUX_DIR)/pdf/$*.pdf/$*.logdeps"
 
 # if .tex invokes xr, compile its aux files separately to prevent cyclic dependencies
 $(AUX_DIR)/pdfaux/%.aux $(AUX_DIR)/pdfaux/%.fls $(AUX_DIR)/pdfaux/%.logdeps: %.tex $$(bml.pdfaux.direct) | $$(@D)/./ $(bml.auxdir.pdfaux.subtree)
@@ -603,8 +603,8 @@ $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEP
 $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $$(bml.xml.recurse)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/xml/$*.xml"
 
-$(sort $(BMLGOALS.XMLDEPS)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps bookml/postxml.pl | $(AUX_DIR)/deps/./
-	@$(PERL) bookml/postxml.pl "$(AUX_DIR)" "$*"
+$(sort $(BMLGOALS.XMLDEPS)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps bookml/deps.pl | $(AUX_DIR)/deps/./
+	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$<"
 
 # build HTML and deps files
 

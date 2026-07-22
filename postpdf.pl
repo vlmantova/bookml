@@ -49,7 +49,7 @@ my $cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : decode('l
 
 sub normalize_path {
   my ($file) = @_;
-  $file = Win32::GetLongPathName($file) if $^O eq 'MSWin32';
+  $file = Win32::GetLongPathName($file) // $file if $^O eq 'MSWin32';
   $file = File::Spec->canonpath($file);
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);
@@ -58,7 +58,7 @@ sub normalize_path {
       $file = $relfile if $top ne File::Spec->updir;
     }
   } else {
-    my ($top) = File::Spec->splitdir($file);
+    my ($top) = File::Spec->splitdir($file) // '';
     $file = File::Spec->rel2abs($file, $cwd) if $top eq File::Spec->updir;
   }
   $file =~ s!\\!/!g;

@@ -130,7 +130,7 @@ all:
 	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
 .PHONY: all
 
-### determine, as best as we can, which files need to be compiled
+### determine which files need to be compiled
 BMLGOALS ?= $(MAKECMDGOALS)
 ifneq (,$(filter html,$(MAKECMDGOALS)))
 BMLGOALS += $(TARGETS.HTML)
@@ -160,10 +160,12 @@ endif
 BMLGOALS.SCORM += $(filter SCORM.%.zip,$(BMLGOALS))
 BMLGOALS.ZIP   += $(filter %.zip,$(filter-out SCORM.%.zip,$(BMLGOALS)))
 
-BMLGOALS.HTML     += $(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)) $(patsubst SCORM.%.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.SCORM)) $(patsubst %.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.ZIP))
-BMLGOALS.XML     += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(AUX_DIR)/xml/%.xml,$(filter $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(BMLGOALS))) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/xml/%.xml,$(BMLGOALS.HTML))
-BMLGOALS.PDF     += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
+BMLGOALS.HTML += $(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)) $(patsubst SCORM.%.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.SCORM)) $(patsubst %.zip,$(AUX_DIR)/html/%/index.html,$(BMLGOALS.ZIP))
+BMLGOALS.XML  += $(filter $(AUX_DIR)/xml/%.xml,$(BMLGOALS)) $(patsubst $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(AUX_DIR)/xml/%.xml,$(filter $(AUX_DIR)/latexmlaux/%.latexml.logdeps,$(BMLGOALS))) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/xml/%.xml,$(BMLGOALS.HTML))
+BMLGOALS.PDF  += $(filter $(AUX_DIR)/pdf/%.pdf,$(BMLGOALS)) $(addprefix $(AUX_DIR)/pdf/,$(filter-out $(AUX_DIR)/pdf/%.pdf,$(join $(filter %.pdf/,$(BMLGOALS:=/)),$(notdir $(filter %.pdf,$(BMLGOALS)))))) $(patsubst %.aux,%.pdf,$(filter $(AUX_DIR)/pdf/%.aux,$(BMLGOALS))) $(patsubst %.aux,%.fls,$(filter $(AUX_DIR)/pdf/%.fls,$(BMLGOALS))) $(patsubst %.logdeps,%.pdf,$(filter $(AUX_DIR)/pdf/%.logdeps,$(BMLGOALS)))
 
+# include all deps files
+# to avoid rebuilding everything, we only instruct make on how to rebuild the ones we are sure will be used
 BMLGOALS.HTMLDEPS += $(filter $(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/html/%/index.html,$(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS.HTML))
 -include $(sort $(BMLGOALS.HTMLDEPS) $(wildcard $(AUX_DIR)/deps/*.htmldeps))
 
@@ -173,12 +175,19 @@ BMLGOALS.XMLDEPS += $(filter $(AUX_DIR)/deps/%.xmldeps,$(BMLGOALS)) $(patsubst $
 BMLGOALS.PDFDEPS += $(filter $(AUX_DIR)/deps/%.pdfdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdf/%.pdf,$(AUX_DIR)/deps/%.pdfdeps,$(patsubst %/,%,$(dir $(BMLGOALS.PDF))))
 -include $(sort $(BMLGOALS.PDFDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfdeps))
 
-bml.html.direct  = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.htmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.html.recurse = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.xml.direct   = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.xmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.xml.recurse  = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.pdf.direct   = $(if $(filter $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps,$(BMLGOALS.PDFDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.pdf.recurse  = $(if $(filter $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps,$(BMLGOALS.PDFDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+BMLGOALS.PDFAUXDEPS += $(filter $(AUX_DIR)/deps/%.pdfauxdeps,$(BMLGOALS)) $(patsubst $(AUX_DIR)/pdfaux/%.aux,$(AUX_DIR)/deps/%.pdfauxdeps,$(BMLGOALS.PDFAUX))
+-include $(sort $(BMLGOALS.PDFAUXDEPS) $(wildcard $(AUX_DIR)/deps/*.pdfauxddeps))
+
+# direct: when the deps file is automatically rebuilt before evaluation; the deps file is missing, FORCE the build as we cannot detect if it is out of date
+# recurse: use Make recursion to trigger recompilation and reevaluation of the deps file
+bml.html.direct    = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.htmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.html.recurse   = $(if $(filter $(AUX_DIR)/deps/$*.htmldeps,$(BMLGOALS.HTMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET,FORCE)
+bml.xml.direct     = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.xmldeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.xml.recurse    = $(if $(filter $(AUX_DIR)/deps/$*.xmldeps,$(BMLGOALS.XMLDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET,FORCE)
+bml.pdf.direct     = $(if $(filter $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps,$(BMLGOALS.PDFDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.pdf.recurse    = $(if $(filter $(AUX_DIR)/deps/$(basename $(*D)).pdfdeps,$(BMLGOALS.PDFDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET,FORCE)
+bml.pdfaux.direct  = $(if $(filter $(AUX_DIR)/deps/$*.pdfauxdeps,$(BMLGOALS.PDFAUXDEPS)),$(if $(wildcard $(AUX_DIR)/deps/$*.pdfauxdeps),,FORCE),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+bml.pdfaux.recurse = $(if $(filter $(AUX_DIR)/deps/$*.pdfauxdeps,$(BMLGOALS.PDFAUXDEPS)),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET,FORCE)
 
 # treat the target as 'not intermediate': if the file is missing, it must be rebuilt
 bml.not.intermediate = $(if $(wildcard $@),,FORCE)
@@ -354,7 +363,7 @@ clean-html:
 	$(call bml.rmdir,$(AUX_DIR)/html)
 clean-pdf:
 	-$(call bml.rmdir,$(AUX_DIR)/pdf)
-	-$(call bml.rmdir,$(AUX_DIR)/pdfnoxr)
+	-$(call bml.rmdir,$(AUX_DIR)/pdfaux)
 	-$(RM) $(call bml.ospath,$(TARGETS.PDF) $(TARGETS.PDF:.pdf=.synctex) $(TARGETS.PDF:.pdf=.synctex.gz))
 clean-scorm:
 	-$(call bml.rmdir,$(AUX_DIR)/scorm)
@@ -541,14 +550,14 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/$$*.pdf/$$(*F).pdf
 # generate all possible subfolders so that \include{subfolder/...} can write its aux files
 bml.subtree := $(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.)))
 bml.auxdir.pdf.subtree = $(patsubst %,$(AUX_DIR)/pdf/$(*D)/%/./,$(bml.subtree))
-bml.auxdir.pdfnoxr.subtree = $(patsubst %,$(AUX_DIR)/pdfnoxr/%/./,$(bml.subtree))
+bml.auxdir.pdfaux.subtree = $(patsubst %,$(AUX_DIR)/pdfaux/%/./,$(bml.subtree))
 
 # if .pdfdeps is already being rebuilt via BMLGOALS.PDFDEPS, compile normally
 # typo LATEKMKFLAGS preserved for backwards compatibility
 # build in subfolder AUX_DIR/pdf/jobname.pdf/jobname.pdf to isolate builds from each other
 bml.assert.pdf.naming = $(if $(filter-out $(*F).pdf,$(notdir $(*D))),$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
 $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: $$(basename $$(*D)).tex $$(bml.assert.pdf.naming) $(BOOKML_DEPS_PDF) $$(bml.pdf.direct) | $$(@D)/./ $$(bml.auxdir.pdf.subtree)
-	@$(call bml.prog,pdflatex: $(basename $(*D)).tex → $(*D))
+	@$(call bml.prog,latexmk: $(basename $(*D)).tex → $(*D))
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -MP -output-directory="$(@D)" "$<")
@@ -556,30 +565,29 @@ $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.
 
 # otherwise, use recursion so that .pdfdeps gets evaluated first
 # this is a last resort measure, and it may cause the same prerequisite to be rebuilt multiple times
-$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: $$(basename $$(*D)).tex $$(bml.assert.pdf.naming) FORCE $$(bml.pdf.recurse)
+$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps: $$(basename $$(*D)).tex $$(bml.assert.pdf.naming) $$(bml.pdf.recurse)
 	$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/pdf/$*.pdf"
 
-$(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/$$*.pdf/$$*.fls $(AUX_DIR)/pdf/$$*.pdf/$$*.logdeps bookml/postpdf.pl | $(AUX_DIR)/deps/./
-	@$(PERL) bookml/postpdf.pl "$(AUX_DIR)" "$*"
+$(sort $(BMLGOALS.PDFDEPS)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/$$*.pdf/$$*.fls $(AUX_DIR)/pdf/$$*.pdf/$$*.logdeps bookml/deps.pl | $$(@D)/./
+	$(PERL) bookml/deps.pl --auxdir "$(AUX_DIR)" --output "$@" "$(AUX_DIR)/pdf/$*.pdf/$*.fls" "$(AUX_DIR)/pdf/$*.pdf/$*.logdeps"
 
 # if .tex invokes xr, compile its aux files separately to prevent cyclic dependencies
-# TODO: replicate .pdfdeps mechanism
-# TODO: can we detect cyclic dependencies from Make?
-
-# force compiling if pdfnoxr/%.aux is missing, otherwise it is treated as intermediate file
-$(AUX_DIR)/pdfnoxr/%.aux: %.tex $$(bml.not.intermediate) | $(AUX_DIR)/pdfnoxr/./ $(bml.auxdir.pdfnoxr.subtree)
-	@$(call bml.prog,pdflatex: $*.tex → pdfnoxr/$*.aux)
+$(AUX_DIR)/pdfaux/%.aux $(AUX_DIR)/pdfaux/%.fls $(AUX_DIR)/pdfaux/%.logdeps: %.tex $$(bml.pdfaux.direct) | $$(@D)/./ $(bml.auxdir.pdfaux.subtree)
+	@$(call bml.prog,latexmk: $*.tex → pdfaux/$*.aux)
 	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
-	  -MP -output-directory="$(AUX_DIR)/pdfnoxr" "$<")
+	  -MP -output-directory="$(AUX_DIR)/pdfaux" "$<")
+	@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdfaux/$*.log)" "$(call bml.ospath,$(AUX_DIR)/pdfaux/$*.logdeps)"
+
+$(AUX_DIR)/pdfaux/%.aux $(AUX_DIR)/pdfaux/%.fls $(AUX_DIR)/pdfaux/%.logdeps: %.tex $$(bml.pdfaux.recurse)
+	$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/pdf/$*.pdf"
+
+$(sort $(BMLGOALS.PDFAUXDEPS)): $(AUX_DIR)/deps/%.pdfauxdeps: $(AUX_DIR)/pdfaux/%.fls $(AUX_DIR)/pdfaux/%.logdeps bookml/deps.pl | $$(@D)/./
+	$(PERL) bookml/deps.pl --auxdir "$(AUX_DIR)" --output "$@" "$(AUX_DIR)/pdfaux/$*.fls" "$(AUX_DIR)/pdfaux/$*.logdeps"
 
 ##### TODO:
-# (1) new pdfdeps.pl: add backslashes, duplicate .pdf prerequisites for .aux, .xml
-# (2) proc-resources.xml: add .pdf prerequisites to BMLGOALS.PDF
-# (3) pdfdeps.pl: parse log for 'Package xr Info: IMPORTING LABELS FROM ... on input line', 'Package xr Warning:\nNo file ...', add files to BMLGOALS.AUX
-# (4) in pdf recipe: save old .aux file, restore it if content has not changed
-# (5) for each file in BMLGOALS.AUX, make the pdf depend on its aux file to avoid race conditions (but remove -g to avoid recompiling?)
-# (6) compile each PDF in auxdir/pdf/%/output.pdf so that xr is forced to look up auxdir/pdfnoxr
+# (2) deps.pl, proc-resources.xml: add .pdf prerequisites to BMLGOALS.PDF
+# (7) determine how to set target-specific LATEXMKFLAGS so that they are picked up by all subtargets .pdf .aux .fls .logdeps and pdfaux/...
 
 # build XML files
 # (Windows can sometimes set the READONLY attribute on the xml folder,
@@ -592,7 +600,7 @@ $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEP
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$(AUX_DIR)/xml/$*.xml" --output "$(AUX_DIR)/xml/$*.xml" --stringparam AUX_DIR "$(AUX_DIR)" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
 	@$(CP) "$(call bml.ospath,$(AUX_DIR)/latexmlaux/$*.latexml.log)" "$(call bml.ospath,$(AUX_DIR)/latexmlaux/$*.latexml.logdeps)"
 
-$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex FORCE $$(bml.xml.recurse)
+$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $$(bml.xml.recurse)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$(AUX_DIR)/xml/$*.xml"
 
 $(sort $(BMLGOALS.XMLDEPS)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps bookml/postxml.pl | $(AUX_DIR)/deps/./
@@ -614,7 +622,7 @@ $(sort $(BMLGOALS.HTML)): $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(B
 	@$(call bml.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)
 	@$(call bml.cmd,$(PERL) bookml/search_index.pl "$(AUX_DIR)/html/$*")
 
-$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml FORCE $$(bml.html.recurse)
+$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $$(bml.html.recurse)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@"
 
 # copy zip and SCORM files from $(AUX_DIR) to main folder

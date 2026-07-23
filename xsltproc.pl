@@ -3,7 +3,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -112,7 +112,7 @@ while (@ARGV) {
   } elsif ($arg eq '--output' || $arg eq '-o') {
     $output = shift @ARGV;
   } elsif ($arg =~ /^-/) {
-    Error('Fatal', 'unexpected', '$arg', 'this minimal script only supports --stringparam, --output, -o');
+    Error('Fatal', 'unexpected', encode_console('$arg'), 'this minimal script only supports --stringparam, --output, -o');
   } else {
     if (defined $stylefile) {
       $input = $arg;

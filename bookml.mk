@@ -33,6 +33,9 @@ else
 endif
 bml.grep = $(findstring $1,$(call bml.file,$2))
 
+# set default target immediately
+all:
+
 ### CONFIGURATION
 # Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
 # (1) where to store auxiliary files (*.aux, *.d, *.toc,...)
@@ -70,7 +73,11 @@ TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
 TARGETS.CMD   := $(filter-out all pdf scorm zip clean clean-% detect detect-%,$(MAKECMDGOALS))
-TARGETS       ?= $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
+ifneq ($(filter all,$(MAKECMDGOALS) $(if $(MAKECMDGOALS),,$(.DEFAULT_GOAL))),)
+override TARGETS += $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
+else
+override TARGETS := $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
+endif
 ifneq ($(BMLGOALS),)
 override TARGETS = $(sort $(BMLGOALS))
 endif
@@ -124,11 +131,6 @@ BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.
 BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
 BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
 BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
-
-### default target
-all:
-	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
-.PHONY: all
 
 ### determine which files need to be compiled
 MAKECMDGOALS ?= $(.DEFAULT_GOAL)
@@ -342,17 +344,19 @@ endif
 # force recompilation
 .PHONY: FORCE
 
-all:
-html:  TARGETS=$(TARGETS.HTML)
-pdf:   TARGETS=$(TARGETS.PDF)
-scorm: TARGETS=$(TARGETS.SCORM)
-xml:   TARGETS=$(TARGETS.XML)
-zip:   TARGETS=$(TARGETS.ZIP)
+### main targets
+all html pdf scorm xml zip:
+	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory)):
+
+all:   $(TARGETS)
+html:  $(TARGETS.HTML)
+pdf:   $(TARGETS.PDF)
+scorm: $(TARGETS.SCORM)
+xml:   $(TARGETS.XML)
+zip:   $(TARGETS.ZIP)
+.PHONY: all html pdf scorm xml zip
 
 $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
-
-all html pdf scorm xml zip: $$(TARGETS)
-.PHONY: all html pdf scorm xml zip
 
 # cleanup targets
 clean:  clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip

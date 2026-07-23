@@ -355,7 +355,11 @@ xml:   $(TARGETS.XML)
 zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
+ifeq ($(filter clean clean-%,$(MAKECMDGOALS)),)
 $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
+else
+$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(MAKECMDGOALS))))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
+endif
 
 # cleanup targets
 clean:  clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip

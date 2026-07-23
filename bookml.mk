@@ -33,8 +33,8 @@ else
 endif
 bml.grep = $(findstring $1,$(call bml.file,$2))
 
-# set default target immediately
-all:
+# simplify MAKECMDGOALS
+MAKECMDGOALS ?= $(if $(.DEFAULT_GOAL),(.DEFAULT_GOAL),all)
 
 ### CONFIGURATION
 # Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
@@ -65,7 +65,7 @@ endif
 # (7) formats: possible values are pdf, scorm, zip
 FORMATS          ?= scorm zip
 FORMATS.CMD      := $(filter pdf scorm zip,$(MAKECMDGOALS))
-override FORMATS := $(sort $(if $(filter all,$(MAKECMDGOALS) $(if $(MAKECMDGOALS),,$(.DEFAULT_GOAL))),$(FORMATS)) $(FORMATS.CMD))
+override FORMATS := $(sort $(if $(filter all,$(MAKECMDGOALS)),$(FORMATS)) $(FORMATS.CMD))
 # (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
 TARGETS.PDF   ?= $(sort $(SOURCES:.tex=.pdf))
 TARGETS.XML   ?= $(patsubst %.tex,$(AUX_DIR)/xml/%.xml,$(sort $(SOURCES)))
@@ -73,7 +73,7 @@ TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
 TARGETS.CMD   := $(filter-out all pdf scorm zip clean clean-% detect detect-%,$(MAKECMDGOALS))
-ifneq ($(filter all,$(MAKECMDGOALS) $(if $(MAKECMDGOALS),,$(.DEFAULT_GOAL))),)
+ifneq ($(filter all,$(MAKECMDGOALS)),)
   override TARGETS += $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
 else
   override TARGETS := $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
@@ -133,7 +133,6 @@ BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl b
 BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
 
 ### determine which files need to be compiled
-MAKECMDGOALS ?= $(.DEFAULT_GOAL)
 BMLGOALS += \
   $(filter-out %.pdf,$(TARGETS)) \
   $(foreach pdf,$(filter %.pdf,$(filter-out $(AUX_DIR)/pdf/%,$(TARGETS))),$(AUX_DIR)/pdf/$(pdf)/$(notdir $(pdf))) \
@@ -160,8 +159,11 @@ bmljobs.pdf    += $(call bml.extract.jobname,%.pdf/,$(dir \
 bmljobs.pdfaux += \
   $(call bml.extract.jobname,$(addprefix $(AUX_DIR)/pdfaux/%,.aux .logdeps) $(AUX_DIR)/deps/%.pdfauxdeps,$(BMLGOALS))
 
-# include all deps files
+#### deps files
 # to avoid rebuilding everything, we only instruct make on how to rebuild the ones we are sure will be used
+
+# declare 'all' as default target before including other make files
+all:
 
 bml.knowndeps = $(filter $(AUX_DIR)/deps/%.$1deps,$(BMLGOALS)) $(patsubst %,$(AUX_DIR)/deps/%.$1deps,$(bmljobs.$1))
 bml.alldeps   = $(sort $(bml.deps.$1) $(wildcard $(AUX_DIR)/deps/*.$1deps))
@@ -344,10 +346,9 @@ endif
 .PHONY: FORCE
 
 ### main targets
-all html pdf scorm xml zip:
-	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory)):
+all html pdf scorm xml zip: %: $(TARGETS)
+	@$(if $(SOURCES)$^,,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
 
-all:   $(TARGETS)
 html:  $(TARGETS.HTML)
 pdf:   $(TARGETS.PDF)
 scorm: $(TARGETS.SCORM)
@@ -356,9 +357,9 @@ zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
 ifeq ($(filter clean clean-%,$(MAKECMDGOALS)),)
-$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
+  $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 else
-$(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(MAKECMDGOALS))))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
+  $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(MAKECMDGOALS))))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 endif
 
 # cleanup targets
@@ -623,7 +624,7 @@ $(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.late
 $(sort $(bml.deps.html)): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps/./
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$(AUX_DIR)/xml/$*.xml" --output "$@" --stringparam BML_JOB "$*")
 
-$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTML) $$(call bml.direct,html) | $(AUX_DIR)/html/./
+$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTML) $$(call bml.direct,html) $$(info '$$(call bml.direct,html)') | $(AUX_DIR)/html/./
 	@$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html)
 	@$(call bml.rmdir,$(AUX_DIR)/html/$*)
 	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \

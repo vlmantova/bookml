@@ -72,7 +72,7 @@ TARGETS.XML   ?= $(addprefix $(AUX_DIR)/xml/,$(sort $(SOURCES:.tex=.xml)))
 TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
 TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
-TARGETS.CMD   := $(filter-out all html pdf scorm xml zip clean clean-% detect detect-%,$(MAKECMDGOALS))
+TARGETS.CMD   := $(filter-out all html pdf scorm xml zip clean clean-% detect detect-% check-for-update update,$(MAKECMDGOALS))
 bml.targets = $(sort \
   $(if $(filter html,$(FORMATS)),$(TARGETS.HTML)) \
   $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) \

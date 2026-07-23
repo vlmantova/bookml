@@ -167,7 +167,7 @@ The build process accepts configuration options via Make variables, using the sy
 
 1. In `GNUmakefile` before `include bookml/bookml.mk`. Each option must appear on its own line, without indentation.
 2. On the command line as `make VARIABLE=value`.
-3. To apply an option to a single output `file`, write it in `GNUmakefile` after `include bookml/bookml.mk` as `file: VARIABLE=value` on its own line, without indentation. For instance, `main.pdf: LATEXMKFLAGS=-pdflua`. **Warning:** the variable must be applied to the target it affects *immediately* or it can cause inconsistent results (see for example SPLITAT below).
+3. To apply an option to a single file `file.tex`, add `file_VARIABLE = value` in `GNUmakefile` on its own line. Normal variables are replaced, while flags are appended. For instance, `main_LATEXMKFLAGS = -pdflua` adds the flag `-pdflua` to the values already in `LATEXMKFLAGS`, while `main_SPLITAT=` replaces the value of `SPLITAT`. Specifying variables the targets, like `file.pdf: LATEXMKFLAGS = -pdflua`, **is not supported**. Special characters in the file name must be replaced with `_`; for instance use `sheet1_solutions_SPLITAT` to control the file `sheet1+solutions.tex`.
 
 Note that changing options will *not* trigger a recompilation of the files. You will typically need to run `make clean` before recompiling again. For more information about the Makefile syntax and how variables are evaluated, consult the [GNU Make manual](https://www.gnu.org/software/make/manual/).
 
@@ -175,13 +175,13 @@ The following options are available.
 
 <dl>
 <dt>AUX_DIR</dt>
-<dd>Location of the directory containing all intermediate files generated during compilation, such as <samp>.aux</samp> and <samp>.bbl</samp> files. This option is ignored by the BookML GitHub action. Default <i>auxdir</i>.</dd>
+<dd>Location of the directory containing all intermediate files generated during compilation, such as <samp>.aux</samp> and <samp>.bbl</samp> files. This option is ignored by the BookML GitHub action. <strong>The value must not contain spaces</strong>. Default <i>auxdir</i>.</dd>
 <dt>SOURCES</dt>
 <dd>Space-separated list of <samp>.tex</samp> files to be compiled. File names with spaces are <i>not</i> supported. Default is the list of <samp>.tex</samp> files in the current directory that contain the string <code>\documentclass</code> (even if appearing in a comment!).</dd>
 <dt>FORMATS</dt>
 <dd>Spaces-separated list of formats to be generated from SOURCES. Recognised formats are pdf, scorm, zip. Default <i>scorm zip</i>.</dd>
 <dt>SPLITAT</dt>
-<dd>How to split the HTML output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the latexmlpost manual, <code>--split</code> option, for more details. <strong>Warning:</strong> when applied to a single target, it must be applied to <code>$(AUX_DIR)/file/index.html:</code> instead of say <code>file.zip:</code>, otherwise zip and SCORM outputs will see different values. Default <i>section</i>.</dd>
+<dd>How to split the HTML output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the latexmlpost manual, <code>--split</code> option, for more details. To change splitting for a simple file, use <code>file_SPLITAT</code>. For instance, <code>file_SPLITAT=chapter</code> will split <samp>file.zip</samp> and <samp>SCORM.file.zip</samp> by chapter, while all the other files will be split by section. Default <i>section</i>.</dd>
 <dt>DVISVGM</dt>
 <dd>Command to call dvisvgm. Default <i>dvisvgm</i>.</dd>
 <dt>DVISVGMFLAGS</dt>
@@ -197,7 +197,7 @@ The following options are available.
 <dt>LATEXMLPOST</dt>
 <dd>Command to call latexmlpost. Default <i>latexmlpost</i>.</dd>
 <dt>LATEXMLPOSTFLAGS</dt>
-<dd>Options to pass to latexmlpost. <strong>Warning:</strong> when applied to a single target, it must be applied to <code>$(AUX_DIR)/file/index.html:</code> instead of say <code>file.zip:</code>, just like for SPLITAT.</dd>
+<dd>Options to pass to latexmlpost.</dd>
 <dt>MUTOOL</dt>
 <dd>Command to call mutool. Default <i>mutool</i>.</dd>
 <dt>MUTOOLFLAGS</dt>

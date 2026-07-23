@@ -74,12 +74,12 @@ TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
 TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
 TARGETS.CMD   := $(filter-out all pdf scorm zip clean clean-% detect detect-%,$(MAKECMDGOALS))
 ifneq ($(filter all,$(MAKECMDGOALS) $(if $(MAKECMDGOALS),,$(.DEFAULT_GOAL))),)
-override TARGETS += $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
+  override TARGETS += $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
 else
-override TARGETS := $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
+  override TARGETS := $(sort $(if $(filter pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(filter scorm,$(FORMATS)),$(TARGETS.SCORM)) $(TARGETS.CMD))
 endif
 ifneq ($(BMLGOALS),)
-override TARGETS = $(sort $(BMLGOALS))
+  override TARGETS = $(sort $(BMLGOALS))
 endif
 # (9) texfot (optional, disable with TEXFOT=)
 ifndef TEXFOT
@@ -135,16 +135,13 @@ BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSL
 ### determine which files need to be compiled
 MAKECMDGOALS ?= $(.DEFAULT_GOAL)
 BMLGOALS += \
-  $(if $(filter all,  $(MAKECMDGOALS)),$(TARGETS)) \
-  $(if $(filter html, $(MAKECMDGOALS)),$(TARGETS.HTML)) \
-  $(if $(filter pdf,  $(MAKECMDGOALS)),$(patsubst %,$(AUX_DIR)/pdf/%,$(join $(TARGETS.PDF:=/),$(notdir $(TARGETS.PDF))))) \
-  $(if $(filter scorm,$(MAKECMDGOALS)),$(TARGETS.SCORM)) \
-  $(if $(filter xml,  $(MAKECMDGOALS)),$(TARGETS.XML)) \
-  $(if $(filter zip,  $(MAKECMDGOALS)),$(TARGETS.ZIP)) \
-  $(filter-out all html pdf scorm xml zip,$(MAKECMDGOALS))
+  $(filter-out %.pdf,$(TARGETS)) \
+  $(foreach pdf,$(filter %.pdf,$(filter-out $(AUX_DIR)/pdf/%,$(TARGETS))),$(AUX_DIR)/pdf/$(pdf)/$(notdir $(pdf))) \
+  $(filter $(AUX_DIR)/pdf/%,$(TARGETS))
+$(error BMLGOALS = '$(BMLGOALS)')
 
 ifneq ($(filter clean-%,$(MAKECMDGOALS))$(filter clean,$(MAKECMDGOALS)),)
-BMLGOALS =
+  override BMLGOALS =
 endif
 
 bml.extract.jobname = $(foreach pat,$1,$(patsubst $(pat),%,$(filter $(pat),$2)))
@@ -255,7 +252,7 @@ bml.prog = $(call bml.box,$1)
 ifeq ($(call ver.lt,$(MAKE_VERSION),4.1),true)
   MAKE_TERMOUT ?= $(if $(bml.is.win),,$(shell tput setaf 1 >/dev/null 2>&1 && echo true))
 endif
-ifneq (,$(MAKE_TERMOUT))
+ifneq ($(MAKE_TERMOUT),)
   bml.esc     := 
   bml.cyan    := $(bml.esc)[96m
   bml.cyanbg  := $(bml.esc)[46m
@@ -329,7 +326,7 @@ PDFTOSVG_CONVERTER=
 endif
 
 ifneq ($(PDFTOSVG_CONVERTER),)
-bml.pdftosvg.proc=$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+  bml.pdftosvg.proc=$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
 endif
 
 # do not delete intermediate files

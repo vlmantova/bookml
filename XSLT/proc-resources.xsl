@@ -31,15 +31,16 @@
     method="text"
     encoding="utf-8" />
 
-  <xsl:param name="BML_TARGET" />
+  <xsl:param name="BML_JOB" />
+
+  <xsl:variable name="TARGET">$(AUX_DIR)/html/<xsl:value-of select="$BML_JOB" />/index.html</xsl:variable>
 
   <xsl:template match="/">
     <xsl:if test="$BMLSTYLE='gitbook'">
-      <xsl:text>$(AUX_DIR)/</xsl:text>
-      <xsl:value-of select="$BML_TARGET" />
+      <xsl:value-of select="$TARGET" />
       <xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
     </xsl:if>
-    <xsl:text>$(AUX_DIR)/</xsl:text><xsl:value-of select="$BML_TARGET" /><xsl:text>:</xsl:text>
+    <xsl:value-of select="$TARGET" /><xsl:text>:</xsl:text>
     <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
       <xsl:text> \&#x0A;  </xsl:text>
       <xsl:value-of select="." />
@@ -54,7 +55,7 @@
     </xsl:variable>
     <xsl:if test="$pdfs != ''">
       <xsl:text>ifneq ($(filter </xsl:text>
-      <xsl:value-of select="substring($BML_TARGET,6,string-length($BML_TARGET) - 16)" />
+      <xsl:value-of select="$BML_JOB" />
       <xsl:text>,$(bmljobs.html)),)&#x0A;</xsl:text>
       <xsl:text>  bmljobs.pdf += </xsl:text>
       <xsl:value-of select="$pdfs" />

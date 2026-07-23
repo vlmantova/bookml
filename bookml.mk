@@ -138,10 +138,12 @@ BMLGOALS += \
   $(filter-out %.pdf,$(TARGETS)) \
   $(foreach pdf,$(filter %.pdf,$(filter-out $(AUX_DIR)/pdf/%,$(TARGETS))),$(AUX_DIR)/pdf/$(pdf)/$(notdir $(pdf))) \
   $(filter $(AUX_DIR)/pdf/%,$(TARGETS))
-$(error BMLGOALS = '$(BMLGOALS)')
 
 ifneq ($(filter clean-%,$(MAKECMDGOALS))$(filter clean,$(MAKECMDGOALS)),)
+  # do not recompile deps files if we are cleaning
   override BMLGOALS =
+  # error out if there are also targets
+  $(if $(filter-out clean-% clean,$(MAKECMDGOALS)),$(error Compiling targets while cleaning is not supported!))
 endif
 
 bml.extract.jobname = $(foreach pat,$1,$(patsubst $(pat),%,$(filter $(pat),$2)))

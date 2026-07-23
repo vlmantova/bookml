@@ -24,9 +24,13 @@
 
 use warnings;
 use strict;
+use Encode qw(decode decode_utf8 encode);
+use Encode::Locale;
 use XML::LibXSLT;
 use Term::ANSIColor qw(colored);
 use IO::Handle;
+
+Encode::Locale::decode_argv(Encode::FB_CROAK);
 
 my @files = ();
 my %params;
@@ -37,8 +41,19 @@ BEGIN {
   require Win32::Console if $^O eq 'MSWin32';
 }
 
-binmode(STDERR, ":encoding(UTF-8)");
+binmode(STDERR, ":encoding(utf-8)");
 *STDERR->autoflush();
+
+# recode output messages from Perl to match the messages from libxslt
+sub encode_console {
+  my ($message) = @_;
+  return encode('console_out', $message, Encode::FB_CROAK | Encode::LEAVE_SRC);
+}
+
+sub decode_console {
+  my ($message) = @_;
+  return decode('console_out', $message, Encode::FB_CROAK | Encode::LEAVE_SRC);
+}
 
 my $IS_TERMINAL = -t STDERR;
 
@@ -46,6 +61,9 @@ if ($IS_TERMINAL && $^O eq 'MSWin32') {
   # set utf-8 codepage
   # CP_UTF8 = 65001
   Win32::Console::OutputCP(65001);
+
+  # CHECK what does libxslt do after we changed codepage?
+  Encode::Locale::reinit;
 
   # get standard error console
   our $W32_STDERR = Win32::Console->new(&Win32::Console::STD_ERROR_HANDLE());
@@ -67,25 +85,27 @@ my %color_scheme = (
 
 sub Error {
   my ($severity, $category, $object, $summary) = @_;
-  my $prefix = "$severity:$category:$object";
-  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{lc($severity)}) : $prefix) . " $summary\n");
+  my $prefix = decode_console("$severity:$category:$object");
+  $summary = decode_console($summary);
+  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{ lc($severity) }) : $prefix) . " $summary\n");
   exit 1 if $severity eq 'Fatal';
+  return;
 }
 
-$SIG{__WARN__} = sub {
+local $SIG{__WARN__} = sub {
   my ($msg) = @_;
   my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
   $severity = $severity // 'Error';
-  $object = $object // 'unknown';
+  $object   = $object   // 'unknown';
   $category = $category // 'internal';
-  $summary = $summary // $msg;
+  $summary  = $summary  // $msg;
   Error($severity, $object, $category, $summary . ($input ? " at $input;" : ''));
 };
 
 while (@ARGV) {
   my $arg = shift @ARGV;
   if ($arg eq '--stringparam') {
-    my $key = shift @ARGV;
+    my $key   = shift @ARGV;
     my $value = shift @ARGV;
     ($key, $value) = XML::LibXSLT::xpath_to_string($key => $value);
     $params{$key} = $value;
@@ -102,14 +122,18 @@ while (@ARGV) {
   }
 }
 
-Error('Fatal', 'expected', 'input', 'must specify an input file') unless defined $input;
-Error('Fatal', 'expected', 'stylesheet', 'must specify a stylesheet') unless defined $stylefile;
-Error('Fatal', 'expected', 'output', 'must specify an output file') unless defined $output;
+Error('Fatal', 'expected', 'input',      'must specify an input file')  unless defined $input;
+Error('Fatal', 'expected', 'stylesheet', 'must specify a stylesheet')   unless defined $stylefile;
+Error('Fatal', 'expected', 'output',     'must specify an output file') unless defined $output;
 
-Error('Fatal', 'missing', 'input', 'cannot open input file') unless -f $input;
-Error('Fatal', 'missing', 'stylesheet', 'cannot open stylesheet') unless -f $stylefile;
+my $raw_input     = encode('locale_fs', $input,     Encode::FB_CROAK | Encode::LEAVE_SRC);
+my $raw_stylefile = encode('locale_fs', $stylefile, Encode::FB_CROAK | Encode::LEAVE_SRC);
+my $raw_output    = encode('locale_fs', $output,    Encode::FB_CROAK | Encode::LEAVE_SRC);
 
-my $xslt = XML::LibXSLT->new();
-my $stylesheet = $xslt->parse_stylesheet_file($stylefile);
-my $result = $stylesheet->transform_file($input, %params);
-$stylesheet->output_file($result, $output);
+Error('Fatal', 'missing', 'input', encode_console("cannot open input file '$input'")) unless -f $raw_input;
+Error('Fatal', 'missing', 'stylesheet', encode_console("cannot open stylesheet '$stylefile'")) unless -f $raw_stylefile;
+
+my $xslt       = XML::LibXSLT->new();
+my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile);
+my $result     = $stylesheet->transform_file($raw_input, %params);
+$stylesheet->output_file($result, $raw_output);

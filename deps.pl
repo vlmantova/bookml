@@ -75,14 +75,15 @@ sub Message {
   my $prefix = "$severity:$category:$object";
   print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{ lc($severity) }) : $prefix) . " $summary\n");
   exit 1 if $severity eq 'Fatal';
+  return;
 }
 
 sub Warn {
-  Message('Warning', @_);
+  return Message('Warning', @_);
 }
 
 sub Fatal {
-  Message('Fatal', @_);
+  return Message('Fatal', @_);
 }
 
 my @logs = ();
@@ -99,7 +100,7 @@ sub normalize_path {
       $file = $long;
     } else {
       Warn('I/O', $file, "could not determine the long file name, changes to '$file' will likely not be detected");
-    };
+    }
   }
   $file = File::Spec->canonpath($file);
   if (File::Spec->file_name_is_absolute($file)) {
@@ -120,7 +121,7 @@ sub normalize_path {
 sub logic_path {
   my ($file) = @_;
   $file = normalize_path($file);
-  $file =~ s!^$physical_auxdir/!$auxdir/!;
+  $file =~ s!^\Q$physical_auxdir\E/!$auxdir/!;
   return $file;
 }
 
@@ -128,7 +129,7 @@ sub logic_path {
 sub fix_latexml_cwd_encoding {
   my ($file) = @_;
   if ($^O ne 'Win32') {
-    $file =~ s!^$raw_cwd/!$cwd/!;
+    $file =~ s!^\Q$raw_cwd\E/!$cwd/!;
   }
   return $file;
 }
@@ -158,14 +159,16 @@ for my $log (@logs) {
   my $logname = logic_path($log) =~ s!^\Q$auxdir\E/!!r;
 
   if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
-    my $jobname = $1;
+    my $jobname    = $1;
     my $targetname = "xml/$jobname";
-    $$deps{$targetname} = {} if ! $$deps{$targetname};
+
+    $$deps{$targetname} = {} if !$$deps{$targetname};
     my $target_deps = $$deps{$targetname};
 
     while (<$log_fh>) {
       my $file;
-      if (m/^\(Loading (?:RelaxNG schema from |compiled schema )([^()]+\.(?:ltxml|latexml|model|rng))\.\.\./) {
+
+      if (m/^\(Loading (?:RelaxNG schema from |compiled schema )([^()]+\.(?:model|rng))\.\.\./) {
         $file = $1;
       } elsif (m/^\((?:Loading RelaxNG [^()]+|Preparsing Bibliography <Unknown>|Processing (?:content|definitions) (?:Literal String|Anonymous String))\.\.\./) {
         next;
@@ -174,18 +177,20 @@ for my $log (@logs) {
       } else {
         next;
       }
+
       $file = fix_latexml_cwd_encoding($file);
       $file = normalize_path($file);
+
       # ignore redundant .tex dependency
       next if $file eq "$jobname.tex";
       $$target_deps{$file} = 1;
     }
   } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|logdeps)$!) {
-    my $aux     = $1;
-    my $ext     = $3;
-    my $jobname = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;
+    my $aux        = $1;
+    my $ext        = $3;
+    my $jobname    = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;
     my $targetname = "pdf$aux/$jobname";
-    $$deps{$targetname} = {} if ! $$deps{$targetname};
+    $$deps{$targetname} = {} if !$$deps{$targetname};
     my $target_deps = $$deps{$targetname};
 
     if ($ext eq 'fls') {
@@ -203,26 +208,33 @@ for my $log (@logs) {
       }
     } else {
       my $nextline = 0;
+
       while (<$log_fh>) {
+        my $aux_jobname;
+        my $tex;
+
         if (m/^\s*Package xr Info: IMPORTING LABELS FROM (.*\.aux) on input line \d+.\s*$/) {
-          my $file = logic_path($1);
-          $$target_deps{XR}{$file} = 1;
+          $aux_jobname = logic_path("$1");
+          $aux_jobname =~ s!\.aux$!!;
         } elsif (m/^\s*Package xr Warning:\s*$/) {
           $nextline = 1;
         } elsif ($nextline) {
           $nextline = 0;
           if (m/^\s*No file (.*)\.aux\s*$/) {
-            my $file = $1;
             # the .tex file should exist, start from there to properly resolve the file name on Windows
-            my $tex = logic_path("$1.tex");
-            my $aux_file = $tex =~ s!\.tex$!.aux!r;
-            $$target_deps{XR}{$aux_file} = 1;
-            # pretend that the file actually existed
-            $$target_deps{INPUT}{$tex} = 1 if !$aux;
-            if (!$aux) {
-              $aux_file = "$auxdir/pdfaux/$aux_file" if !File::Spec->file_name_is_absolute($aux_file);
-              $$target_deps{INPUT}{$aux_file} = 1;
-            }
+            $tex         = logic_path("$1.tex");
+            $aux_jobname = $tex =~ s!\.tex$!!r;
+          }
+        }
+
+        if ($aux_jobname) {
+          $$target_deps{XR}{$aux_jobname} = 1;
+          # the 'No file' case is a root .tex file, add it to INPUT in case the .tex file itself is missing
+          $$target_deps{INPUT}{$tex} = 1 if !$aux && $tex;
+          if (!$aux) {
+            my $aux_file = "$aux_jobname.aux";
+            $aux_file = "$auxdir/pdfaux/$aux_file" if !File::Spec->file_name_is_absolute($aux_file);
+            $$target_deps{INPUT}{$aux_file} = 1;
           }
         }
       }
@@ -248,13 +260,7 @@ for my $target (sort keys %$deps) {
       $makefile .= ":\n";
     }
   } elsif ($target =~ m!^pdf((?:aux)?)/(.*)$!) {
-    for (keys %{ $$target_deps{INPUT} }) {
-      delete $$target_deps{INPUT}{$_};
-      $_ =~ s!^$auxdir/!\$(AUX_DIR)/!;
-      $$target_deps{INPUT}{$_} = 1;
-    }
-
-    my $aux = $1;
+    my $aux     = $1;
     my $jobname = $2;
 
     $jobname =~ s!\.pdf/[^/]*$!! if !$aux;
@@ -264,7 +270,7 @@ for my $target (sort keys %$deps) {
     for my $xr (sort keys %{ $$target_deps{XR} }) {
 # we only care about root .aux files, not subfiles generated by \include, \bibliography, etc
 # root .aux files have a corresponding .tex INPUT line in .fls, thanks to \externaldocument calling \set@curr@file
-      my $tex = $xr =~ s!\.aux$!.tex!r;
+      my $tex = "$xr.tex";
       if ($$target_deps{INPUT}{$tex}) {
         # ignore redundant .tex dependency
         delete $$target_deps{INPUT}{$tex};
@@ -281,9 +287,12 @@ for my $target (sort keys %$deps) {
       $makefile .= ":\n";
     }
 
-    if (!$aux && (my @xr = sort(keys %{ $$target_deps{XR} }))) {
-      $makefile .= "\nifneq (,\$(filter $fullname.pdf,\$(BMLGOALS.PDF)))";
-      $makefile .= "\n  BMLGOALS.PDFAUX += \$(AUX_DIR)/pdfaux/" . join(' $(AUX_DIR)/pdfaux/', @xr);
+    if (!$aux &&
+      ((my @xr = grep { !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{XR} }))) ||
+        (my @pdf = grep { m!.pdf$! && !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{INPUT} }))))) {
+      $makefile .= "\nifneq (,\$(filter $jobname,\$(bmljobs.pdf)))";
+      $makefile .= "\n  bmljobs.pdfaux += " . join(' ', @xr) if @xr;
+      $makefile .= "\n  bmljobs.pdf += " . join(' ', @pdf)   if @pdf;
       $makefile .= "\nendif\n";
     }
   }

@@ -48,18 +48,15 @@
     <xsl:variable name="pdfs">
       <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
         <xsl:if test="translate(substring(.,string-length(.) - 3),'PDF','pdf') = '.pdf' and not(starts-with(.,'/')) and not(starts-with(.,'../')) and not(substring(.,2,1) = ':')">
-          <xsl:text> $(AUX_DIR)/pdf/</xsl:text>
-          <xsl:value-of select="." />
-          <xsl:text>/</xsl:text>
-          <xsl:value-of select="str:split(.,'/')[last()]" />
+          <xsl:value-of select="substring(.,1,string-length(.) - 4)" />
         </xsl:if>
       </xsl:for-each>
     </xsl:variable>
     <xsl:if test="$pdfs != ''">
-      <xsl:text>ifneq (,$(filter $(AUX_DIR)/</xsl:text>
-      <xsl:value-of select="$BML_TARGET" />
-      <xsl:text>,$(BMLGOALS.HTML)))&#x0A;</xsl:text>
-      <xsl:text>BMLGOALS.PDF +=</xsl:text>
+      <xsl:text>ifneq ($(filter </xsl:text>
+      <xsl:value-of select="substring($BML_TARGET,6,string-length($BML_TARGET) - 16)" />
+      <xsl:text>,$(bmljobs.html)),)&#x0A;</xsl:text>
+      <xsl:text>  bmljobs.pdf += </xsl:text>
       <xsl:value-of select="$pdfs" />
       <xsl:text>&#x0A;endif&#x0A;&#x0A;</xsl:text>
     </xsl:if>

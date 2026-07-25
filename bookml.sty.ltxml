@@ -967,7 +967,7 @@ if ($LaTeXML::VERSION < v0.8.8) {
               # remove the empty identifier if it is not followed by a possible binary operator
               if (!grep { $role eq $_ } ('VERTBAR', 'RELOP', 'ARROW', 'METARELOP', 'MODIFIEROP', 'ADDOP', 'MULOP', 'BINOP', 'APPLYOP', 'COMPOSEOP')) {
                 $document->replaceNode($absent, ()); } }
-        });
+          });
 
         # identical to LaTeXML except for the addition of the empty identifier + cleanup
         DefPrimitive('\@ams@align@bindings', sub {

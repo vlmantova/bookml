@@ -452,11 +452,11 @@ DefPrimitiveI('\bml@process@pt@size', undef, sub {
     elsif ($class eq 'slides') {
       $file = 'slides.cls'; }
 
-    # Remaining classes currently supported by LaTeXML:
-    # aa, elsarticle, ieeeconf, llcns, moderncv, quantumarticle covered by defaults
-    # aipproc OMITTED, font sizes are picked in the preamble by \layoutstyle
-    # standalone, subfiles not true classes
-    # TODO gen-j-l, gen-m-l, gen-p-l, mn, mn2e, mnras, PoS, revtex, revtex4-1, revtex4, svjour, svjour3, svmult
+# Remaining classes currently supported by LaTeXML:
+# aa, elsarticle, ieeeconf, llcns, moderncv, quantumarticle covered by defaults
+# aipproc OMITTED, font sizes are picked in the preamble by \layoutstyle
+# standalone, subfiles not true classes
+# TODO gen-j-l, gen-m-l, gen-p-l, mn, mn2e, mnras, PoS, revtex, revtex4-1, revtex4, svjour, svjour3, svmult
 
     my $sizes = $bml_font_sizes{$file};
     $pt //= 10;

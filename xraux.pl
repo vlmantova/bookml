@@ -22,6 +22,9 @@
 
 =cut
 
+# Read the .aux file recursively and pick out the lines that are read by xr.
+# Do not overwrite the output if the content has not changed.
+
 use warnings;
 use strict;
 use File::Spec;

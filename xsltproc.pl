@@ -22,6 +22,8 @@
 
 =cut
 
+# Minimal implementation of xsltproc based on XML::LibXSLT
+
 use warnings;
 use strict;
 

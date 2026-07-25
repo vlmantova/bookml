@@ -22,6 +22,11 @@
 
 =cut
 
+# Extract the make dependencies.
+# - For PDFS: from .fls (files read), .log (to detect xr)
+# - For XML: from .latexml.log (files read)
+# - For HTML: from .xml (resources required)
+
 use warnings;
 use strict;
 use File::Spec;

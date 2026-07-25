@@ -22,6 +22,8 @@
 
 =cut
 
+# List the files in a given directory into a simple XML file.
+
 use warnings;
 use strict;
 use XML::LibXML;

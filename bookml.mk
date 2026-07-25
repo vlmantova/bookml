@@ -37,7 +37,7 @@ endif
 bml.grep = $(findstring $1,$(call bml.file,$2))
 
 # add the implied default goal ('all' below, unless changed by the user) to MAKECMDGOALS
-MAKECMDGOALS ?= $(if $(.DEFAULT_GOAL),(.DEFAULT_GOAL),all)
+MAKECMDGOALS ?= $(if $(.DEFAULT_GOAL),$(.DEFAULT_GOAL),all)
 
 ### CONFIGURATION
 # Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
@@ -139,7 +139,7 @@ PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm))
 ### INTERNAL VARIABLES
 BOOKML_DEPS_DEPS        = bookml/bookml.pm bookml/deps.pl
 BOOKML_DEPS_PDF         = bookml/bookml.pm bookml/xraux.pl
-BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/XSLT/proc-text.xsl bookml/bookml.pm bookml/xsltproc.pl bookml/search_index.pl)
+BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl) bookml/bookml.pm bookml/xsltproc.pl bookml/search_index.pl
 BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
 BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/bookml.pm bookml/xsltproc.pl
 BOOKML_DEPS_MANIFEST    = bookml/bookml.pm bookml/manifest.pl
@@ -165,8 +165,8 @@ endif
 # (3) reconstruct the (job names of) the files that will be compiled in order to produce the targets
 bml.extract.jobs = $(foreach pat,$1,$(patsubst $(pat),%,$(filter $(pat),$2)))
 
-bml.jobs.scorm  += $(call bml.extract.jobs,SCORM.%.zip,$(bml.goals))
-bml.jobs.zip    += $(call bml.extract.jobs,%.zip,$(filter-out SCORM.%.zip,$(bml.goals)))
+bml.jobs.scorm  += $(call bml.extract.jobs,$(AUX_DIR)/scorm/SCORM.%.zip,$(bml.goals))
+bml.jobs.zip    += $(call bml.extract.jobs,$(AUX_DIR)/zip/%.zip,$(bml.goals))
 bml.jobs.html   += $(bml.jobs.scorm) $(bml.jobs.zip) \
   $(call bml.extract.jobs,$(AUX_DIR)/html/%/index.html,$(bml.goals))
 bml.jobs.xml    += $(bml.jobs.html) \
@@ -619,7 +619,7 @@ $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEP
 $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $$(call bml.recurse,xml)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
-$(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps $(BOOKML_DEPS_DEPS) | $$(@D)/./
+$(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_DEPS) | $$(@D)/./
 	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$<"
 
 # build HTML files
@@ -637,7 +637,7 @@ $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latex
 	@$(call bml.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)
 	@$(call bml.cmd,$(PERL) bookml/search_index.pl "$(AUX_DIR)/html/$*")
 
-$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $$(call bml.recurse,html)
+$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps $$(call bml.recurse,html)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
 # copy zip and SCORM files from $(AUX_DIR) to main folder

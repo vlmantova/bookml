@@ -34,10 +34,9 @@ use XML::LibXSLT;
 
 use lib 'bookml';
 use bookml;
-use bookml qw(encode_fs);
 
 my ($stylefile, $input, $output);
-my @params;
+my @stringparams;
 
 local $SIG{__WARN__} = sub {
   my ($msg) = @_;
@@ -55,19 +54,23 @@ local $SIG{__DIE__} = sub {
 };
 
 GetOptions('--output=s' => \$output,
-  '--stringparam=s{2}' => @params);
+  '--stringparam=s@{2}' => \@stringparams);
 
-my %params = @params;
+my %params = @stringparams;
+
+for (keys %params) {
+  $params{$_} = "'$params{$_}'";
+}
 
 ($stylefile, $input) = @ARGV;
 
-Error('Fatal', 'expected', 'input',      'must specify an input file')  unless defined $input;
-Error('Fatal', 'expected', 'stylesheet', 'must specify a stylesheet')   unless defined $stylefile;
-Error('Fatal', 'expected', 'output',     'must specify an output file') unless defined $output;
+Fatal('expected', 'input',      undef, 'you must specify an input file')  unless defined $input;
+Fatal('expected', 'stylesheet', undef, 'you must specify a stylesheet')   unless defined $stylefile;
+Fatal('expected', 'output',     undef, 'you must specify an output file') unless defined $output;
 
-my $raw_input     = encode_fs($input);
-my $raw_stylefile = encode_fs($stylefile);
-my $raw_output    = encode_fs($output);
+my $raw_input     = bookml::encode_fs($input);
+my $raw_stylefile = bookml::encode_fs($stylefile);
+my $raw_output    = bookml::encode_fs($output);
 
 my $xslt = XML::LibXSLT->new();
 my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet '$stylefile'");

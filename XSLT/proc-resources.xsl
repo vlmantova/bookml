@@ -56,8 +56,8 @@
     <xsl:if test="$pdfs != ''">
       <xsl:text>ifneq ($(filter </xsl:text>
       <xsl:value-of select="$BML_JOB" />
-      <xsl:text>,$(bmljobs.html)),)&#x0A;</xsl:text>
-      <xsl:text>  bmljobs.pdf += </xsl:text>
+      <xsl:text>,$(bml.jobs.html)),)&#x0A;</xsl:text>
+      <xsl:text>  bml.jobs.pdf += </xsl:text>
       <xsl:value-of select="$pdfs" />
       <xsl:text>&#x0A;endif&#x0A;&#x0A;</xsl:text>
     </xsl:if>

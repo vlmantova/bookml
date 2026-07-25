@@ -34,8 +34,7 @@ use Encode::Locale;
 use File::Spec;
 use Term::ANSIColor qw(colored);
 
-our @EXPORT    = qw(Message Warning Error Fatal);
-our @EXPORT_OK = qw(encode_fs);
+our @EXPORT = qw(Message Warning Error Fatal);
 
 BEGIN {
   # portable platform-dependent I/O functions to handle path name encoding
@@ -54,49 +53,9 @@ BEGIN {
       return Win32::GetLongPathName($path) // $path;
     };
 
-    if (eval { require Win32::LongPath; }) {
-      *decode_fs = sub {
-        my ($path) = @_;
-        return $path;
-      };
+    *decode_fs = \&Win32::GetLongPathName;
 
-      *encode_fs = sub {
-        my ($path) = @_;
-        return $path;
-      };
-
-      *get_cwd = sub {
-        return &Win32::LongPath::getcwdL;
-      };
-
-      *open_file = sub {
-        return Win32::LongPath::openL($_[0], $_[1], $_[2]);
-      };
-
-      *test_f = sub {
-        my ($path) = @_;
-        return Win32::LongPath::testL('f', $path); 
-      };
-    } else {
-      *decode_fs = \&Win32::GetLongPathName;
-
-      *encode_fs = \&Win32::GetANSIPathName;
-
-      *get_cwd = sub {
-        return decode_fs(get_raw_cwd);
-      };
-
-      *open_file = sub {
-        my ($fh, $mode, $path) = @_;
-        Win32::CreateFile($path) or Fatal('I/O', $path, "cannot write to '$path': $!") if $mode =~ m/>|\+/;
-        return open($_[0], $_[1], encode_fs($path));
-      };
-
-      *test_f = sub {
-        my ($path) = @_;
-        return -f encode_fs($path); 
-      };
-    }
+    *encode_fs = \&Win32::GetANSIPathName;
   } else {
     *get_long_path_name = sub {
       my ($path) = @_;
@@ -112,19 +71,63 @@ BEGIN {
       my ($path) = @_;
       return Encode::encode('locale_fs', $path, Encode::FB_CROAK | Encode::LEAVE_SRC);
     };
+  }
 
-    *get_cwd = sub {
-      return decode_fs(get_raw_cwd);
-    };
+  if ($^O eq 'Win32' && eval { require Win32::LongPath; }) {
+    *get_cwd = \&Win32::LongPath::getcwdL;
 
-    *open_file = sub {
-      return open($_[0], $_[1], encode_fs($_[2]));
+    *open_file = \&Win32::LongPath::openL($_[0], $_[1], $_[2]);
+
+    *read_dir = \&Win32::LongPath::readdirL;
+
+    *ch_dir = \&Win32::LongPath::chdirL;
+
+    *test_d = sub {
+      my ($path) = @_;
+      return Win32::LongPath::testL('d', $path);
     };
 
     *test_f = sub {
       my ($path) = @_;
-      return -f encode_fs($path); 
+      return Win32::LongPath::testL('f', $path);
     };
+  } else {
+    *get_cwd = sub {
+      return decode_fs(get_raw_cwd);
+    };
+
+    *read_dir = sub {
+      my ($path) = @_;
+      return readdir(encode_fs($path));
+    };
+
+    *ch_dir = sub {
+      my ($path) = @_;
+      return chdir(encode_fs($path));
+    };
+
+    *test_d = sub {
+      my ($path) = @_;
+      return -d encode_fs($path);
+    };
+
+    *test_f = sub {
+      my ($path) = @_;
+      return -f encode_fs($path);
+    };
+
+    if ($^O eq 'Win32') {
+      *open_file = sub {
+        my ($fh, $mode, $path) = @_;
+        Win32::CreateFile($path) or Fatal('I/O', $path, "cannot write to '$path': $!") if $mode =~ m/>|\+/;
+        return open($_[0], $_[1], encode_fs($path));
+      };
+    } else {
+      *open_file = sub {
+        my ($fh, $mode, $path) = @_;
+        return open($_[0], $_[1], encode_fs($path));
+      };
+    }
   }
 }
 

@@ -24,7 +24,7 @@
 
 # Extract the make dependencies.
 # - For PDFS: from .fls (files read), .logdeps (to detect xr)
-# - For XML: from .latexml.log (files read)
+# - For XML: from .latexml.logdeps (files read)
 # - For HTML: from .xml (resources required)
 
 use warnings;
@@ -94,7 +94,7 @@ for my $log (@ARGV) {
   bookml::open_file(my $log_fh, '<', $log) or Fatal('I/O', $log, undef, "cannot read '$log': $!");
   my $logname = logic_path($log) =~ s!^\Q$auxdir\E/!!r;
 
-  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.log!) {
+  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
     my $jobname    = $1;
     my $targetname = "xml/$jobname";
 

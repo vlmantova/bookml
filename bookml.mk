@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -560,7 +560,7 @@ detect-curl: announce-detect-misc
 # TODO check and document why /./ and not just /
 
 # for .pdf, show command to prove that something is happening
-$(AUX_DIR)/pdf/./: | %.tex
+$(AUX_DIR)/pdf/%/./:
 	$(call bml.mkdir,$@)
 
 $(AUX_DIR)/%/./:
@@ -580,19 +580,19 @@ bml.pdf.subtree := $(patsubst %,$(AUX_DIR)/pdf/%/./,$(filter-out $(AUX_DIR)/% bm
 
 # typo LATEKMKFLAGS preserved for backwards compatibility
 $(addprefix $(AUX_DIR)/pdf/%.,pdf aux fls logdeps): %.tex $(BOOKML_DEPS_PDF) $$(call bml.direct,pdf) $$(if $$(wildcard $(AUX_DIR)/pdf/$$*.xraux),,FORCE) | $$(@D)/./ $$(bml.pdf.subtree)
-	@$(call bml.prog,latexmk: $*.tex → $*.pdf)
+	@$(call bml.prog,latexmk: $*.tex → $*.pdf ($@))
 	@$(call bml.cmd,$(call bml.var,TEXFOT) $(call bml.flags,TEXFOTFLAGS) \
 	  $(call bml.var,LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- \
 	  $(if $(call bml.var,SYNCTEX),-synctex=$(call bml.var,SYNCTEX),) $(LATEKMKFLAGS) $(call bml.flags,LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
 	  -MP -output-directory="$(@D)" "$<")
-	@cmp "$(AUX_DIR)/pdf/$*.aux" "$(AUX_DIR)/pdf/$*.xraux" 2>/dev/null || cp "$(AUX_DIR)/pdf/$*.aux" "$(AUX_DIR)/pdf/$*.xraux"
+	@$(PERL) bookml/xraux.pl --output "$(AUX_DIR)/pdf/$*.xraux" "$(AUX_DIR)/pdf/$*.aux"
 	@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.log)" "$(call bml.ospath,$(AUX_DIR)/pdf/$*.logdeps)"
 
 $(addprefix $(AUX_DIR)/pdf/%.,pdf aux fls logdeps): %.tex $$(call bml.recurse,pdf)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
-$(sort $(bml.deps.pdf)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps bookml/deps.pl | $$(@D)/./
+$(sort $(bml.deps.pdf)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps bookml/deps.pl | $$(@D)/./
 	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$(AUX_DIR)/pdf/$*.fls" "$(AUX_DIR)/pdf/$*.logdeps"
 
 # build XML files

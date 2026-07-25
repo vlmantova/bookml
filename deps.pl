@@ -204,7 +204,7 @@ for my $target (sort keys %$deps) {
     }
 
     if (my @inputs = sort(keys %{ $$target_deps{INPUT} })) {
-      my @xrinputs = map { File::Spec->file_name_is_absolute($_) ? "$_.aux" : "\$(AUX_DIR)/pdf/$_.aux" } sort(keys %{ $$target_deps{XR} });
+      my @xrinputs = map { File::Spec->file_name_is_absolute($_) ? "$_.aux" : "\$(addsuffix \$(AUX_DIR)/pdf/$_.,pdf aux fls logdeps)" } sort(keys %{ $$target_deps{XR} });
       $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps: \\\n  ";
       $makefile .= join(" \\\n  ", @inputs);
    # order only dependency to force sequential building, make will break circular dependencies when needed

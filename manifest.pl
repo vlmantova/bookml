@@ -53,7 +53,7 @@ find({
     preprocess => sub { sort @_; },
     wanted     => sub {
       my $path = File::Spec->abs2rel($_, $directory);
-      return if -d $path || $path =~ m/^(\.|imsmanifest\.xml|index\.html|LaTeXML\.cache)$/;
+      return if -d $path || $path =~ m/^(\.|index\.html)$/;
       my $tag = $doc->createElement('file');
       $tag->appendTextNode(URI::file->new($path));
       $root->appendChild($tag);

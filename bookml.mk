@@ -24,12 +24,15 @@ endif
 # backward compatible file/grep function
 ifeq ($(findstring version-3.8,version-$(MAKE_VERSION)),version-3.8)
   ifeq ($(bml.is.win),true)
-    bml.file = $(shell type $(subst /,\,$1))
+    bml.file  = $(shell type $(subst /,\,$1))
+    bml.touch = $(shell echo > $(subst /,\,$1))
   else
-    bml.file = $(shell cat -- $1)
+    bml.file  = $(shell cat -- $1)
+    bml.file  = $(shell echo > $1)
   endif
 else
-  bml.file = $(file < $1)
+  bml.file  = $(file < $1)
+  bml.touch = $(file > $1)
 endif
 bml.grep = $(findstring $1,$(call bml.file,$2))
 
@@ -134,12 +137,14 @@ PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm))
 ### END CONFIGURATION
 
 ### INTERNAL VARIABLES
-BOOKML_DEPS_PDF         = bookml/latexmk.rc
-BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/search_index.pl bookml/XSLT/proc-text.xsl)
-BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
-BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
-BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
-BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
+BOOKML_DEPS_DEPS        = bookml/bookml.pm bookml/deps.pl
+BOOKML_DEPS_PDF         = bookml/bookml.pm bookml/xraux.pl
+BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/XSLT/proc-text.xsl bookml/bookml.pm bookml/xsltproc.pl bookml/search_index.pl)
+BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_MANIFEST    = bookml/bookml.pm bookml/manifest.pl
+BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_AUTOSVG     = bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
 
 ### DEPENDENCY TRACKING
 # (1) collect the immediate targets that will be compiled in $(AUX_DIR)
@@ -165,9 +170,9 @@ bml.jobs.zip    += $(call bml.extract.jobs,%.zip,$(filter-out SCORM.%.zip,$(bml.
 bml.jobs.html   += $(bml.jobs.scorm) $(bml.jobs.zip) \
   $(call bml.extract.jobs,$(AUX_DIR)/html/%/index.html,$(bml.goals))
 bml.jobs.xml    += $(bml.jobs.html) \
-  $(call bml.extract.jobs,$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.logdeps $(AUX_DIR)/deps/%.htmldeps,$(bml.goals))
+  $(call bml.extract.jobs,$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.log $(AUX_DIR)/deps/%.htmldeps,$(bml.goals))
 bml.jobs.pdf    += \
-	$(call bml.extract.jobs,$(AUX_DIR)/deps/%.pdfdeps $(addprefix $(AUX_DIR)/pdf/%,.pdf .aux .fls .logdeps) ,$(bml.goals))
+	$(call bml.extract.jobs,$(AUX_DIR)/deps/%.pdfdeps $(addprefix $(AUX_DIR)/pdf/%,.pdf .aux .fls .logdeps .start-stamp),$(bml.goals))
 
 # (4) include the dependency files (given $(AUX_DIR)/FORMAT/jobname.ext, include $(AUX_DIR)/deps/jobname.FORMATdeps)
 # required to:
@@ -372,7 +377,7 @@ xml:   $(TARGETS.XML)
 zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
-bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd),$(if $(filter %3,$1),rd)))
+bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd,$(if $(filter %3,$1),rd))))
 ifeq ($(filter clean clean-%,$(MAKECMDGOALS)),)
   $(info $(if $(MAKE_RESTARTS),$(bml.yellowbg)$(bml.white) $(call bml.ordinal,$(MAKE_RESTARTS)) make restart,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 else
@@ -400,7 +405,7 @@ clean-svg:
 clean-xml:
 	-$(call bml.rmdir,$(AUX_DIR)/xml)
 	-$(call bml.rmdir,bmlimages/dvi)
-	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.latexml.log $(AUX_DIR)/latexmlaux/*.latexml.logdeps)
+	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.latexml.log $(AUX_DIR)/latexmlaux/*.latexml.log)
 	-$(RM) $(call bml.ospath,$(patsubst $(AUX_DIR)/xml/%.xml,bmlimages/%-*.svg,$(TARGETS.XML)))
 clean-zip:
 	$(call bml.rmdir,$(AUX_DIR)/zip)
@@ -568,7 +573,7 @@ $(AUX_DIR)/%/./:
 
 # copy PDF and synctex.gz files from $(AUX_DIR) to main folder
 # use relative paths is possible (with extra work if there are spaces)
-$(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf | $$(*D)/./
+$(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps $(AUX_DIR)/pdf/%.start-stamp | $$(*D)/./
 	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$*.pdf)")
 	@$(call bml.cp,$(AUX_DIR)/pdf/$*.synctex.gz,$*.synctex.gz)
 	@$(call bml.cp,$(AUX_DIR)/pdf/$*.synctex,$*.synctex)
@@ -579,46 +584,50 @@ $(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf | $$(*D)/./
 bml.pdf.subtree := $(patsubst %,$(AUX_DIR)/pdf/%/./,$(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.))))
 
 # typo LATEKMKFLAGS preserved for backwards compatibility
-$(addprefix $(AUX_DIR)/pdf/%.,pdf aux fls logdeps): %.tex $(BOOKML_DEPS_PDF) $$(call bml.direct,pdf) $$(if $$(wildcard $(AUX_DIR)/pdf/$$*.xraux),,FORCE) | $$(@D)/./ $$(bml.pdf.subtree)
-	@$(call bml.prog,latexmk: $*.tex → $*.pdf ($@))
+# since GNU Make does not do grouped targets very well, all outputs MUST be specified when used as prerequisites!
+$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps $(AUX_DIR)/pdf/%.start-stamp: %.tex $(BOOKML_DEPS_PDF) $$(call bml.direct,pdf) \
+  | $$(@D)/./ $$(bml.pdf.subtree)
+	@$(call bml.prog,latexmk: $*.tex → $*.pdf ($(@F)))
+	@$(call bml.touch,$(AUX_DIR)/pdf/$*.start-stamp)
 	@$(call bml.cmd,$(call bml.var,TEXFOT) $(call bml.flags,TEXFOTFLAGS) \
-	  $(call bml.var,LATEXMK) -r bookml/latexmk.rc -pdf -dvi- -ps- \
-	  $(if $(call bml.var,SYNCTEX),-synctex=$(call bml.var,SYNCTEX),) $(LATEKMKFLAGS) $(call bml.flags,LATEXMKFLAGS) \
+	  $(call bml.var,LATEXMK) -pdf -dvi- -ps- $(if $(call bml.var,SYNCTEX),-synctex=$(call bml.var,SYNCTEX),) \
+	  $(LATEKMKFLAGS) $(call bml.flags,LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
-	  -MP -output-directory="$(@D)" "$<")
+	  -output-directory="$(@D)" "$<")
+	@$(call bml.cp,$(AUX_DIR)/pdf/$*.log,$(AUX_DIR)/pdf/$*.logdeps)
 	@$(PERL) bookml/xraux.pl --output "$(AUX_DIR)/pdf/$*.xraux" "$(AUX_DIR)/pdf/$*.aux"
-	@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.log)" "$(call bml.ospath,$(AUX_DIR)/pdf/$*.logdeps)"
 
-$(addprefix $(AUX_DIR)/pdf/%.,pdf aux fls logdeps): %.tex $$(call bml.recurse,pdf)
+$(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps $(AUX_DIR)/pdf/%.start-stamp: %.tex $$(call bml.recurse,pdf)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
-$(sort $(bml.deps.pdf)): $(AUX_DIR)/deps/%.pdfdeps: $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps bookml/deps.pl | $$(@D)/./
+$(sort $(bml.deps.pdf)): $(AUX_DIR)/deps/%.pdfdeps: %.tex $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps $(AUX_DIR)/pdf/%.start-stamp $(BOOKML_DEPS_DEPS) | $$(@D)/./
 	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$(AUX_DIR)/pdf/$*.fls" "$(AUX_DIR)/pdf/$*.logdeps"
 
 # build XML files
 
 # (Windows can sometimes set the READONLY attribute on the xml folder,
 #  especially on cloud drives, and this trips LaTeXML)
-$(addprefix $(AUX_DIR)/,xml/%.xml latexmlaux/%.latexml.logdeps): %.tex $(BOOKML_DEPS_XML) $$(call bml.direct,xml) | $$(AUX_DIR)/xml/$$(*D)/./ $$(AUX_DIR)/latexmlaux/$$(*D)/./
+$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $(BOOKML_DEPS_XML) $$(call bml.direct,xml) \
+  | $$(AUX_DIR)/xml/$$(*D)/./ $$(AUX_DIR)/latexmlaux/$$(*D)/./
 	@$(call bml.prog,latexml: $< → $*.xml)
 	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
 	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
 	  $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/latexmlaux/$*.latexml.log" --destination="$(AUX_DIR)/xml/$*.xml" "$<")
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$(AUX_DIR)/xml/$*.xml" --output "$(AUX_DIR)/xml/$*.xml" --stringparam AUX_DIR "$(AUX_DIR)" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
-	@$(CP) "$(call bml.ospath,$(AUX_DIR)/latexmlaux/$*.latexml.log)" "$(call bml.ospath,$(AUX_DIR)/latexmlaux/$*.latexml.logdeps)"
+	@$(call bml.cp,$(AUX_DIR)/latexmlaux/$*.latexml.log,$(AUX_DIR)/latexmlaux/$*.latexml.logdeps)
 
-$(addprefix $(AUX_DIR)/,xml/%.xml latexmlaux/%.latexml.logdeps): %.tex $$(call bml.recurse,xml)
+$(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps: %.tex $$(call bml.recurse,xml)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
-$(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/latexmlaux/%.latexml.logdeps bookml/deps.pl | $$(@D)/./
+$(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps $(BOOKML_DEPS_DEPS) | $$(@D)/./
 	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$<"
 
 # build HTML files
 
-$(sort $(bml.deps.html)): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $$(@D)/./
+$(sort $(bml.deps.html)): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps $(BOOKML_DEPS_HTMLDEPS) | $$(@D)/./
 	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$(AUX_DIR)/xml/$*.xml" --output "$@" --stringparam BML_JOB "$*")
 
-$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTML) $$(call bml.direct,html) | $$(@D)/./
+$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.xml $(AUX_DIR)/latexmlaux/%.latexml.logdeps $(BOOKML_DEPS_HTML) $$(call bml.direct,html) | $$(@D)/./
 	@$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html)
 	@$(call bml.rmdir,$(AUX_DIR)/html/$*)
 	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
@@ -662,7 +671,7 @@ $(AUX_DIR)/zip/%.zip: $(AUX_DIR)/html/%/index.html $$(call bml.html.for,$$*) | $
 
 # create BookML minimal manifest (a list of files generated by latexmlpost in XML format)
 # manifest should be refreshed whenever any folder has been modified
-$(AUX_DIR)/latexmlaux/%.manifest: $(AUX_DIR)/html/%/index.html bookml/manifest.pl $$(call bml.html.dirfor,$$*) | $$(@D)/./
+$(AUX_DIR)/latexmlaux/%.manifest: $(AUX_DIR)/html/%/index.html $(BOOKML_DEPS_MANIFEST) $$(call bml.html.dirfor,$$*) | $$(@D)/./
 	@$(call bml.cmd,$(PERL) bookml/manifest.pl "$(AUX_DIR)/html/$*" "$@")
 
 # create SCORM manifest

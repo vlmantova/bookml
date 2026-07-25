@@ -43,16 +43,16 @@ File::Find::find({
   },
   $ARGV[0]);
 
-my $parser = XML::LibXML->new({ suppress_errors => 1, suppress_warnings => 1, recover => 2 });
-my $xslt = XML::LibXSLT->new();
+my $parser     = XML::LibXML->new({ suppress_errors => 1, suppress_warnings => 1, recover => 2 });
+my $xslt       = XML::LibXSLT->new();
 my $stylesheet = $xslt->parse_stylesheet_file('bookml/XSLT/proc-text.xsl');
 
 chdir $ARGV[0];
 
 for my $file (@files) {
-  my $doc = $parser->load_html(location => $file);
+  my $doc   = $parser->load_html(location => $file);
   my $title = $doc->findnodes('//title/text()');
-  my @urls = reverse (map { $_->string_value } $doc->findnodes('//link[contains("up up up up up up up up up",@rel)]/@href'));
+  my @urls = reverse(map { $_->string_value } $doc->findnodes('//link[contains("up up up up up up up up up",@rel)]/@href'));
   push(@urls, $file);
   my $result = $stylesheet->transform($doc);
   push(@index, [\@urls, $title->string_value, $stylesheet->output_as_chars($result)]);

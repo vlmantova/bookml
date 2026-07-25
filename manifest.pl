@@ -30,15 +30,15 @@ use File::Spec;
 use URI::file;
 
 my $directory = $ARGV[0];
-my $manifest = $ARGV[1];
+my $manifest  = $ARGV[1];
 
-if (! $directory || ! -d $directory || @ARGV != 2) {
+if (!$directory || !-d $directory || @ARGV != 2) {
   die 'you must specify exactly one directory and one manifest file';
 }
 
 open(my $fh, '>', $manifest) or die "cannot write '$manifest': $!";
 
-my $doc = XML::LibXML::Document->new('1.0', 'utf-8');
+my $doc  = XML::LibXML::Document->new('1.0', 'utf-8');
 my $root = $doc->createElement('manifest');
 $doc->setDocumentElement($root);
 
@@ -49,14 +49,14 @@ $doc->setDocumentElement($root);
 }
 
 find({
-  no_chdir => 1,
-  preprocess => sub { sort @_; },
-  wanted => sub {
-    my $path = File::Spec->abs2rel($_, $directory);
-    return if -d $path || $path =~ m/^(\.|imsmanifest\.xml|index\.html|LaTeXML\.cache)$/;
-    my $tag = $doc->createElement('file');
-    $tag->appendTextNode(URI::file->new($path));
-    $root->appendChild($tag);
-  }}, $directory);
+    no_chdir   => 1,
+    preprocess => sub { sort @_; },
+    wanted     => sub {
+      my $path = File::Spec->abs2rel($_, $directory);
+      return if -d $path || $path =~ m/^(\.|imsmanifest\.xml|index\.html|LaTeXML\.cache)$/;
+      my $tag = $doc->createElement('file');
+      $tag->appendTextNode(URI::file->new($path));
+      $root->appendChild($tag);
+    } }, $directory);
 
 $doc->toFH($fh, 1);

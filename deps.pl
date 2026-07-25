@@ -24,87 +24,27 @@
 
 use warnings;
 use strict;
-use Cwd;
-use Encode qw(decode decode_utf8 encode);
-use Encode::Locale;
 use File::Spec;
-use Term::ANSIColor qw(colored);
+use Getopt::Long;
 
-use open ':std', ':encoding(UTF-8)';
-binmode(STDERR, ':encoding(UTF-8)');
-binmode(STDOUT, ':encoding(UTF-8)');
-*STDERR->autoflush();
-
-BEGIN {
-  if ($^O eq 'MSWin32') {
-    require Win32;
-    require Win32::Console;
-  }
-}
-
-Encode::Locale::decode_argv(Encode::FB_CROAK);
-
-# Pretty print messages like LaTeXML (adapted from LaTeXML::Common::Error)
-my $IS_TERMINAL = -t STDERR;
-
-if ($IS_TERMINAL && $^O eq 'MSWin32') {
-  # set utf-8 codepage
-  # CP_UTF8 = 65001
-  Win32::Console::OutputCP(65001);
-
-  # get standard error console
-  our $W32_STDERR = Win32::Console->new(&Win32::Console::STD_ERROR_HANDLE());
-
-  # enable VT100 emulation or fall back to ANSI emulation if unsuccessful
-  # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004 (not exported by Win32::Console)
-  my $mode = $W32_STDERR->Mode();
-  unless ($W32_STDERR->Mode($mode | 0x0004) && $W32_STDERR->Mode() & 0x0004) {
-    require Win32::Console::ANSI; } }
-
-my %color_scheme = (
-  details => 'bold',
-  success => 'green',
-  info    => 'bright_blue',
-  warning => 'yellow',
-  error   => 'bold red',
-  fatal   => 'bold red underline',
-);
-
-sub Message {
-  my ($severity, $category, $object, $summary) = @_;
-  my $prefix = "$severity:$category:$object";
-  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{ lc($severity) }) : $prefix) . " $summary\n");
-  exit 1 if $severity eq 'Fatal';
-  return;
-}
-
-sub Warn {
-  return Message('Warning', @_);
-}
-
-sub Fatal {
-  return Message('Fatal', @_);
-}
+use lib 'bookml';
+use bookml;
 
 my @logs = ();
 my ($output, $physical_auxdir);
-my $raw_cwd = $^O eq 'MSWin32' ? Win32::GetLongPathName(Win32::GetCwd()) : Cwd::getcwd;
-my $cwd = $^O eq 'MSWin32' ? $raw_cwd : decode('locale_fs', $raw_cwd, Encode::FB_CROAK | Encode::LEAVE_SRC);
-my $auxdir = '$(AUX_DIR)';
+my $raw_cwd = bookml::get_raw_cwd;
+my $cwd     = bookml::get_cwd;
+my $auxdir  = '$(AUX_DIR)';
 
 sub normalize_path {
   my ($file) = @_;
-  # if $file does not exist (problematic!), fall back gracefully
-  if ($^O eq 'MSWin32') {
-    if (my $long = Win32::GetLongPathName($file)) {
-      $file = $long;
-    } else {
-      Warn('I/O', $file, "could not determine the long file name, changes to '$file' will likely not be detected");
-    }
-  }
+
+  $file = bookml::get_long_path_name($file);
   $file = File::Spec->canonpath($file);
+
   if (File::Spec->file_name_is_absolute($file)) {
     my $relfile = File::Spec->abs2rel($file, $cwd);
+
     if (!File::Spec->file_name_is_absolute($relfile)) {
       my ($top) = File::Spec->splitdir($relfile);
       $file = $relfile if $top ne File::Spec->updir;
@@ -113,49 +53,40 @@ sub normalize_path {
     my ($top) = File::Spec->splitdir($file);
     $file = File::Spec->rel2abs($file, $cwd) if $top eq File::Spec->updir;
   }
+
   $file =~ s!\\!/!g;
   $file =~ s! !\\ !g;
+
   return $file;
 }
 
 sub logic_path {
   my ($file) = @_;
+
   $file = normalize_path($file);
   $file =~ s!^\Q$physical_auxdir\E/!$auxdir/!;
+
   return $file;
 }
 
 # LaTeXML 0.8.8 does not decode Cwd::getcwd
 sub fix_latexml_cwd_encoding {
   my ($file) = @_;
-  if ($^O ne 'Win32') {
-    $file =~ s!^\Q$raw_cwd\E/!$cwd/!;
-  }
-  return $file;
+  return $file =~ s!^\Q$raw_cwd\E/!$cwd/!r;
 }
 
-while (@ARGV) {
-  my $arg = shift @ARGV;
-  if ($arg eq '--output' || $arg eq '-o') {
-    $output = (shift @ARGV) or Fatal('expected', 'output', "argument required after $arg");
-  } elsif ($arg eq '--auxdir' || $arg eq '-a') {
-    $physical_auxdir = (shift @ARGV) or Fatal('expected', 'auxdir', "argument required after $arg");
-  } elsif ($arg =~ /^-/) {
-    Fatal('unexpected', '$arg', 'this minimal script only supports --auxdir, -a, --output, -o');
-  } else {
-    push(@logs, $arg);
-  }
-}
+GetOptions('output=s' => \$output,
+  'auxdir=s' => \$physical_auxdir);
 
-Fatal('expected', 'aux-dir', 'you must specify the aux directory with --auxdir or -a') unless $auxdir;
-Fatal('expected', 'output', 'you must specify the output file with --output or -o') unless $output;
+Fatal('expected', 'aux-dir', undef, 'you must specify the aux directory with --auxdir or -a') unless $physical_auxdir;
+Fatal('expected', 'output', undef, 'you must specify the output file with --output or -o') unless $output;
 
 $physical_auxdir = normalize_path($physical_auxdir);
 
 my $deps = {};
 
-for my $log (@logs) {
-  open(my $log_fh, '<', encode('locale_fs', $log, Encode::FB_CROAK | Encode::LEAVE_SRC)) or Fatal('I/O', $log, "cannot read '$log': $!");
+for my $log (@ARGV) {
+  bookml::open_file(my $log_fh, '<', $log) or Fatal('I/O', $log, undef, "cannot read '$log': $!");
   my $logname = logic_path($log) =~ s!^\Q$auxdir\E/!!r;
 
   if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
@@ -185,11 +116,11 @@ for my $log (@logs) {
       next if $file eq "$jobname.tex";
       $$target_deps{$file} = 1;
     }
-  } elsif ($logname =~ m!^pdf((?:aux)?)/(.*)\.(fls|logdeps)$!) {
-    my $aux        = $1;
-    my $ext        = $3;
-    my $jobname    = $aux ? $2 : $2 =~ s!\.pdf/[^/]*$!!r;
-    my $targetname = "pdf$aux/$jobname";
+  } elsif ($logname =~ m!^pdf/(.*)\.(fls|logdeps)$!) {
+    my $jobname    = $1;
+    my $targetname = "pdf/$jobname";
+    my $ext        = $2;
+
     $$deps{$targetname} = {} if !$$deps{$targetname};
     my $target_deps = $$deps{$targetname};
 
@@ -199,8 +130,8 @@ for my $log (@logs) {
         # we do not care about OUTPUT
         if (m/^\s*INPUT\s+(.*)$/) {
           my $file = logic_path($1);
-          # skip files that could cause cyclic dependencies
-          next if $file =~ m!^\Q$auxdir\E/pdf$aux/!;
+          # skip files generated within $(AUX_DIR)
+          next if $file =~ m!^\Q$auxdir\E/pdf/!;
           # ignore redundant .tex dependency
           next if $file eq "$jobname.tex";
           $$target_deps{INPUT}{$file} = 1;
@@ -214,8 +145,7 @@ for my $log (@logs) {
         my $tex;
 
         if (m/^\s*Package xr Info: IMPORTING LABELS FROM (.*\.aux) on input line \d+.\s*$/) {
-          $aux_jobname = logic_path("$1");
-          $aux_jobname =~ s!\.aux$!!;
+          $aux_jobname = logic_path("$1") =~ s!\.aux$!!r;
         } elsif (m/^\s*Package xr Warning:\s*$/) {
           $nextline = 1;
         } elsif ($nextline) {
@@ -229,18 +159,15 @@ for my $log (@logs) {
 
         if ($aux_jobname) {
           $$target_deps{XR}{$aux_jobname} = 1;
-          # the 'No file' case is a root .tex file, add it to INPUT in case the .tex file itself is missing
-          $$target_deps{INPUT}{$tex} = 1 if !$aux && $tex;
-          if (!$aux) {
-            my $aux_file = "$aux_jobname.aux";
-            $aux_file = "$auxdir/pdfaux/$aux_file" if !File::Spec->file_name_is_absolute($aux_file);
-            $$target_deps{INPUT}{$aux_file} = 1;
-          }
+      # the 'No file' case is a root .tex file, add it to INPUT in case the .tex file itself needs to be built
+          $$target_deps{INPUT}{$tex} = 1 if $tex;
+          my $aux_file = File::Spec->file_name_is_absolute($aux_jobname) ? "$aux_jobname.aux" : "$auxdir/pdf/$aux_jobname.xraux";
+          $$target_deps{INPUT}{$aux_file} = 1;
         }
       }
     }
   } else {
-    Fatal('malformed', $logname, 'cannot determine source of log');
+    Fatal('malformed', $logname, undef, 'cannot determine source of log');
   }
 }
 
@@ -259,13 +186,10 @@ for my $target (sort keys %$deps) {
       $makefile .= join(":\n", @inputs);
       $makefile .= ":\n";
     }
-  } elsif ($target =~ m!^pdf((?:aux)?)/(.*)$!) {
-    my $aux     = $1;
-    my $jobname = $2;
+  } elsif ($target =~ m!^pdf/(.*)$!) {
+    my $jobname = $1;
 
-    $jobname =~ s!\.pdf/[^/]*$!! if !$aux;
     my $fullname = "\$(AUX_DIR)/$target";
-    $fullname .= ".pdf/$jobname" if !$aux;
 
     for my $xr (sort keys %{ $$target_deps{XR} }) {
 # we only care about root .aux files, not subfiles generated by \include, \bibliography, etc
@@ -280,26 +204,27 @@ for my $target (sort keys %$deps) {
     }
 
     if (my @inputs = sort(keys %{ $$target_deps{INPUT} })) {
-      $makefile .= ($aux ? "$fullname.aux $fullname.fls:" : "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps:") . " \\\n  ";
+      my @xrinputs = map { File::Spec->file_name_is_absolute($_) ? "$_.aux" : "\$(AUX_DIR)/pdf/$_.aux" } sort(keys %{ $$target_deps{XR} });
+      $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps: \\\n  ";
       $makefile .= join(" \\\n  ", @inputs);
+   # order only dependency to force sequential building, make will break circular dependencies when needed
+      $makefile .= " | \\\n  " . join(" \\\n  ", @xrinputs) if @xrinputs;
       $makefile .= "\n\n";
-      $makefile .= join(":\n", @inputs);
-      $makefile .= ":\n";
+      $makefile .= join(":\n", @inputs, @xrinputs) . ":\n";
     }
 
-    if (!$aux &&
-      ((my @xr = grep { !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{XR} }))) ||
-        (my @pdf = grep { m!.pdf$! && !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{INPUT} }))))) {
-      $makefile .= "\nifneq (,\$(filter $jobname,\$(bmljobs.pdf)))";
-      $makefile .= "\n  bmljobs.pdfaux += " . join(' ', @xr) if @xr;
-      $makefile .= "\n  bmljobs.pdf += " . join(' ', @pdf)   if @pdf;
+    if ((my @xr = grep { !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{XR} }))) ||
+      (my @pdf = grep { m!.pdf$! && !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{INPUT} })))) {
+      $makefile .= "\nifneq (\$(filter $jobname,\$(bml.jobs.pdf)),)";
+      $makefile .= "\n  -include \$(sort \$(filter-out \$(call bml.deps.detect,pdf),\$(patsubst %,\$(AUX_DIR)/deps/%.pdfdeps," . join(' ', @xr) . ")))" if @xr;
+      $makefile .= "\n  bml.jobs.pdf += " . join(' ', @pdf, @xr) if @pdf || @xr;
       $makefile .= "\nendif\n";
     }
   }
 }
 
 if ($output ne '-') {
-  open(my $fh_output, '>', encode('locale_fs', $output, Encode::FB_CROAK | Encode::LEAVE_SRC)) or die "cannot write '$output': $!";
+  bookml::open_file(my $fh_output, '>', $output) or Fatal('I/O', $output, undef, "cannot write '$output': $!");
   print $fh_output $makefile;
 } else {
   print $makefile;

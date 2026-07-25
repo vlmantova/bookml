@@ -24,73 +24,18 @@
 
 use warnings;
 use strict;
-use Encode qw(decode decode_utf8 encode);
+
+use Encode qw(decode);
 use Encode::Locale;
+use Getopt::Long;
 use XML::LibXSLT;
-use Term::ANSIColor qw(colored);
-use IO::Handle;
 
-Encode::Locale::decode_argv(Encode::FB_CROAK);
+use lib 'bookml';
+use bookml;
+use bookml qw(encode_fs);
 
-my @files = ();
-my %params;
 my ($stylefile, $input, $output);
-
-# Pretty print messages like LaTeXML (adapted from LaTeXML::Common::Error)
-BEGIN {
-  require Win32::Console if $^O eq 'MSWin32';
-}
-
-binmode(STDERR, ":encoding(utf-8)");
-*STDERR->autoflush();
-
-# recode output messages from Perl to match the messages from libxslt
-sub encode_console {
-  my ($message) = @_;
-  return encode('console_out', $message, Encode::FB_CROAK | Encode::LEAVE_SRC);
-}
-
-sub decode_console {
-  my ($message) = @_;
-  return decode('console_out', $message, Encode::FB_CROAK | Encode::LEAVE_SRC);
-}
-
-my $IS_TERMINAL = -t STDERR;
-
-if ($IS_TERMINAL && $^O eq 'MSWin32') {
-  # set utf-8 codepage
-  # CP_UTF8 = 65001
-  Win32::Console::OutputCP(65001);
-
-  # CHECK what does libxslt do after we changed codepage?
-  Encode::Locale::reinit;
-
-  # get standard error console
-  our $W32_STDERR = Win32::Console->new(&Win32::Console::STD_ERROR_HANDLE());
-
-  # enable VT100 emulation or fall back to ANSI emulation if unsuccessful
-  # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004 (not exported by Win32::Console)
-  my $mode = $W32_STDERR->Mode();
-  unless ($W32_STDERR->Mode($mode | 0x0004) && $W32_STDERR->Mode() & 0x0004) {
-    require Win32::Console::ANSI; } }
-
-my %color_scheme = (
-  details => 'bold',
-  success => 'green',
-  info    => 'bright_blue',
-  warning => 'yellow',
-  error   => 'bold red',
-  fatal   => 'bold red underline',
-);
-
-sub Error {
-  my ($severity, $category, $object, $summary) = @_;
-  my $prefix = decode_console("$severity:$category:$object");
-  $summary = decode_console($summary);
-  print STDERR (($IS_TERMINAL ? colored($prefix, $color_scheme{ lc($severity) }) : $prefix) . " $summary\n");
-  exit 1 if $severity eq 'Fatal';
-  return;
-}
+my @params;
 
 local $SIG{__WARN__} = sub {
   my ($msg) = @_;
@@ -99,41 +44,30 @@ local $SIG{__WARN__} = sub {
   $object   = $object   // 'unknown';
   $category = $category // 'internal';
   $summary  = $summary  // $msg;
-  Error($severity, $object, $category, $summary . ($input ? " at $input;" : ''));
+  Message($severity, $category, $object, $input, decode('console_out', $summary));
 };
 
-while (@ARGV) {
-  my $arg = shift @ARGV;
-  if ($arg eq '--stringparam') {
-    my $key   = shift @ARGV;
-    my $value = shift @ARGV;
-    ($key, $value) = XML::LibXSLT::xpath_to_string($key => $value);
-    $params{$key} = $value;
-  } elsif ($arg eq '--output' || $arg eq '-o') {
-    $output = shift @ARGV;
-  } elsif ($arg =~ /^-/) {
-    Error('Fatal', 'unexpected', encode_console('$arg'), 'this minimal script only supports --stringparam, --output, -o');
-  } else {
-    if (defined $stylefile) {
-      $input = $arg;
-    } else {
-      $stylefile = $arg;
-    }
-  }
-}
+local $SIG{__DIE__} = sub {
+  my ($msg) = @_;
+  Fatal('error', 'xsltproc.pl', undef, decode('console_out', $msg));
+};
+
+GetOptions('--output=s' => \$output,
+  '--stringparam=s{2}' => @params);
+
+my %params = @params;
+
+($stylefile, $input) = @ARGV;
 
 Error('Fatal', 'expected', 'input',      'must specify an input file')  unless defined $input;
 Error('Fatal', 'expected', 'stylesheet', 'must specify a stylesheet')   unless defined $stylefile;
 Error('Fatal', 'expected', 'output',     'must specify an output file') unless defined $output;
 
-my $raw_input     = encode('locale_fs', $input,     Encode::FB_CROAK | Encode::LEAVE_SRC);
-my $raw_stylefile = encode('locale_fs', $stylefile, Encode::FB_CROAK | Encode::LEAVE_SRC);
-my $raw_output    = encode('locale_fs', $output,    Encode::FB_CROAK | Encode::LEAVE_SRC);
+my $raw_input     = encode_fs($input);
+my $raw_stylefile = encode_fs($stylefile);
+my $raw_output    = encode_fs($output);
 
-Error('Fatal', 'missing', 'input', encode_console("cannot open input file '$input'")) unless -f $raw_input;
-Error('Fatal', 'missing', 'stylesheet', encode_console("cannot open stylesheet '$stylefile'")) unless -f $raw_stylefile;
-
-my $xslt       = XML::LibXSLT->new();
-my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile);
-my $result     = $stylesheet->transform_file($raw_input, %params);
+my $xslt = XML::LibXSLT->new();
+my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet '$stylefile'");
+my $result = $stylesheet->transform_file($raw_input, %params) or Fatal('I/O', 'input', $input, "cannot open or parse input file '$input'");
 $stylesheet->output_file($result, $raw_output);

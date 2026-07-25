@@ -86,9 +86,11 @@ bml.targets = $(sort \
   $(if $(filter zip,$(FORMATS)),$(TARGETS.ZIP)) \
   $(TARGETS.CMD))
 ifneq ($(filter all,$(MAKECMDGOALS)),)
-  override TARGETS += $(bml.targets)
+  TARGETS += $(bml.targets)
 else
-  override TARGETS := $(bml.targets)
+  ifndef TARGETS
+    TARGETS := $(bml.targets)
+  endif
 endif
 ifneq ($(bml.goals),)
   override TARGETS = $(sort $(bml.goals))

@@ -217,6 +217,8 @@ The following options are available.
 ### Makefile targets
 The following targets can be used as arguments when calling `make`, for instance `make zip`.
 
+**For sophisticated users:** custom targets are *not* supported out of the box. If you wish to add your own targets, you must ensure that the TARGETS variable contains the files you intend to create, such as <samp>SCORM.notes.zip</samp>; intermediate files such as <samp>$(AUX_DIR)/html/notes/index.html</samp> can be omitted. If TARGETS is incomplete, BookML will fall back to Make recursion, which is likely to lead to longer compilation times, and corrupted outputs in some parallel building scenarios.
+
 <dl>
 <dt>all</dt>
 <dd>Compile all targets, based on the content of SOURCES, FORMATS, and TARGETS. This is the default target.</dd>

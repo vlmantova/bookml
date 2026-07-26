@@ -53,9 +53,15 @@ BEGIN {
       return Win32::GetLongPathName($path) // $path;
     };
 
-    *decode_fs = \&Win32::GetLongPathName;
+    *decode_fs = sub {
+      my ($path) = @_;
+      return Win32::GetLongPathName($path) // $path;
+    };
 
-    *encode_fs = \&Win32::GetANSIPathName;
+    *encode_fs = sub {
+      my ($path) = @_;
+      return Win32::GetANSIPathName($path) // $path;
+    }
   } else {
     *get_long_path_name = sub {
       my ($path) = @_;

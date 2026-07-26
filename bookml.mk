@@ -164,6 +164,10 @@ ifneq ($(filter clean clean-%,$(MAKECMDGOALS)),)
   override bml.goals =
 endif
 
+ifneq ($(findstring n,$(firstword -$(MAKEFLAGS))),)
+  override bml.goals =
+endif
+
 # (3) reconstruct the (job names of) the files that will be compiled in order to produce the targets
 bml.extract.jobs = $(foreach pat,$1,$(patsubst $(pat),%,$(filter $(pat),$2)))
 
@@ -204,8 +208,14 @@ bml.deps.pdf += $(call bml.deps.detect,pdf)
 
 # convenience variables to pick a direct vs recursive recipe depending on
 # whether Make can rebuild the deps file automatically
-bml.direct  = $(if $(filter $(AUX_DIR)/deps/$*.$1deps,$(bml.deps.$1)),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
-bml.recurse = $(if $(bml.direct),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+ifeq ($(findstring n,$(firstword -$(MAKEFLAGS))),)
+  bml.direct  = $(if $(filter $(AUX_DIR)/deps/$*.$1deps,$(bml.deps.$1)),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+  bml.recurse = $(if $(bml.direct),,$(AUX_DIR)/NONEXISTENT_INVALID_TARGET)
+else
+  # --dry-run does not disable $(MAKE) recipe lines, we have to do it ourselves
+  bml.direct =
+  bml.recurse = $(AUX_DIR)/NONEXISTENT_INVALID_TARGET
+endif
 
 ### UTILS
 # per-target configuration variables:
@@ -276,6 +286,7 @@ ifeq ($(call ver.lt,$(MAKE_VERSION),4.1),true)
   MAKE_TERMOUT ?= $(if $(bml.is.win),,$(shell tput setaf 1 >/dev/null 2>&1 && echo true))
 endif
 ifneq ($(MAKE_TERMOUT),)
+ifeq ($(findstring p,$(firstword -$(MAKEFLAGS))),)
   bml.esc      := 
   bml.cyan     := $(bml.esc)[1;36m
   bml.cyanbg   := $(bml.esc)[106m
@@ -292,6 +303,7 @@ ifneq ($(MAKE_TERMOUT),)
   ifeq ($(bml.is.win),true)
     __ignore    := $(shell chcp 65001)
   endif
+endif
 endif
 
 ifeq ($(bml.is.win),true)

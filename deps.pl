@@ -212,40 +212,15 @@ for my $target (sort keys %$deps) {
       my @xr = map { "\$(AUX_DIR)/pdf/$_.xraux" } @xrjobs;
 
       $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps: \\\n  ";
-      $makefile .= join(" \\\n  ", @inputs, @xr);
-
-      # enforce that PDFs directly depending on each other do not build in parallel
-      # use the alphabetical ordering as a cheap way to prevent cycles
-      if (my @before = grep { $_ lt $jobname } @xrjobs) {
-        $makefile .= " | \\\n    ";
-        $makefile .= join(" \\\n    ", map { "\$(AUX_DIR)/pdf/$_.pdf \$(AUX_DIR)/pdf/$_.aux \$(AUX_DIR)/pdf/$_.fls \$(AUX_DIR)/pdf/$_.logdeps \$(AUX_DIR)/pdf/$_.start-stamp" } @before) . "\n\n";
-      }
-
-      $makefile .= "\n\n";
-
-      # enforce that PDFs directly depending on each other do not build in parallel
-      if (my @after = grep { $_ gt $jobname } @xrjobs) {
-        for (@after) {
-          my $xr = "\$(AUX_DIR)/pdf/$_";
-          $makefile .= "$xr.pdf $xr.aux $xr.fls $xr.logdeps $xr.start-stamp: | $fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps $fullname.start-stamp\n";
-        }
-
-        $makefile .= "\n";
-      }
-
-      if (@inputs) {
-        $makefile .= join(":\n", @inputs) . ":\n";
-      }
-
-      $makefile .= join(":\n", map { "\$(AUX_DIR)/pdf/$_.pdf \$(AUX_DIR)/pdf/$_.aux \$(AUX_DIR)/pdf/$_.fls \$(AUX_DIR)/pdf/$_.logdeps \$(AUX_DIR)/pdf/$_.start-stamp" } @xrjobs) . ":\n";
-
-      $makefile .= join('', map { "\$(AUX_DIR)/pdf/$_.xraux:\n" } @xrjobs);
+      $makefile .= join(" \\\n  ", @inputs, @xr) . "\n\n";
+      $makefile .= join(":\n", @inputs, @xr) . ":\n";
 
       if (@xrjobs ||
         (my @pdf = grep { m!.pdf$! && !File::Spec->file_name_is_absolute($_); } (sort(keys %{ $$target_deps{INPUT} })))) {
         $makefile .= "\nifneq (\$(filter $jobname,\$(bml.jobs.pdf)),)\n";
         $makefile .= '  -include $(sort $(filter-out $(call bml.deps.detect,pdf),$(patsubst %,$(AUX_DIR)/deps/%.pdfdeps,' . join(' ', @xrjobs) . ")))\n" if @xrjobs;
         $makefile .= '  bml.jobs.pdf += ' . join(' ', @pdf, @xrjobs) . "\n" if @pdf || @xrjobs;
+        $makefile .= '  bml.xraux    += ' . join(' ', map { "$jobname:$_" } @xrjobs) . "\n" if @xrjobs;
         $makefile .= "endif\n";
       }
     }

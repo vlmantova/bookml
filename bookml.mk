@@ -217,6 +217,21 @@ else
   bml.recurse = $(AUX_DIR)/NONEXISTENT_INVALID_TARGET
 endif
 
+# (5) disable parallelism between xr outputs that depend on each other
+define bml.xraux.notparallel
+$(eval _x:=$(sort $(subst :, ,$1)))$(eval _y:=$(word 1,$(_x)))$(eval _z:=$(word 2,$(_x)))
+ifneq ($(if $(filter $(_y),$(bml.jobs.pdf)),$(filter $(_z),$(bml.jobs.pdf)),),)
+  # both are being built, enforce alphabetical order
+$(info enforcing that $(_y) is built after $(_z))
+$(info $(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp): | $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp))
+$(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp): | $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp)
+$(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp):
+$(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp):
+
+endif
+endef
+$(foreach edge,$(bml.xraux),$(eval $(call bml.xraux.notparallel,$(edge))))
+
 ### UTILS
 # per-target configuration variables:
 # - use $(bml.var FOO) to allow overriding via jobname_FOO = ...
@@ -599,7 +614,9 @@ bml.pdf.subtree := $(patsubst %,$(AUX_DIR)/pdf/%/./,$(filter-out $(AUX_DIR)/% bm
 
 # typo LATEKMKFLAGS preserved for backwards compatibility
 # since GNU Make does not do grouped targets very well, all outputs MUST be specified when used as prerequisites!
+# force regenerating .xraux if missing
 $(AUX_DIR)/pdf/%.pdf $(AUX_DIR)/pdf/%.aux $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.logdeps $(AUX_DIR)/pdf/%.start-stamp: %.tex $(BOOKML_DEPS_PDF) $$(call bml.direct,pdf) \
+  $$(if $$(wildcard $$(AUX_DIR)/pdf/$$*.xraux),,FORCE) \
   | $$(@D)/./ $$(bml.pdf.subtree)
 	@$(call bml.prog,latexmk: $*.tex → $*.pdf ($(@F)))
 	@$(call bml.touch,$(AUX_DIR)/pdf/$*.start-stamp)

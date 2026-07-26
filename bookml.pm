@@ -76,7 +76,9 @@ BEGIN {
   if ($^O eq 'MSWin32' && eval { require Win32::LongPath; }) {
     *get_cwd = \&Win32::LongPath::getcwdL;
 
-    *open_file = \&Win32::LongPath::openL($_[0], $_[1], $_[2]);
+    *open_file = sub {
+      return \&Win32::LongPath::openL(\$_[0], $_[1], $_[2]);
+    };
 
     *read_dir = \&Win32::LongPath::readdirL;
 

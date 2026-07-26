@@ -222,8 +222,6 @@ define bml.xraux.notparallel
 $(eval _x:=$(sort $(subst :, ,$1)))$(eval _y:=$(word 1,$(_x)))$(eval _z:=$(word 2,$(_x)))
 ifneq ($(if $(filter $(_y),$(bml.jobs.pdf)),$(filter $(_z),$(bml.jobs.pdf)),),)
   # both are being built, enforce alphabetical order
-$(info enforcing that $(_y) is built after $(_z))
-$(info $(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp): | $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp))
 $(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp): | $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp)
 $(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp):
 $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp):
@@ -303,6 +301,7 @@ endif
 ifneq ($(MAKE_TERMOUT),)
 ifeq ($(findstring p,$(firstword -$(MAKEFLAGS))),)
   bml.esc      := 
+  bml.black    := $(bml.esc)[30m
   bml.cyan     := $(bml.esc)[1;36m
   bml.cyanbg   := $(bml.esc)[106m
   bml.magenta  := $(bml.esc)[1;35m
@@ -407,8 +406,8 @@ zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
 bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd,$(if $(filter %3,$1),rd))))
-ifneq ($(filter clean clean-% detect detect-%,$(MAKECMDGOALS)),)
-  $(info $(if $(MAKE_RESTARTS),$(bml.yellowbg)$(bml.white) $(call bml.ordinal,$(MAKE_RESTARTS)) make restart,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
+ifeq ($(filter clean clean-% detect detect-%,$(MAKECMDGOALS)),)
+  $(info $(if $(MAKE_RESTARTS),$(bml.yellowbg)$(bml.black) $(call bml.ordinal,$(MAKE_RESTARTS)) make restart,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 else ifneq ($(filter clean clean-%,$(MAKECMDGOALS)),)
   $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(MAKECMDGOALS))))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 endif

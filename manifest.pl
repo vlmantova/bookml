@@ -63,5 +63,5 @@ find({
       $root->appendChild($tag);
     } }, $directory);
 
-bookml::open_file(my $fh, '>', $manifest) or die "cannot write '$manifest': $!";
+bookml::open_file(my $fh, '>', $manifest) or Fatal('I/O', $manifest, undef, "cannot write to file: $!");
 $doc->toFH($fh, 1);

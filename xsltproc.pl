@@ -73,6 +73,6 @@ my $raw_stylefile = bookml::encode_fs($stylefile);
 my $raw_output    = bookml::encode_fs($output);
 
 my $xslt = XML::LibXSLT->new();
-my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet '$stylefile'");
-my $result = $stylesheet->transform_file($raw_input, %params) or Fatal('I/O', 'input', $input, "cannot open or parse input file '$input'");
+my $stylesheet = $xslt->parse_stylesheet_file($raw_stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet: $!");
+my $result = $stylesheet->transform_file($raw_input, %params) or Fatal('I/O', 'input', $input, "cannot open or parse input file: $!");
 $stylesheet->output_file($result, $raw_output);

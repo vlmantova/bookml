@@ -63,5 +63,5 @@ for my $file (@files) {
   push(@index, [\@urls, $title->string_value, $stylesheet->output_as_chars($result)]);
 }
 
-bookml::open_file(my $fh, '>', 'search_index.json') or die "cannot write search_index.json: $!";
+bookml::open_file(my $fh, '>', 'search_index.json') or Fatal('I/O', 'search_index.json', undef, "cannot write search_index.json: $!");
 print $fh encode_json(\@index);

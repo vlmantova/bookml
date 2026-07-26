@@ -69,7 +69,7 @@ my $out = process_aux($ARGV[0]);
 
 if ($output ne '-') {
   if (bookml::test_f($output)) {
-    bookml::open_file(my $fh_output, '<', $output) or Fatal('I/O', $output, undef, "cannot read '$output': $!");
+    bookml::open_file(my $fh_output, '<', $output) or Fatal('I/O', $output, undef, "cannot read file: $!");
     my $prev_out = do {
       local $/ = undef;
       <$fh_output>;
@@ -79,7 +79,7 @@ if ($output ne '-') {
       exit 0;
     }
   }
-  bookml::open_file(my $fh_output, '>', $output) or Fatal('I/O', $output, undef, "cannot write '$output': $!");
+  bookml::open_file(my $fh_output, '>', $output) or Fatal('I/O', $output, undef, "cannot write file: $!");
   print $fh_output $out;
 } else {
   print $out;

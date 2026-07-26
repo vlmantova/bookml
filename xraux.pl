@@ -34,6 +34,7 @@ use lib 'bookml';
 use bookml;
 
 my $output;
+my @read;
 
 GetOptions('output=s' => \$output);
 
@@ -47,7 +48,11 @@ sub process_aux {
     $dir = File::Spec->catpath($v, $d);
   }
 
-  my $out = "";
+  return '' if grep { $_ eq $aux } @read;
+
+  push(@read, $aux);
+
+  my $out = '';
   my @next;
 
   bookml::open_file(my $aux_fh, '<', $aux) or Fatal('I/O', $aux, undef, "cannot read '$aux': $!");
@@ -59,9 +64,9 @@ sub process_aux {
       push(@next, $1);
     }
   }
-  for (@next) {
-    $out .= process_aux(File::Spec->catfile($dir, $_), $dir);
-  }
+
+  $out .= join('', map { process_aux(File::Spec->catfile($dir, $_), $dir) } @next);
+
   return $out;
 }
 

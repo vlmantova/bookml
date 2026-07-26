@@ -220,7 +220,8 @@ for my $target (sort keys %$deps) {
         $makefile .= "\nifneq (\$(filter $jobname,\$(bml.jobs.pdf)),)\n";
         $makefile .= '  -include $(sort $(filter-out $(call bml.deps.detect,pdf),$(patsubst %,$(AUX_DIR)/deps/%.pdfdeps,' . join(' ', @xrjobs) . ")))\n" if @xrjobs;
         $makefile .= '  bml.jobs.pdf += ' . join(' ', @pdf, @xrjobs) . "\n" if @pdf || @xrjobs;
-        $makefile .= '  bml.xraux    += ' . join(' ', map { "$jobname:$_" } @xrjobs) . "\n" if @xrjobs;
+        # for good measure, avoid self dependencies
+        $makefile .= '  bml.xraux    += ' . join(' ', map { $_ ne $jobname ? "$jobname:$_" : () } @xrjobs) . "\n" if @xrjobs;
         $makefile .= "endif\n";
       }
     }

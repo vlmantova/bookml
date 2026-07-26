@@ -218,16 +218,34 @@ else
 endif
 
 # (5) disable parallelism between xr outputs that depend on each other
-define bml.xraux.notparallel
-$(eval _x:=$(sort $(subst :, ,$1)))$(eval _y:=$(word 1,$(_x)))$(eval _z:=$(word 2,$(_x)))
-ifneq ($(if $(filter $(_y),$(bml.jobs.pdf)),$(filter $(_z),$(bml.jobs.pdf)),),)
-  # both are being built, enforce alphabetical order
-$(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp): | $(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp)
-$(addprefix $(AUX_DIR)/pdf/$(_y).,pdf aux fls logdeps start-stamp):
-$(addprefix $(AUX_DIR)/pdf/$(_z).,pdf aux fls logdeps start-stamp):
+# introduce order-only dependencies between the xr outputs so that they build serially
+# since make drops circular dependencies, cycles must be detected and broken by hand
 
+# represent a graph as a list of pairs target:prerequisite
+bml.graph.t   = $(word 1,$(subst :, ,$1))
+bml.graph.p   = $(word 2,$(subst :, ,$1))
+# create new edges from $2 using the edges in $1
+bml.graph.newedges = $(strip $(foreach e,$1,$(eval _t:=$(call bml.graph.t,$e))$(eval _p:=$(call bml.graph.p,$e))$(filter-out $2,$e $(patsubst %:$(_t),%:$(_p),$2))))
+bml.graph.close    = $(strip $(eval _n:=$(call bml.graph.newedges,$1,$2))$(if $(_n),$(call bml.graph.close,$1,$2 $(_n)),$2))
+# compute the transitive closure of bml.xraux
+bml.xraux.closure := $(call bml.graph.close,$(bml.xraux))
+
+# for each edge t:p, output t: | p if the edge is not on a cycle, or if t < p is alphabetical order
+# otherwise emit p: | t
+# we assume that t = p is already excluded by deps.pl
+define bml.xraux.notparallel
+$(eval _t:=$(call bml.graph.t,$1))
+$(eval _p:=$(call bml.graph.p,$1))
+ifneq ($(filter $(_p),$(bml.jobs.pdf)),) # but this is always true!
+ifeq ($(if $(filter $(_p):$(_t),$(bml.xraux.closure)),$(filter-out $(_p),$(word 2,$(sort $(_t) $(_p))))),)
+$(AUX_DIR)/pdf/$(_t).pdf $(AUX_DIR)/pdf/$(_t).aux $(AUX_DIR)/pdf/$(_t).fls $(AUX_DIR)/pdf/$(_t).logdeps $(AUX_DIR)/pdf/$(_t).start-stamp: | $(AUX_DIR)/pdf/$(_p).pdf $(AUX_DIR)/pdf/$(_p).aux $(AUX_DIR)/pdf/$(_p).fls $(AUX_DIR)/pdf/$(_p).logdeps $(AUX_DIR)/pdf/$(_p).start-stamp
+$(AUX_DIR)/pdf/$(_p).pdf $(AUX_DIR)/pdf/$(_p).aux $(AUX_DIR)/pdf/$(_p).fls $(AUX_DIR)/pdf/$(_p).logdeps $(AUX_DIR)/pdf/$(_p).start-stamp:
+else
+$(AUX_DIR)/pdf/$(_p).pdf $(AUX_DIR)/pdf/$(_p).aux $(AUX_DIR)/pdf/$(_p).fls $(AUX_DIR)/pdf/$(_p).logdeps $(AUX_DIR)/pdf/$(_p).start-stamp: | $(AUX_DIR)/pdf/$(_t).pdf $(AUX_DIR)/pdf/$(_t).aux $(AUX_DIR)/pdf/$(_t).fls $(AUX_DIR)/pdf/$(_t).logdeps $(AUX_DIR)/pdf/$(_t).start-stamp
+endif
 endif
 endef
+
 $(foreach edge,$(bml.xraux),$(eval $(call bml.xraux.notparallel,$(edge))))
 
 ### UTILS

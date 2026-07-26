@@ -407,9 +407,9 @@ zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
 bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd,$(if $(filter %3,$1),rd))))
-ifeq ($(filter clean clean-%,$(MAKECMDGOALS)),)
+ifneq ($(filter clean clean-% detect detect-%,$(MAKECMDGOALS)),)
   $(info $(if $(MAKE_RESTARTS),$(bml.yellowbg)$(bml.white) $(call bml.ordinal,$(MAKE_RESTARTS)) make restart,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Targets: $(sort $(TARGETS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
-else
+else ifneq ($(filter clean clean-%,$(MAKECMDGOALS)),)
   $(info $(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(MAKECMDGOALS))))$(if $(MAKE_RESTARTS), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))) $(bml.reset))
 endif
 

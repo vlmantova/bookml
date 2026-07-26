@@ -44,7 +44,7 @@ BEGIN {
     return Cwd::getcwd;
   }
 
-  if ($^O eq 'Win32') {
+  if ($^O eq 'MSWin32') {
     require Win32;
     require Win32::Console;
 
@@ -73,7 +73,7 @@ BEGIN {
     };
   }
 
-  if ($^O eq 'Win32' && eval { require Win32::LongPath; }) {
+  if ($^O eq 'MSWin32' && eval { require Win32::LongPath; }) {
     *get_cwd = \&Win32::LongPath::getcwdL;
 
     *open_file = \&Win32::LongPath::openL($_[0], $_[1], $_[2]);
@@ -116,7 +116,7 @@ BEGIN {
       return -f encode_fs($path);
     };
 
-    if ($^O eq 'Win32') {
+    if ($^O eq 'MSWin32') {
       *open_file = sub {
         my ($fh, $mode, $path) = @_;
         Win32::CreateFile($path) or Fatal('I/O', $path, "cannot write to '$path': $!") if $mode =~ m/>|\+/;

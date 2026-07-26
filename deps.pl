@@ -23,8 +23,8 @@
 =cut
 
 # Extract the make dependencies.
-# - For PDFS: from .fls (files read), .logdeps (to detect xr)
-# - For XML: from .latexml.logdeps (files read)
+# - For PDFS: from .fls (files read), .log (to detect xr)
+# - For XML: from .latexml.log (files read)
 # - For HTML: from .xml (resources required)
 
 use warnings;
@@ -94,7 +94,7 @@ for my $log (@ARGV) {
   bookml::open_file(my $log_fh, '<', $log) or Fatal('I/O', $log, undef, "cannot read '$log': $!");
   my $logname = logic_path($log) =~ s!^\Q$auxdir\E/!!r;
 
-  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.logdeps!) {
+  if ($logname =~ m!^latexmlaux/(.*)\.latexml\.log!) {
     my $jobname    = $1;
     my $targetname = "xml/$jobname";
 
@@ -121,7 +121,7 @@ for my $log (@ARGV) {
       next if $file eq "$jobname.tex";
       $$target_deps{$file} = 1;
     }
-  } elsif ($logname =~ m!^pdf/(.*)\.(fls|logdeps)$!) {
+  } elsif ($logname =~ m!^pdf/(.*)\.(fls|log)$!) {
     my $jobname    = $1;
     my $targetname = "pdf/$jobname";
     my $ext        = $2;
@@ -211,7 +211,7 @@ for my $target (sort keys %$deps) {
       # anything else creates a mess when Make breaks the cycles
       my @xr = map { "\$(AUX_DIR)/pdf/$_.xraux" } @xrjobs;
 
-      $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps $fullname.start-stamp: \\\n  ";
+      $makefile .= "$fullname.pdf $fullname.start-stamp: \\\n  ";
       $makefile .= join(" \\\n  ", @inputs, @xr) . "\n\n";
       $makefile .= join(":\n", @inputs, @xr) . ":\n";
 

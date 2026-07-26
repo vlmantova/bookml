@@ -672,7 +672,7 @@ $(AUX_DIR)/xml/%.xml: %.tex $$(call bml.recurse,xml)
 	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@"
 
 $(sort $(bml.deps.xml)): $(AUX_DIR)/deps/%.xmldeps: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_DEPS) | $$(@D)/./
-	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$<"
+	@$(PERL) bookml/deps.pl -a "$(AUX_DIR)" -o "$@" "$(AUX_DIR)/latexmlaux/$*.latexml.log"
 
 # build HTML files
 

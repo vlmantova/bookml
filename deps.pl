@@ -211,7 +211,7 @@ for my $target (sort keys %$deps) {
       # anything else creates a mess when Make breaks the cycles
       my @xr = map { "\$(AUX_DIR)/pdf/$_.xraux" } @xrjobs;
 
-      $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps: \\\n  ";
+      $makefile .= "$fullname.pdf $fullname.aux $fullname.fls $fullname.logdeps $fullname.start-stamp: \\\n  ";
       $makefile .= join(" \\\n  ", @inputs, @xr) . "\n\n";
       $makefile .= join(":\n", @inputs, @xr) . ":\n";
 

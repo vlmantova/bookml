@@ -1,0 +1,45 @@
+# -*- mode: Perl -*-
+# vim: syntax=perl
+
+=begin comment
+
+  BookML: bookdown flavoured GitBook port for LaTeXML
+  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+=end comment
+
+=cut
+
+package LaTeXML::Package::Pool;
+
+use strict;
+use warnings;
+
+use URI;
+
+DefMacro('\externaldocument [] [] {} []', '\bml@externaldocument{#1}{#2}{#3}{#4}');
+DefMacro('\bml@externaldocument Semiverbatim Semiverbatim Semiverbatim HyperVerbatim', '\bml@externaldocument@{#1}{#2}{#3}{#4}');
+
+# see hyperref.sty.ltxml for the HyperVerbatim -> Semiverbatim sequence
+DefConstructor('\bml@externaldocument@ Semiverbatim Semiverbatim Semiverbatim Semiverbatim', sub {
+  my ($document, $prefix, $nocite, $doc, $url) = @_;
+  ($prefix, $nocite, $url) = (ToString($prefix), ToString($nocite), ToString($url));
+  $document->insertPI('xr', $prefix ? (prefix => $prefix) : (), $nocite ? (nocite => $nocite) : (), document => $doc, $url ? (url => URI->new($url)->as_string) : ());
+});
+
+Let('\externalcitedocument', '\externaldocument');
+
+1;

@@ -789,6 +789,32 @@ if ($LaTeXML::VERSION < v0.8.8) {
 # various fixes
 {
 
+  ### Copy HyperVerbatim from v0.9 to support xr
+
+  if ($LaTeXML::VERSION <= v0.8.8) {
+    DefParameterType('HyperVerbatim', sub {
+        my ($gullet) = @_;
+        $gullet->readUntil(T_BEGIN);
+        StartSemiverbatim('%');
+        DefMacroI('\%',              undef, T_OTHER('%'), scope => 'local');
+        DefMacroI('\#',              undef, T_OTHER('#'), scope => 'local');
+        DefMacroI('\&',              undef, T_OTHER('&'), scope => 'local');
+        DefMacroI('\textunderscore', undef, T_OTHER('_'), scope => 'local');
+        Let('\_', '\textunderscore');
+        DefMacroI('\hyper@tilde', undef, T_OTHER('~'), scope => 'local');
+        Let('\~',              '\hyper@tilde');
+        Let('\textasciitilde', '\hyper@tilde');
+        Let('\\\\',            '\@backslashchar');
+        my $arg = $gullet->readBalanced(1);
+        EndSemiverbatim();
+        return $arg; },
+      beforeDigest => sub {
+        $_[0]->bgroup;
+        MergeFont(family => 'typewriter'); },
+      afterDigest => sub {
+        $_[0]->egroup; },
+      reversion => sub { (T_BEGIN, Revert($_[0]), T_END); });
+  }
   ### Rules
 
   if ($LaTeXML::VERSION <= v0.8.8) {

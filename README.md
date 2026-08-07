@@ -7,6 +7,7 @@ Automated LaTeX to [bookdown](https://bookdown.org/yihui/bookdown/html.html#gitb
 
 BookML is a small wrapper around [LaTeXML](https://dlmf.nist.gov/LaTeXML/) for the production of accessible HTML content straight from LaTeX files, and for packaging it as SCORM. Created by and maintained for maths lecturers at the University of Leeds. Its main features:
 - simple installation: simply drop the <samp>bookml/</samp> directory next to the files to be compiled and copy <samp>GNUmakefile</samp> in the same place (well, uhm, that is a bit of a lie: you need to install LaTeXML first!)
+- Overleaf and GitHub integration: BookML can also be used with Overleaf by adding a single file to your project, or using the [BookML template](https://www.overleaf.com/latex/templates/bookml-template/nycbmrhpscpx), and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub
 - accessible and mobile friendly output: virtually identical to the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org), including font selection and dark mode, tweaked to meet the [Web Content Accessibility Guidelines 2.1](https://www.w3.org/TR/WCAG21/) level AA
 - fully automated (re-)compilation based on which files have changed on disk, powered by [GNU make](https://www.gnu.org/software/make/): just run
   ```shell
@@ -73,8 +74,8 @@ Or you can unpack the [template](https://github.com/vlmantova/bookml/releases/la
 - for any image handling: the Perl module [Image::Magick](https://metacpan.org/pod/Image::Magick)
 - for BookML images (see <code>bmlimage</code> below): [Ghostscript](https://www.ghostscript.com/), [latexmk](https://ctan.org/pkg/latexmk), [preview.sty](https://ctan.org/pkg/preview), [dvisvgm](https://ctan.org/pkg/dvisvgm) (minimum 1.6, recommended 2.7 or later)
 - for automatic PDF, HTML, zip, SCORM packaging, EPS/PDF to SVG automatic conversion: [GNU make](https://www.gnu.org/software/make/), [latexmk](https://ctan.org/pkg/latexmk), [zip](https://sourceforge.net/projects/infozip/), optionally [texfot](https://ctan.org/pkg/texfot)
-- for autoconverting EPS images to SVG, when using GNU make: [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/)
-- for autoconverting PDF images to SVG, when using GNU make: [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html) is the default and most reliable option; otherwise, BookML can try using any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html)
+- for autoconverting EPS images to SVG, when using GNU make: [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) or [inkscape](https://inkscape.org/)
+- for autoconverting PDF images to SVG, when using GNU make: [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html) is the default and most reliable option; otherwise, BookML can try using any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html), or [inkscape](https://inkscape.org/)
 
 ### Running locally on your device (calling latexml, latexmlpost, latexmlc directly)
 You can also run BookML as a simple addition to LaTeXML. You will lose some functionality, such as conversion of EPS and PDF figures to SVG and SCORM packaging.
@@ -163,29 +164,49 @@ Loading `\usepackage{bookml/bookml}` makes the following commands available. It 
 
 ### Makefile options
 
-The build process accepts configuration options via Make variables, using the syntax `VARIABLE=value`. The options can be passed in three ways:
+The build process accepts configuration options via Make variables, using the syntax `VARIABLE=value` to replace a value and `FLAGS+=moreflags` to append more values. Changing the settings will automatically recompile the files that are affected. To apply an option only to the outputs of `file.tex`, use `file_VARIABLE` and `file_FLAGS` (normal variables are replaced, while `file_*FLAGS` variables are added to the general `*FLAGS` values). Special characters in the file name must be replaced with `_`; for instance use `sheet1_solutions_SPLITAT` to control the outputs of `sheet1+solutions.tex`. Comments can be added by starting the line with `#`.
 
-1. In `GNUmakefile` before `include bookml/bookml.mk`. Each option must appear on its own line, without indentation.
-2. On the command line as `make VARIABLE=value`.
-3. To apply an option to a single output `file`, write it in `GNUmakefile` after `include bookml/bookml.mk` as `file: VARIABLE=value` on its own line, without indentation. For instance, `main.pdf: LATEXMKFLAGS=-pdflua`. **Warning:** the variable must be applied to the target it affects *immediately* or it can cause inconsistent results (see for example SPLITAT below).
+For instance, the following `GNUmakefile` specifies that the files to compile are `notes.tex` and `exercises.tex` only (instead of every `.tex` file with `\documentclass`), that they must be compiled to SCORM packages, and that `exercises.tex` must not be split by section. Moreover, `exercises.tex` should be complied using LuaTeX.
+```make
+SOURCES=notes.tex exercises.tex
+include bookml/bookml.mk
+FORMATS=scorm
+# exercises is split into small sections but we want a single HTML page
+exercises_SPLITAT=
+exercises_LATEXMKFLAGS=-pdflua
+```
+The options can be passed in four ways:
 
-Note that changing options will *not* trigger a recompilation of the files. You will typically need to run `make clean` before recompiling again. For more information about the Makefile syntax and how variables are evaluated, consult the [GNU Make manual](https://www.gnu.org/software/make/manual/).
+1. Written in `GNUmakefile`, with each option on its own line, without indentation. You typically want to put the values before `include bookml/bookml.mk`, for instance to avoid scanning the `.tex` files when you are overriding `SOURCES`. Moreover, `AUX_DIR` **must** appear **before** `include bookml/bookml.mk`. On the other hand, adding flags with `+=` **must** be done **after** `include bookml/bookml.mk`.
+2. On the command line as `make VARIABLE=value`. Appending is not supported on the command line.
+3. In your shell environment.
+4. In `GNUmakefile` applied directly to the target, like `file.pdf: LATEXMKFLAGS = -pdflua`. This is discouraged: it behaves consistently **only if applied to the ultimate affected target**. For instance, `SPLITAT` must be applied to `$(AUX_DIR)/html/file/index.html`. If applied to `file.zip` by mistake, the variable may or may not take effect depending on its value on `SCORM.file.zip`, potentially leading to an infinite loop. Use `file_SPLITAT` instead.
+
+Changing the configuration will trigger a recompilation of the files that are affected. For instance, changing `file_SPLITAT` will cause `file/index.html` to rebuild, but not `file.pdf`, nor `notes/index.html`.
+
+For more information about the Makefile syntax and how variables are evaluated, consult the [GNU Make manual](https://www.gnu.org/software/make/manual/).
 
 The following options are available.
 
 <dl>
 <dt>AUX_DIR</dt>
-<dd>Location of the directory containing all intermediate files generated during compilation, such as <samp>.aux</samp> and <samp>.bbl</samp> files. This option is ignored by the BookML GitHub action. Default <i>auxdir</i>.</dd>
+<dd>Location of the directory containing all intermediate files generated during compilation, such as <samp>.aux</samp> and <samp>.bbl</samp> files. This option is ignored by the BookML GitHub action. <strong>The value must not contain spaces</strong>. Default <i>auxdir</i>.</dd>
 <dt>SOURCES</dt>
 <dd>Space-separated list of <samp>.tex</samp> files to be compiled. File names with spaces are <i>not</i> supported. Default is the list of <samp>.tex</samp> files in the current directory that contain the string <code>\documentclass</code> (even if appearing in a comment!).</dd>
 <dt>FORMATS</dt>
 <dd>Spaces-separated list of formats to be generated from SOURCES. Recognised formats are pdf, scorm, zip. Default <i>scorm zip</i>.</dd>
 <dt>SPLITAT</dt>
-<dd>How to split the HTML output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the latexmlpost manual, <code>--split</code> option, for more details. <strong>Warning:</strong> when applied to a single target, it must be applied to <code>$(AUX_DIR)/file/index.html:</code> instead of say <code>file.zip:</code>, otherwise zip and SCORM outputs will see different values. Default <i>section</i>.</dd>
+<dd>How to split the HTML output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the latexmlpost manual, <code>--split</code> option, for more details. To change splitting for a simple file, use <code>file_SPLITAT</code>. For instance, <code>file_SPLITAT=chapter</code> will split <samp>file.zip</samp> and <samp>SCORM.file.zip</samp> by chapter, while all the other files will be split by section. Default <i>section</i>.</dd>
 <dt>DVISVGM</dt>
 <dd>Command to call dvisvgm. Default <i>dvisvgm</i>.</dd>
 <dt>DVISVGMFLAGS</dt>
-<dd>Options to pass to dvisvgm. Default <i>--no-fonts</i>.</dd>
+<dd>Options to pass to dvisvgm. Default <i>--no-fonts --optimize</i>.</dd>
+<dt>EPSTOSVG_CONVERTER</dt>
+<dd>Select which converter to use for converting EPS images to SVG. Currently supported values are dvisvgm, inkscape. If set to empty, LaTeXML will convert EPS to PNG using ImageMagick. Default <i>dvisvgm</i>.</dd>
+<dt>INKSCAPE</dt>
+<dd>Command to call mutool. Default <i>inkscape</i>.</dd>
+<dt>INKSCAPEFLAGS</dt>
+<dd>Options to pass to inkscape. Default <i>--without-gui</i>.</dd>
 <dt>LATEXMK</dt>
 <dd>Command to call Latexmk. Default <i>latexmk</i>.</dd>
 <dt>LATEXMKFLAGS</dt>
@@ -197,19 +218,23 @@ The following options are available.
 <dt>LATEXMLPOST</dt>
 <dd>Command to call latexmlpost. Default <i>latexmlpost</i>.</dd>
 <dt>LATEXMLPOSTFLAGS</dt>
-<dd>Options to pass to latexmlpost. <strong>Warning:</strong> when applied to a single target, it must be applied to <code>$(AUX_DIR)/file/index.html:</code> instead of say <code>file.zip:</code>, just like for SPLITAT.</dd>
+<dd>Options to pass to latexmlpost.</dd>
 <dt>MUTOOL</dt>
 <dd>Command to call mutool. Default <i>mutool</i>.</dd>
 <dt>MUTOOLFLAGS</dt>
 <dd>Options to pass to mutool draw.</dd>
+<dt>PDFTOCAIRO</dt>
+<dd>Command to call pdftocairo. Default <i>pdftocairo</i>.</dd>
+<dt>PDFTOCAIROFLAGS</dt>
+<dd>Options to pass to pdftocairo.</dd>
+<dt>PDFTOSVG_CONVERTER</dt>
+<dd>Select which converter to use for converting PDF images to SVG. Currently supported values are dvisvgm, inkscape, mutool, pdftocairo. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default <i>mutool</i>.</dd>
 <dt>PERL</dt>
 <dd>Command to call Perl. Default <i>perl</i>.</dd>
-<dt>PDFTOSVG_CONVERTER</dt>
-<dd>Select which converter to use for converting PDF images to SVG. Currently supported values are dvisvgm and mutool. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default <i>mutool</i>.</dd>
 <dt>TEXFOT</dt>
 <dd>Command to call tex. Default <i>texfot</i>.</dd>
 <dt>TEXFOTFLAGS</dt>
-<dd>Options to pass to texfot.</dd>
+<dd>Options to pass to texfot. Default <i>--no-stderr</i>.</dd>
 <dt>ZIP</dt>
 <dd>Command to call zip. Default <i>zip</i> (or <i>miktex-zip</i> if zip.exe is not available on Windows).</dd>
 </dl>

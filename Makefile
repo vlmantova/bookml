@@ -49,9 +49,8 @@ BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
 BOOKML_JS    := $(patsubst %,bookml/%,$(wildcard js/*))
 BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
 BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
-BOOKML_LTXML := bookml/bookml-init.sty.ltxml  bookml/bookml.sty.ltxml bookml/schema.rng
-BOOKML_MK    := bookml/bookml.mk bookml/manifest.pl bookml/search_index.pl bookml/xsltproc.pl
-BOOKML_DIRS  := bookml bookml/CSS bookml/js bookml/XSLT $(patsubst %,bookml/%,$(GITBOOK_DIRS))
+BOOKML_LTXML := bookml/bookml-init.sty.ltxml bookml/bookml.sty.ltxml bookml/schema.rng $(patsubst %,bookml/%,$(wildcard bindings/*/*.ltxml))
+BOOKML_MK    := bookml/bml-config.mk bookml/bml-deps.mk bookml/bml-detect.mk bookml/bml-print.mk bookml/bml-utils.mk bookml/bml-version.mk bookml/bookml.mk bookml/bookml.pm bookml/deps.pl bookml/manifest.pl bookml/search_index.pl bookml/xraux.pl bookml/xsltproc.pl
 BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
 
 RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
@@ -69,14 +68,15 @@ SCHEMES=basic small medium mediumextra full
 .SECONDARY:
 .SECONDEXPANSION:
 
+.PHONY: all bookml release test clean
+
 all: $(GITBOOK_OUT) $(CSS)
+
+bookml: $(RELEASE_OUT)
 
 release: release.zip example.zip template.zip
 
-docker-ctx:
-	@$(MKDIR) "$@"
-
-docker-ctx/release.zip: release.zip | docker-ctx
+docker-ctx/release.zip: release.zip | docker-ctx/./
 	$(CP) "$<" "$@"
 
 TEXLIVE_VERSION=2021
@@ -142,43 +142,50 @@ $(GITBOOK_SOURCE):
 
 $(GITBOOK_CSS) $(GITBOOK_TTF) $(GITBOOK_JS): $(GITBOOK_SOURCE)
 
-$(BOOKML_DIRS) $(GITBOOK_DIRS) $(TEST_DIRS):
+bookml/./:
 	$(MKDIR) "$(call ospath,$@)"
 
-gitbook/%: $(GITBOOK_SOURCE)/% | $(GITBOOK_DIRS)
+bookml/%/./:
+	$(MKDIR) "$(call ospath,$@)"
+
+gitbook/%/./:
+	$(MKDIR) "$(call ospath,$@)"
+
+test/bookml/%/./:
+	$(MKDIR) "$(call ospath,$@)"
+
+gitbook/%: $(GITBOOK_SOURCE)/% | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-bookml/%: % | $(BOOKML_DIRS)
+bookml/%: % | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-test/bookml/%: bookml/% | $(TEST_DIRS)
+test/bookml/%: bookml/% | $$(if $$(filter %/./,$@),,$(@D)/./)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-bookml/GNUmakefile: template/GNUmakefile | $(BOOKML_DIRS)
+bookml/GNUmakefile: template/GNUmakefile | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-bookml/bookml.sty: bookml.sty | $(BOOKML_DIRS)
-
-$(patsubst %,bookml/%,bookml.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $(BOOKML_DIRS)
+$(patsubst %,bookml/%,bml-detect.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $$(@D)/./
 	perl -pe "s!\@DATE@!$(BOOKML_DATE)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding
-gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js app.min.js.pl | $(GITBOOK_DIRS)
+gitbook/js/app.min.js: $(GITBOOK_SOURCE)/js/app.min.js app.min.js.pl | $$(@D)/./
 	perl -p app.min.js.pl "$<" > "$@"
 
 # bookdown javascript patches
-gitbook/js/%.js: $(GITBOOK_SOURCE)/js/%.js %.js.patch | $(GITBOOK_DIRS)
+gitbook/js/%.js: $(GITBOOK_SOURCE)/js/%.js %.js.patch | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 	patch -p1 <$*.js.patch
 
 # subset font awesome
 # fa-check, fa-font, fa-search, fa-edit, fa-history, fa-eye, fa-file-pdf-o, fa-download, fa-info, fa-clone, fa-angle-left, fa-angle-right, fa-align-justify
 # f00c, f031, f002, f044, f1da, f06e, f1c1, f019, f129, f24d, f104, f105, f039
-gitbook/%.woff2: $(GITBOOK_SOURCE)/%.ttf | $(GITBOOK_DIRS)
+gitbook/%.woff2: $(GITBOOK_SOURCE)/%.ttf | $$(@D)/./
 	pyftsubset "$<" --output-file="$@" --unicodes="f00c,f031,f002,f044,f1da,f06e,f1c1,f019,f129,f24d,f104,f105,f039" --flavor=woff2
 
-gitbook/css/style.css: $(GITBOOK_SOURCE)/css/style.css | $(GITBOOK_DIRS)
-	perl -p -e "s!\./fontawesome/fontawesome-webfont.ttf\?v=4\.7\.0'\) format\('truetype'\)!./fontawesome/fontawesome-webfont.woff2') format('woff2')!" "$<" > "$@"
+gitbook/css/style.css: $(GITBOOK_SOURCE)/css/style.css | $$(@D)/./
+	perl -p -e "s!\('\./fontawesome/fontawesome-webfont.ttf\?v=4\.7\.0'\) format\('truetype'\)!('\./fontawesome/fontawesome-webfont.woff2') format('woff2')!" "$<" > "$@"
 
 CSS/%.css: CSS/%.scss
 	$(SASS) $(SASSFLAGS) "$<" "$@"

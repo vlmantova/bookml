@@ -3,7 +3,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 =cut
 
+# Create a search index in the format used by bookdown.
+
 use warnings;
 use strict;
 
@@ -29,6 +31,9 @@ use File::Find;
 use JSON::XS;
 use XML::LibXML;
 use XML::LibXSLT;
+
+use lib 'bookml';
+use bookml;
 
 my @files;
 my @index;
@@ -38,25 +43,25 @@ die 'must specify a folder' unless scalar @ARGV == 1;
 File::Find::find({
     preprocess => sub { sort @_; },
     wanted     => sub {
-      push(@files, $_) if (-f $_ && m/\.html$/i);
+      push(@files, bookml::decode_fs($_)) if (-f $_ && m/\.html$/i);
     }
   },
-  $ARGV[0]);
+  bookml::encode_fs($ARGV[0]));
 
-my $parser = XML::LibXML->new({ suppress_errors => 1, suppress_warnings => 1, recover => 2 });
-my $xslt = XML::LibXSLT->new();
+my $parser     = XML::LibXML->new({ suppress_errors => 1, suppress_warnings => 1, recover => 2 });
+my $xslt       = XML::LibXSLT->new();
 my $stylesheet = $xslt->parse_stylesheet_file('bookml/XSLT/proc-text.xsl');
 
-chdir $ARGV[0];
+bookml::ch_dir($ARGV[0]);
 
 for my $file (@files) {
-  my $doc = $parser->load_html(location => $file);
+  my $doc   = $parser->load_html(location => bookml::encode_fs($file));
   my $title = $doc->findnodes('//title/text()');
-  my @urls = reverse (map { $_->string_value } $doc->findnodes('//link[contains("up up up up up up up up up",@rel)]/@href'));
+  my @urls = reverse(map { $_->string_value } $doc->findnodes('//link[contains("up up up up up up up up up",@rel)]/@href'));
   push(@urls, $file);
   my $result = $stylesheet->transform($doc);
   push(@index, [\@urls, $title->string_value, $stylesheet->output_as_chars($result)]);
 }
 
-open(my $fh, '>', 'search_index.json') or die "cannot write search_index.json: $!";
+bookml::open_file(my $fh, '>', 'search_index.json') or Fatal('I/O', 'search_index.json', undef, "cannot write search_index.json: $!");
 print $fh encode_json(\@index);

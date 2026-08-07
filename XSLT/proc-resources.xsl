@@ -21,6 +21,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ltx="http://dlmf.nist.gov/LaTeXML"
   xmlns:b="https://vlmantova.github.io/bookml/functions"
+  xmlns:bml="https://vlmantova.github.io/bookml"
   xmlns:exsl="http://exslt.org/common"
   xmlns:str="http://exslt.org/strings"
   extension-element-prefixes="exsl str">
@@ -31,98 +32,61 @@
     method="text"
     encoding="utf-8" />
 
-  <xsl:param name="BML_TARGET" />
+  <xsl:param name="BML_JOB" />
+
+  <xsl:variable name="TARGET">$(AUX_DIR)/html/<xsl:value-of select="$BML_JOB" />/index.html</xsl:variable>
 
   <xsl:template match="/">
     <xsl:if test="$BMLSTYLE='gitbook'">
-      <xsl:value-of select="$BML_TARGET" /><xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
+      <xsl:value-of select="$TARGET" />
+      <xsl:text>: LATEXMLPOSTAUTOFLAGS=--navigationtoc=context&#x0A;</xsl:text>
     </xsl:if>
-    <xsl:apply-templates select="//ltx:resource | //ltx:graphics/@candidates" />
-  </xsl:template>
 
-  <xsl:template match="ltx:resource">
-    <xsl:value-of select="$BML_TARGET" /><xsl:text>: </xsl:text><xsl:value-of select="@src" /><xsl:text>&#x0A;</xsl:text>
-    <xsl:value-of select="@src" /><xsl:text>:&#x0A;</xsl:text>
-  </xsl:template>
+    <xsl:value-of select="$TARGET" /><xsl:text>:</xsl:text>
 
-  <!-- convert PDF and EPS to SVG using dvisvgm (instead of letting LaTeXML rely on ImageMagick) -->
-  <xsl:template match="ltx:graphics/@candidates">
-    <xsl:variable name="candidates" select="str:split(str:replace(.,'\','/'),',')" />
-    <xsl:variable name="source" select="b:auto-svg-source($candidates)" />
+    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
+      <xsl:text> \&#x0A;  </xsl:text>
+      <xsl:value-of select="." />
+    </xsl:for-each>
+    <xsl:text>&#x0A;&#x0A;</xsl:text>
 
-    <xsl:choose>
-      <xsl:when test="$source = ''">
-        <!-- add dependency on existing candidates -->
-        <xsl:for-each select="$candidates">
-          <xsl:value-of select="$BML_TARGET" />
-          <xsl:text>: </xsl:text>
-          <xsl:value-of select="string()" />
-          <xsl:text>&#x0A;</xsl:text>
-          <xsl:value-of select="string()" />
-          <xsl:text>:&#x0A;</xsl:text>
-        </xsl:for-each>
-      </xsl:when>
+    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
+      <xsl:apply-templates select="." />
+      <xsl:text>:&#x0A;</xsl:text>
+    </xsl:for-each>
 
-      <xsl:otherwise>
-        <xsl:variable name="page" select="b:page-option()" />
-        <xsl:variable name="candidate" select="b:auto-svg-candidate($source,$page)" />
+    <xsl:if test="//ltx:graphics[@bml:source]">
+      <xsl:text>&#x0A;</xsl:text>
 
-        <!-- add dependency on new candidate -->
-        <xsl:value-of select="$BML_TARGET" />
+      <xsl:for-each select="//ltx:graphics[@bml:source]">
+        <xsl:value-of select="@candidates" />
         <xsl:text>: </xsl:text>
-        <xsl:value-of select="$candidate" />
+        <xsl:value-of select="@bml:source" />
         <xsl:text>&#x0A;</xsl:text>
+      </xsl:for-each>
+    </xsl:if>
 
-        <!-- do not try to build source -->
-        <xsl:value-of select="$source" />
-        <xsl:text>:&#x0A;</xsl:text>
+    <xsl:if test="//ltx:graphics[b:ends-with(b:lower-case(@bml:source),'.pdf')]">
+      <xsl:text>&#x0A;</xsl:text>
 
-        <xsl:variable name="source-without-parent">
-          <xsl:choose>
-            <xsl:when test="b:is-within-cwd($source)">
-              <xsl:value-of select="$source" />
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="str:split($source,'/')[last()]" />
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>
+      <xsl:text>bml.autosvg.pdf +=</xsl:text>
+      <xsl:for-each select="//ltx:graphics[b:ends-with(b:lower-case(@bml:source),'.pdf')]">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="@candidates" />
+      </xsl:for-each>
+      <xsl:text>&#x0A;</xsl:text>
+    </xsl:if>
 
-        <xsl:variable name="parent">
-          <xsl:if test="$source-without-parent != $source">
-            <xsl:value-of select="substring($source,1,string-length($source) - string-length($source-without-parent))"/>
-          </xsl:if>
-        </xsl:variable>
+    <xsl:if test="//ltx:graphics[b:ends-with(b:lower-case(@bml:source),'.eps')]">
+      <xsl:text>&#x0A;</xsl:text>
 
-        <xsl:if test="$parent != ''">
-          <xsl:value-of select="$candidate" />
-          <xsl:text>: bml.svg.parent=</xsl:text>
-          <xsl:value-of select="$parent" />
-          <xsl:text>&#x0A;</xsl:text>
-        </xsl:if>
-
-        <xsl:if test="$page != ''">
-          <!-- add manual rules that are not caught by the make pattern rule -->
-          <xsl:variable name="ext" select="b:lower-case(substring($source,string-length($source)-2))" />
-
-          <xsl:value-of select="$candidate" />
-          <xsl:text>: bml.svg.page=</xsl:text>
-          <xsl:value-of select="$page" />
-          <xsl:text>&#x0A;</xsl:text>
-
-          <xsl:value-of select="$candidate" />
-          <xsl:text>: </xsl:text>
-          <xsl:value-of select="$source" />
-          <xsl:text> $(BOOKML_DEPS_AUTOSVG) | bmlimages/svg</xsl:text>
-          <xsl:text>/</xsl:text>
-          <xsl:value-of select="$source-without-parent" />
-          <xsl:text>/./&#x0A;</xsl:text>
-          <!-- WARNING: must be kept in sync with bookml.mk -->
-          <xsl:text>&#x09;@$(bml.pdftosvg)&#x0A;</xsl:text>
-          <xsl:text>&#x09;@$(bml.pdftosvg.proc)&#x0A;</xsl:text>
-        </xsl:if>
-      </xsl:otherwise>
-    </xsl:choose>
+      <xsl:text>bml.autosvg.eps +=</xsl:text>
+      <xsl:for-each select="//ltx:graphics[b:ends-with(b:lower-case(@bml:source),'.eps')]">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="@candidates" />
+      </xsl:for-each>
+      <xsl:text>&#x0A;</xsl:text>
+    </xsl:if>
   </xsl:template>
 
 </xsl:stylesheet>

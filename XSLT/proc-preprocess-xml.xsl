@@ -21,8 +21,11 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ltx="http://dlmf.nist.gov/LaTeXML"
   xmlns:b="https://vlmantova.github.io/bookml/functions"
+  xmlns:bml="https://vlmantova.github.io/bookml"
+  xmlns:exsl="http://exslt.org/common"
+  xmlns:func = "http://exslt.org/functions"
   xmlns:str="http://exslt.org/strings"
-  extension-element-prefixes="str">
+  extension-element-prefixes="exsl func str">
 
   <xsl:import href="utils.xsl" />
 
@@ -30,7 +33,9 @@
     method="xml"
     encoding="utf-8" />
 
-  <xsl:param name="AUX_DIR" />
+  <xsl:variable name="bml-element">
+    <xsl:element name="bml:element" />
+  </xsl:variable>
 
   <!-- make a copy of the XML file with selected alterations -->
   <xsl:template match="@*|node()">
@@ -39,28 +44,130 @@
     </xsl:copy>
   </xsl:template>
 
-  <xsl:template match="/">
-    <xsl:processing-instruction name="latexml">
-      <xsl:text>searchpaths="</xsl:text>
-      <xsl:value-of select="$AUX_DIR" />
-      <xsl:text>/images"</xsl:text>
-    </xsl:processing-instruction>
-    <xsl:apply-templates />
+  <xsl:template match="/*[b:auto-svg()]">
+    <xsl:copy>
+      <xsl:copy-of select="exsl:node-set($bml-element)/*/namespace::*" />
+      <xsl:apply-templates select="@*|node()" />
+    </xsl:copy>
   </xsl:template>
 
   <!-- replace PDF, EPS images with auto-generated SVGs if no other candidates are available -->
-  <xsl:template match="ltx:graphics/@candidates[b:auto-svg()]">
-    <xsl:variable name="svg-candidate" select="b:auto-svg-candidate()"/>
+  <xsl:template match="ltx:graphics[not(@candidates) and b:auto-svg-source() != '']/@graphic">
+    <xsl:attribute name="graphic">
+      <xsl:value-of select="." />
+    </xsl:attribute>
     <xsl:attribute name="candidates">
-      <xsl:choose>
-        <xsl:when test="$svg-candidate = ''">
-          <xsl:value-of select="."/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$svg-candidate" />
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:value-of select="b:auto-svg-candidate()" />
     </xsl:attribute>
   </xsl:template>
+
+  <xsl:template match="ltx:graphics/@candidates[b:auto-svg-source() != '']">
+    <xsl:attribute name="candidates">
+      <xsl:value-of select="b:auto-svg-candidate()" />
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="ltx:graphics[b:auto-svg-source() != '' and (b:auto-svg-parent() != '' or @options[b:page-option() != ''])]">
+    <xsl:copy>
+      <xsl:attribute name="bml:source"><xsl:value-of select="b:auto-svg-source()" /></xsl:attribute>
+      <xsl:apply-templates select="@*|node()" />
+    </xsl:copy>
+  </xsl:template>
+
+  <!-- auto EPS/PDF to SVG conversion -->
+  <func:function name="b:escape-options">
+    <xsl:param name="options"/>
+    <func:result select="str:replace(str:replace($options,'%','%25'),'\,','%2C')"/>
+  </func:function>
+
+  <func:function name="b:unescape-option">
+    <xsl:param name="escaped-option" />
+    <func:result select="str:replace(str:replace($escaped-option,'%2C',','),'%25','%')" />
+  </func:function>
+
+  <func:function name="b:page-option">
+    <xsl:param name="split-options" select="str:split(b:escape-options(self::ltx:graphics/@options | ../@options),',')" />
+    <func:result select="substring-after(($split-options/text()[starts-with(.,'page=')])[last()],'page=')" />
+  </func:function>
+
+  <func:function name="b:auto-svg-source">
+    <xsl:param name="candidates" select="str:split(str:replace(concat(self::ltx:graphics/@candidates,',',self::ltx:graphics/@graphic,',',../@candidates,',',../@graphic),'\','/'),',')" />
+
+    <func:result>
+      <!-- if we only have EPS/PDF candidates, pick the first, preferring EPS -->
+      <!-- .tex files are considered candidates (why exactly?) -->
+      <xsl:if test="not($candidates//text()[not(b:ends-with(b:lower-case(.),'.eps') or b:ends-with(b:lower-case(.),'.pdf') or b:ends-with(b:lower-case(.),'.tex'))])">
+        <xsl:variable name="eps" select="($candidates//text()[b:ends-with(b:lower-case(.),'.eps')])[1]"/>
+        <xsl:variable name="pdf" select="($candidates//text()[b:ends-with(b:lower-case(.),'.pdf')])[1]"/>
+        <xsl:variable name="tex" select="($candidates//text()[b:ends-with(b:lower-case(.),'.tex')])[1]"/>
+        <xsl:choose>
+          <xsl:when test="contains($AUTOSVG,'eps') and $eps != ''">
+            <xsl:value-of select="$eps" />
+          </xsl:when>
+          <xsl:when test="contains($AUTOSVG,'pdf') and $pdf != ''">
+            <xsl:value-of select="$pdf" />
+          </xsl:when>
+          <xsl:when test="contains($AUTOSVG,'pdf') and $tex != ''">
+            <xsl:value-of select="concat(substring($tex,1,string-length($tex) - 3),'pdf')" />
+          </xsl:when>
+        </xsl:choose>
+      </xsl:if>
+      <!-- otherwise, assume that the author is providing their own conversion -->
+    </func:result>
+  </func:function>
+
+  <func:function name="b:is-within-cwd">
+    <xsl:param name="path"/>
+    <!-- Win32: also check if path starts with drive letter -->
+    <func:result select="not(substring($path,2,1)=':' or starts-with($path,'/') or starts-with($path,'../'))"/>
+  </func:function>
+
+  <func:function name="b:auto-svg-without-parent">
+    <xsl:param name="source" select="b:auto-svg-source()"/>
+    <!-- if $source is not below the current folder, we remove the folder, as latexmlpost would do -->
+    <func:result>
+      <xsl:choose>
+        <xsl:when test="b:is-within-cwd($source)">
+          <xsl:value-of select="$source" />
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="str:split($source,'/')[last()]//text()" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </func:result>
+  </func:function>
+
+  <func:function name="b:auto-svg-parent">
+    <xsl:param name="source" select="b:auto-svg-source()"/>
+    <xsl:param name="source-without-parent" select="b:auto-svg-without-parent($source)" />
+    <func:result>
+      <xsl:value-of select="substring($source,1,string-length($source) - string-length($source-without-parent))"/>
+    </func:result>
+  </func:function>
+
+  <func:function name="b:auto-svg-candidate">
+    <xsl:param name="source" select="b:auto-svg-source()"/>
+    <xsl:param name="page" select="b:page-option()"/>
+
+    <func:result>
+      <xsl:if test="$source != ''">
+        <!-- if $source is not below the current folder, we remove the folder, as latexmlpost would do -->
+        <xsl:variable name="source-without-parent" select="b:auto-svg-without-parent($source)" />
+
+        <xsl:text>bmlimages/svg/</xsl:text>
+        <xsl:choose>
+          <xsl:when test="$page != ''">
+            <xsl:value-of select="$source-without-parent" />
+            <xsl:text>/p</xsl:text>
+            <xsl:value-of select="$page" />
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="substring($source-without-parent,1,string-length($source-without-parent)-4)" />
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>.svg</xsl:text>
+      </xsl:if>
+    </func:result>
+  </func:function>
 
 </xsl:stylesheet>

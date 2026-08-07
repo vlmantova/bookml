@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,575 +14,532 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-bml.is.win := $(if $(subst xWindows_NT,,x$(OS)),,true)
-# find if a command is available
-ifeq ($(bml.is.win),true)
-  bml.which = $(shell where "$1" 2>NUL)
-else
-  bml.which = $(shell command -v "$1")
-endif
-# backward compatible file/grep function
-ifeq ($(findstring version-3.8,version-$(MAKE_VERSION)),version-3.8)
-  ifeq ($(bml.is.win),true)
-    bml.file = $(shell type $(subst /,\,$1))
-  else
-    bml.file = $(shell cat -- $1)
-  endif
-else
-  bml.file = $(file < $1)
-endif
-bml.grep = $(findstring $1,$(call bml.file,$2))
+include bookml/bml-utils.mk
+include bookml/bml-print.mk
 
 ### CONFIGURATION
-# Configure these variables inside 'Makefile' before 'include bookml/bookml.mk'
-# (1) where to store auxiliary files (*.aux, *.d, *.toc,...)
+# Configure these variables assigning the desired value anywhere inside
+# 'GNUmakefile' with the sole exception of 'AUX_DIR', which must be configured
+# BEFORE 'include bookml/bookml.mk'.
+#
+# You can extend a variable with the operator +=, but only AFTER the line
+# 'include bookml/bookml.mk'.
+#
+# Add 'file_' to the variable name to replace its value for the outputs of
+# 'file.tex' only. For *FLAGS variables, the content of the 'file_' variable
+# is appended to the global value rather than replacing it.
+#
+# For instance, the following moves the AUX_DIR to another folder, and does not
+# split HTML files into pages, except for notes.tex, which gets split by
+# by section. Moreover, notes.pdf is compiled with LuaTeX instead of LaTeX.
+#
+# AUX_DIR = $(HOME)/Documents/bookml-outputs/example
+#
+# WARNING: AUX_DIR cannot contain spaces!!!
+#
+# include bookml/bookml.mk
+# SPLITAT=
+# notes_SPLITAT=section
+# notes_LATEXMKFLAGS+=-lualatex
+
+# location of all outputs and intermediary files
+# must be set before 'include bookml/bookml.mk'
 AUX_DIR ?= auxdir
-# (2) latexmk command and options
+
+$(if $(filter-out 1,$(words $(AUX_DIR))),$(call bml.print.error,the variable AUX_DIR cannot contain spaces nor be empty: AUX_DIR='$(AUX_DIR)'))
+
+# source files
+# by default, all .tex files containing a \documentclass
+SOURCES ?= $(bml.autosources)
+
+# formats: possible values are pdf, scorm, zip (and secretly html, xml)
+# by default, build SCORM.*.zip and *.zip files
+FORMATS ?= scorm zip
+
+# files to be built
+# by default, the formats requested in FORMATS for each .tex file in SOURCE
+TARGETS.PDF   ?= $(sort $(call bml.utils.filtersubst,%.tex,%.pdf,$(SOURCES)))
+TARGETS.XML   ?= $(sort $(call bml.utils.filtersubst,%.tex,$(AUX_DIR)/xml/%.xml,$(SOURCES)))
+TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
+TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
+TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
+TARGETS       += $(bml.autotargets)
+
+# the following variables can be customised by prefixing them with 'file_'
+# latexmk command and options
 LATEXMK      ?= latexmk
 LATEXMKFLAGS ?=
 SYNCTEX      ?= 5 # must produce *.synctex.gz
-# (3) latexml commands and options
+
+# latexml commands and options
 LATEXML          ?= latexml
 LATEXMLPOST      ?= latexmlpost
 LATEXMLFLAGS     ?=
 LATEXMLPOSTFLAGS ?=
-# (4) perl command
-PERL ?= perl
-# (5) how to split into multiple files (section, chapter, etc), set to empty string to disable splitting
+
+# dvisvgm command and options
+DVISVGM      ?= dvisvgm
+DVISVGMFLAGS ?= --no-fonts --optimize
+
+# inkscape command and options
+INKSCAPE      ?= inkscape
+INKSCAPEFLAGS ?= --without-gui
+
+# mutool command and options
+MUTOOL      ?= mutool
+MUTOOLFLAGS ?=
+
+# mutool command and options
+PDFTOCAIRO      ?= pdftocairo
+PDFTOCAIROFLAGS ?=
+
+# choice of EPS/PDF to SVG converter
+EPSTOSVG_CONVERTER ?= $(if $(DVISVGM),dvisvgm,$(if $(INKSCAPE),inkscape))
+PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm,$(if $(INKSCAPE),inkscape,$(if $(PDFTOCAIRO),pdftocairo))))
+
+# how to split into multiple files (section, chapter, etc)
+# set to empty string to disable splitting
 SPLITAT ?= section
-# (6) source files: by default, all .tex files containing a \documentclass, unless this is a recursive call
-ifndef SOURCES
-  ifndef BMLGOALS
-	  bml.allsources := $(wildcard *.tex)
-    $(if $(filter-out %.tex,$(bml.allsources)),$(warning Some .tex files have spaces in their names, which is not supported!))
-    SOURCES := $(foreach f,$(filter %.tex,$(bml.allsources)),$(if $(call bml.grep,\documentclass,$(f)),$(f)))
-  endif
-endif
-# (7) formats: possible values are pdf, scorm, zip
-FORMATS ?= scorm zip
-# (8) files to be built: by default, a .zip and a SCORM.zip file for each .tex file in $(SOURCES)
-TARGETS.PDF   ?= $(SOURCES:.tex=.pdf)
-TARGETS.XML   ?= $(patsubst %.pdf,$(AUX_DIR)/xml/%.xml,$(TARGETS.PDF))
-TARGETS.HTML  ?= $(patsubst $(AUX_DIR)/xml/%.xml,$(AUX_DIR)/html/%/index.html,$(TARGETS.XML))
-TARGETS.ZIP   ?= $(patsubst $(AUX_DIR)/html/%/index.html,%.zip,$(TARGETS.HTML))
-TARGETS.SCORM ?= $(patsubst $(AUX_DIR)/html/%/index.html,SCORM.%.zip,$(TARGETS.HTML))
-TARGETS       ?= $(if $(findstring pdf,$(FORMATS)),$(TARGETS.PDF)) $(if $(findstring zip,$(FORMATS)),$(TARGETS.ZIP)) $(if $(findstring scorm,$(FORMATS)),$(TARGETS.SCORM))
-# (9) texfot (optional, disable with TEXFOT=)
+
+# texfot (optional, disable with TEXFOT=)
 ifndef TEXFOT
-  TEXFOT    := $(if $(call bml.which,texfot),texfot)
+  TEXFOT := $(if $(call bml.utils.which,texfot),texfot)
 endif
-TEXFOTFLAGS ?= $(if $(TEXFOT),--no-stderr,)
-# (10) various terminal commands: by default, use typical Windows or Unix version
-ifeq ($(bml.is.win),true)
+TEXFOTFLAGS ?= $(if $(call bml.utils.autovar,TEXFOT),--no-stderr,)
+
+# the following variables CANNOT be customised with 'file_'
+# perl command
+PERL ?= perl
+
+# various terminal commands: by default, use typical Windows or Unix version
+ifneq ($(bml.utils.iswin),)
   ifndef ZIP
-    ZIP        := $(if $(call bml.which,zip),zip,miktex-zip)
+    ZIP        := $(if $(call bml.utils.which,zip),zip,miktex-zip)
   endif
   ifndef UNZIP
-    UNZIP      := $(if $(call bml.which,tar),tar)
+    UNZIP      := $(if $(call bml.utils.which,tar),tar)
     UNZIPFLAGS := -x -f
   endif
   CP           := copy
+  MV           := move
   RMDIR        := rd /s /q
   RM           := del /f /s /q
   MKDIR        := mkdir
+  ROBOCOPY     := robocopy
 else
   ZIP          ?= zip
   ifndef UNZIP
-    UNZIP      := $(if $(call bml.which,unzip),unzip)
+    UNZIP      := $(if $(call bml.utils.which,unzip),unzip)
     UNZIPFLAGS := -o
   endif
   CP           := cp
+  MV           := mv
   RMDIR        := rm -fr --
   RM           := rm -f --
   MKDIR        := mkdir -p --
+  TOUCH        := touch
 endif
 ZIP_EXCLUDE ?= -x
 ifndef CURL
-  CURL := $(if $(call bml.which,curl),curl)
+  CURL := $(if $(call bml.utils.which,curl),curl)
 endif
-# (11) dvisvgm
-DVISVGM      ?= dvisvgm
-DVISVGMFLAGS ?= --no-fonts --optimize
-# (12) mutool
-MUTOOL      ?= mutool
-MUTOOLFLAGS ?=
-# (13) choice of PDF to SVG converter
-PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm))
+
 ### END CONFIGURATION
 
+include bookml/bml-version.mk
+include bookml/bml-config.mk
+include bookml/bml-detect.mk
+include bookml/bml-print.mk
+
 ### INTERNAL VARIABLES
-BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl bookml/search_index.pl bookml/XSLT/proc-text.xsl)
-BOOKML_DEPS_XML         = $(wildcard bookml/*.ltxml bookml/*.rng) \
-  bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
-BOOKML_DEPS_PREPROCESS  = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
-BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/xsltproc.pl
-BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/xsltproc.pl
-BOOKML_DEPS_AUTOSVG     = bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl
+# default value of TARGETS
+bml.formats.cmd := $(filter html pdf scorm xml zip,$(bml.utils.makecmdgoals))
+bml.formats      = $(sort $(if $(filter all,$(bml.utils.makecmdgoals)),$(FORMATS)) $(bml.formats.cmd))
+bml.autotargets  = $(sort $(filter-out all html pdf scorm xml zip clean clean-% detect detect-% check-for-update update,$(bml.utils.makecmdgoals)) \
+  $(if $(filter html,$(bml.formats)),$(TARGETS.HTML)) \
+  $(if $(filter pdf,$(bml.formats)),$(TARGETS.PDF)) \
+  $(if $(filter scorm,$(bml.formats)),$(TARGETS.SCORM)) \
+  $(if $(filter xml,$(bml.formats)),$(TARGETS.XML)) \
+  $(if $(filter zip,$(bml.formats)),$(TARGETS.ZIP)))
 
-
-BMLGOALS ?= $(MAKECMDGOALS)
-
-### UTILS
-# cross-platform convenience variables
-bml.openp   := (
-bml.closedp := )
-bml.comma   := ,
-define bml.nl # newline
-
-
-endef
-
-# recursively list all files and folders, or just files, within a directory (after https://stackoverflow.com/a/18258352)
-bml.reclist      = $(foreach d,$(wildcard $(1:=/*)),$(call bml.reclist,$d) $d)
-bml.reclist.dir  = $(foreach d,$(wildcard $(1:=/*/./)),$(call bml.reclist.dir,$(d:/./=)) $(d:/./=))
-bml.reclist.file = $(foreach d,$(wildcard $(1:=/*)),$(eval _x:=$(call bml.reclist.file,$d))$(if $(_x),$(_x),$d)) # BUG: empty folders are interpreted as files
-
-# help editors detect UTF-8 encoding: ∀x.x=x
-
-# progress output (code inspired by GMSL)
-bml.spc := $(strip) $(strip)
-bml.box  = $(call bml.echo,$(bml.redbg)$(bml.white) $(strip $(subst $(bml.spc)$(bml.esc)[,$(bml.esc)[,$1))$(bml.reset)$(bml.redbg) )
-ifeq ($(bml.is.win),true)
-  bml.cmd  = $(call bml.echo,$(bml.cyan)$1) & $1
-  bml.echo = echo $(subst >,^>,$1)$(bml.reset)
-else
-  bml.cmd  = $(call bml.echo,$(bml.cyan)$1)$(subst \,\\,$1)
-  bml.echo = $(info $1$(bml.reset))
-endif
-bml.prog = $(call bml.box,$1)
-
-# colors
-ifeq ($(if $(bml.is.win),true,$(shell tput setaf 1 >/dev/null 2>&1 && echo true)),true)
-  bml.esc     := 
-  bml.cyan    := $(bml.esc)[96m
-  bml.cyanbg  := $(bml.esc)[46m
-  bml.magenta := $(bml.esc)[95m
-  bml.yellow  := $(bml.esc)[93m
-  bml.green   := $(bml.esc)[92m
-  bml.red     := $(bml.esc)[91m
-  bml.redbg   := $(bml.esc)[41m
-  bml.blue    := $(bml.esc)[34m
-  bml.white   := $(bml.esc)[97m
-  bml.bluebg  := $(bml.esc)[44m
-  bml.reset   := $(bml.esc)[0m
-endif
-
-ifeq ($(bml.is.win),true)
-  SHELL      := cmd.exe
-  __ignore   := $(shell chcp 65001)
-  bml.ospath  = $(subst /,$(bml.pathsep),$1)
-  bml.pathsep := $(strip \)
-  bml.null    := 2>NUL
-  bml.lt      := ^<
-  bml.gt      := ^>
-  bml;        := &
-  bml.mkdir   = if not exist "$(call bml.ospath,$1/)" $(MKDIR) "$(call bml.ospath,$1/)"
-  bml.rm      = if exist "$(call bml.ospath,$1)" $(RM) "$(call bml.ospath,$1)"
-  bml.rmdir   = if exist "$(call bml.ospath,$1/)" $(RMDIR) "$(call bml.ospath,$1/)"
-else
-  SHELL      := bash
-  bml.ospath  = $1
-  bml.pathsep := /
-  bml.null    := 2>/dev/null
-  bml.lt      := "<"
-  bml.gt      := ">"
-  bml;        := ;
-  bml.mkdir   = $(MKDIR) "$1/"
-  bml.rm      = $(RM) "$1"
-  bml.rmdir   = $(RMDIR) "$1"
-endif
-
-# painful version comparison
-ver.rewrap = $(strip $(eval _x:=$5)$(foreach a,0 1 2 3 4 5 6 7 8 9, \
-  $(eval _x:=$(subst $1$a$2,$3$a$4,$(_x))))$(_x))
-ver.expl   = $(call ver.rewrap,,, ,,$1)   # separate consecutive digits
-ver.sep    = $(call ver.rewrap,,, , ,$1)  # separate all digits
-ver.join   = $(call ver.rewrap,, ,,,$1)   # join consecutive digits and following non-digit if present
-ver.split  = $(strip $(foreach a,$(subst ., ,$1),$(call ver.join,$(call ver.sep,$a))))
-  # split version number by . and non-digit/digit alternations
-ver.pad_   = $(strip $(if $(word $(words x $1),$2),$(call ver.pad_,0 $1,$2), \
-  $(if $(word $(words x $2),$1),$(call ver.pad_,$1,0 $2), \
-  $(subst $(bml.spc),,$1) $(subst $(bml.spc),,$2))))
-  # zero pad two sequences of digits to make them of the same length
-ver.pad    = $(strip $(if $1$2, \
-  $(call ver.pad_,0 $(call ver.expl,$(firstword $1)!),0 $(call ver.expl,$(firstword $2)!)) \
-  $(call ver.pad,$(wordlist 2,$(words $1),$1),$(wordlist 2,$(words $2),$2))))
-  # zero pad all the components of two version numbers
-ver.leq_   = $(strip $(eval _x:=$(firstword $1))$(eval _y:=$(wordlist 2,2,$1)) \
-  $(eval _z:=$(wordlist 3,$(words $1),$1))$(if $(_x)$(_y), \
-    $(if $(subst 0$(_x),,$(firstword $(sort 0$(_x) 0$(_y)))),, \
-      $(if $(subst 0$(_x),,0$(_y)),true,$(call ver.leq_,$(_z)))),true))
-  # compare two split and padded version numbers
-ver.leq    = $(call ver.leq_,$(call ver.pad,$(call ver.split,$1),$(call ver.split,$2)))
-  # compare two verison numbers for 'less than or equal'
-ver.lt     = $(if $(call ver.leq,$2,$1),,true)
-  # compare two version numbers for 'less than'
-
-# friendly message checking for minimum and recommended version number
-bml.recver  = $(strip $(if $3, \
-  $(if $(call ver.leq,$1,$3),$(if $(call ver.leq,$2,$3),$(bml.green) $3 OK$(bml.reset), \
-    $(bml.yellow) $3; recommended $2 or later), \
-    $(bml.red) $3; required at least $1$(if $2,; recommended $2 or later)), \
-    $(bml.red) NOT FOUND))
-bml.testver = $(call bml.echo,$(bml.cyan)$1:$(call bml.recver,$2,$3,$4)$(bml.reset)$5)
-
-# PDF to SVG conversion
-ifeq ($(PDFTOSVG_CONVERTER),dvisvgm)
-  ifeq ($(DVISVGM),)
-    $(warning Option PDFTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. PDF figures will not be automatically converted to SVG.)
-    PDFTOSVG_CONVERTER=
-  else
-    bml.pdftosvg=$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --pdf $(if $(bml.svg.page),--page=$(bml.svg.page) )"$<" --output="$@")
+# default value of SOURCES, but computed only if necessary
+ifndef bml.autosources
+  bml.autosources :=
+  ifeq ("$(value SOURCES)","$$(bml.autosources)")
+    ifneq ($(or $(and $(filter all,$(bml.utils.makecmdgoals)),$(filter "$(value TARGETS)","$$(bml.autotargets)"))),\
+             $(filter detect-sources,$(bml.utils.makecmdgoals),\
+             $(filter-out all check-for-update detect-% update %/ %.html %.pdf %.svg %.xml SCORM.%.zip %.zip $(AUX_DIR)/%,$(bml.utils.makecmdgoals))),)
+      bml.allsources := $(wildcard *.tex)
+      $(if $(filter-out %.tex,$(bml.allsources)),$(call bml.print.warning,Some .tex files have spaces in their names, which is not supported!))
+      bml.autosources := $(sort $(foreach source,$(filter %.tex,$(bml.allsources)),$(if $(call bml.utils.grep,\documentclass,$(source)),$(source))))
+    endif
   endif
-else ifeq ($(PDFTOSVG_CONVERTER),mutool)
-  ifeq ($(DVISVGM),)
-    $(warning Option PDFTOSVG_CONVERTER is 'mutool', but MUTOOL is empty. PDF figures will not be automatically converted to SVG.)
-    PDFTOSVG_CONVERTER=
-  else
-    # mutool always add the page number to the file name
-    bml.pdftosvg=$(call bml.cmd,$(MUTOOL) draw $(MUTOOLFLAGS) -F svg "$<" $(if $(bml.svg.page),$(bml.svg.page),1) > $(call bml.ospath,"$@"))
-  endif
-else ifneq ($(PDFTOSVG_CONVERTER),)
-$(warning Option PDFTOSVG_CONVERTER: value '$(PDFTOSVG_CONVERTER)' not recognised. PDF figures will not be automatically converted to SVG.)
-PDFTOSVG_CONVERTER=
 endif
 
-ifneq ($(PDFTOSVG_CONVERTER),)
-bml.pdftosvg.proc=$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
-endif
+include bookml/bml-deps.mk
+
+# backward compatibility flag
+LATEKMKFLAGS          ?=
+LATEXMLEXTRAFLAGS     ?=
+LATEXMLPOSTEXTRAFLAGS ?=
+
+# flags added by deps makefiles, default provided to silence warnings
+LATEXMLPOSTAUTOFLAGS  ?=
+
+BOOKML_DEPS_DEPS        = bookml/bookml.pm bookml/deps.pl
+BOOKML_DEPS_PDF         = bookml/bookml.pm bookml/xraux.pl
+BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl) bookml/bookml.pm bookml/xsltproc.pl bookml/search_index.pl
+BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_MANIFEST    = bookml/bookml.pm bookml/manifest.pl
+BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_AUTOSVG     = bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
 
 # do not delete intermediate files
 .SECONDARY:
 
-# enable second expansion for $$(...) dependencies
-.SECONDEXPANSION:
-
 # delete files on error
 .DELETE_ON_ERROR:
 
-# force recompilation
+# force recompilation when needed
 .PHONY: FORCE
 
-# default targets
-all:
-	@$(if $(SOURCES),,$(call bml.echo,$(bml.red) Warning: no .tex files with \documentclass found in this directory))
-.PHONY: all
+### MAIN TARGETS
+# use ':' to silence 'Nothing to be done' if something actually happened
+all html pdf scorm xml zip: %:
+	@$(if $(SOURCES)$^,,$$(call bml.print.warning,Warning: no .tex files with \documentclass found in this directory))
+	@$(if $(MAKE_RESTARTS),:)
 
-all:
-html:  TARGETS=$(TARGETS.HTML)
-pdf:   TARGETS=$(TARGETS.PDF)
-scorm: TARGETS=$(TARGETS.SCORM)
-xml:   TARGETS=$(TARGETS.XML)
-zip:   TARGETS=$(TARGETS.ZIP)
-
-announce-targets:
-	@$(call bml.box,Targets: $(TARGETS))
-.PHONY: announce-targets
-
-all html pdf scorm xml zip: announce-targets $$(TARGETS)
+all:   $(TARGETS)
+html:  $(TARGETS.HTML)
+pdf:   $(TARGETS.PDF)
+scorm: $(TARGETS.SCORM)
+xml:   $(TARGETS.XML)
+zip:   $(TARGETS.ZIP)
 .PHONY: all html pdf scorm xml zip
 
-# cleanup targets
-clean:  clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
+### ANNOUNCE TARGETS
+bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd,$(if $(filter %3,$1),rd))))
+ifeq ($(filter clean clean-% detect detect-%,$(bml.utils.makecmdgoals)),)
+  $(if $(filter-out undefined,$(origin MAKE_RESTARTS)),$(call bml.print.yellowbox_,$(call bml.ordinal,$(MAKE_RESTARTS)) make restart),$(call bml.print.redbox_,Targets: $(sort $(TARGETS))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL)))))
+else ifneq ($(filter clean clean-%,$(bml.utils.makecmdgoals)),)
+  $(call bml.print.redbox_,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(bml.utils.makecmdgoals))))$(if $(filter-out undefined,$(origin MAKE_RESTARTS)), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))
+endif
+
+### CLEANUP TARGETS
+clean:  clean-aux clean-deps clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
 .PHONY: clean
-.PHONY: clean-aux clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
+.PHONY: clean-aux clean-deps clean-html clean-pdf clean-scorm clean-svg clean-xml clean-zip
 
 clean-aux:
-	$(call bml.rmdir,$(AUX_DIR))
+	$(call bml.utils.rmdir,$(AUX_DIR))
+clean-deps:
+	$(call bml.utils.rmdir,$(AUX_DIR)/deps)
 clean-html:
-	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.LaTeXML.db $(AUX_DIR)/latexmlaux/*.latexmlpost.log)
-	$(call bml.rmdir,$(AUX_DIR)/html)
+	-$(RM) $(call bml.utils.ospath,$(AUX_DIR)/latexmlaux/*.LaTeXML.db $(AUX_DIR)/latexmlaux/*.latexmlpost.log)
+	$(call bml.utils.rmdir,$(AUX_DIR)/html)
 clean-pdf:
-	-$(call bml.rmdir,$(AUX_DIR)/pdf)
-	-$(RM) $(call bml.ospath,$(TARGETS.PDF) $(TARGETS.PDF:.pdf=.synctex) $(TARGETS.PDF:.pdf=.synctex.gz))
+	-$(call bml.utils.rmdir,$(AUX_DIR)/pdf)
+	-$(RM) $(call bml.utils.ospath,$(TARGETS.PDF) $(TARGETS.PDF:.pdf=.synctex) $(TARGETS.PDF:.pdf=.synctex.gz))
 clean-scorm:
-	-$(call bml.rmdir,$(AUX_DIR)/scorm)
-	-$(RM) $(call bml.ospath,$(TARGETS.SCORM))
+	-$(call bml.utils.rmdir,$(AUX_DIR)/scorm)
+	-$(RM) $(call bml.utils.ospath,$(TARGETS.SCORM))
 clean-svg:
-	$(call bml.rmdir,bmlimages/svg)
+	$(call bml.utils.rmdir,bmlimages/svg)
 clean-xml:
-	-$(call bml.rmdir,$(AUX_DIR)/xml)
-	-$(call bml.rmdir,bmlimages/dvi)
-	-$(RM) $(call bml.ospath,$(AUX_DIR)/latexmlaux/*.latexml.log)
-	-$(RM) $(call bml.ospath,$(patsubst $(AUX_DIR)/xml/%.xml,bmlimages/%-*.svg,$(TARGETS.XML)))
+	-$(call bml.utils.rmdir,$(AUX_DIR)/xml)
+	-$(call bml.utils.rmdir,bmlimages/dvi)
+	-$(RM) $(call bml.utils.ospath,$(AUX_DIR)/latexmlaux/*.latexml.log $(AUX_DIR)/latexmlaux/*.latexml.log)
+	-$(RM) $(call bml.utils.ospath,$(patsubst $(AUX_DIR)/xml/%.xml,bmlimages/%-*.svg,$(TARGETS.XML)))
 clean-zip:
-	$(call bml.rmdir,$(AUX_DIR)/zip)
-	-$(RM) $(call bml.ospath,$(TARGETS.ZIP))
+	$(call bml.utils.rmdir,$(AUX_DIR)/zip)
+	-$(RM) $(call bml.utils.ospath,$(TARGETS.ZIP))
 
-# check for updates
-.PHONY: check-for-update update
-# if running from a Docker image
-ifdef BOOKML_VERSION
-check-for-update:
-	@$(if $(call ver.lt,@VERSION@,$(BOOKML_VERSION)),$(call bml.echo,$(bml.yellow)BookML update $(BOOKML_VERSION) available$(bml.comma) run `update` to install it.))
-	@:
-update:
-	@$(call bml.echo,$(bml.yellow)Replacing BookML @VERSION@ with $(BOOKML_VERSION).)
-	@$(call bml.cmd,$(UNZIP) $(UNZIPFLAGS) /release.zip)
-else
-check-for-update:
-	@$(if $(CURL),,$(call bml.echo,$(bml.red)Checking for updates requires curl, aborting. Visit https://github.com/vlmantova/bookml/releases to find the latest release.)exit 1)
-	@$(eval bookml_release:=$(if $(CURL),$(shell $(CURL) -s https://api.github.com/repos/vlmantova/bookml/releases/latest)))
-	@$(eval bookml_version:=$(if $(CURL),$(word 3,$(subst ", ,$(filter "tag_name":_%,$(subst "tag_name": ,"tag_name":_,$(bookml_release)))))))
-	@$(if $(CURL),$(call bml.echo,$(bml.yellow)$(if $(call ver.lt,@VERSION@,$(bookml_version)),BookML $(bookml_version) is newer than @VERSION@. Run `update` to install it.,BookML @VERSION@ is already up to date.)))
-	@:
+### DIRECTORIES
+# suffix /./ is required for compatibility with GNU Make 3.81
 
-update: | $(AUX_DIR)
-	@$(if $(CURL),,$(call bml.echo,$(bml.red)Updating requires curl, aborting. Visit https://github.com/vlmantova/bookml/releases to find the latest release.)exit 1)
-	@$(if $(CURL),$(if $(UNZIP),,$(call bml.echo,$(bml.red)Updating requires $(if $(bml.is.win),tar.exe,unzip), aborting.)exit 1))
-	@$(eval bookml_release:=$(if $(CURL),$(if $(UNZIP),$(shell $(CURL) -s https://api.github.com/repos/vlmantova/bookml/releases/latest))))
-	@$(eval bookml_version:=$(if $(CURL),$(if $(UNZIP),$(word 3,$(subst ", ,$(filter "tag_name":_%,$(subst "tag_name": ,"tag_name":_,$(bookml_release))))))))
-	@$(eval bookml_update:=$(if $(CURL),$(if $(UNZIP),$(call ver.lt,@VERSION@,$(bookml_version)))))
-	@$(if $(bookml_update),$(call bml.echo,$(bml.yellow)BookML $(bookml_version) is newer than @VERSION@$(bml.comma) updating.,BookML @VERSION@ is already up to date.))
-	@$(if $(bookml_update),$(call bml.cmd,$(CURL) -L https://github.com/vlmantova/bookml/releases/download/$(bookml_version)/release.zip -o "$(AUX_DIR)/release.zip"))
-	@$(if $(bookml_update),$(call bml.cmd,$(UNZIP) $(UNZIPFLAGS) "$(AUX_DIR)/release.zip"))
-endif
+# generate all possible subfolders so that \include{subfolder/...} can write its aux files
+bml.curleafdirs  := $(call bml.utils.leafdirs,$(filter-out $(AUX_DIR)/./ bookml/./ bmlimages/./,$(wildcard */./)))
+bml.pdfleafdirs  := $(patsubst %,$(AUX_DIR)/pdf/%,$(bml.curleafdirs))
+bml.builtpdfdirs := $(patsubst $(AUX_DIR)/pdf/%,%,$(filter %/,$(call bml.utils.tree,$(AUX_DIR)/pdf)))
 
-# dump auxdir into zip file
-.PHONY: aux-zip
-aux-zip: | $(AUX_DIR)
-	@$(call bml.rm,AUX.$(AUX_DIR).zip)
-	@$(call bml.cmd,$(ZIP) --quiet --recurse-paths "AUX.$(AUX_DIR).zip" "$(AUX_DIR)")
+# generating the $(AUX_DIR)/pdf/ tree can take time, let the user know
+# important: the target must not exist to ensure its recipe always runs, but
+# not be true .PHONY or the depending recipes will also run every time
+$(filter-out $(bml.builtpdfdirs),$(bml.curleafdirs)):
+$(AUX_DIR)/PHONY/beforedirs: $(filter-out $(bml.builtpdfdirs),$(bml.curleafdirs))
+	@$(call bml.print.echo,$(bml.print.cyan)creating $(words $?) folder$(if $(filter-out 1,$(words $?)),s) in $$(AUX_DIR)/pdf in case $(if $(filter-out 1,$(words $?)),they are,it is) needed by '\include'; this may take some time)
 
-# version detection targets
-detect: DETECT_CORE:=detect-core
-detect: DETECT_IMAGE:=detect-image
-detect: DETECT_BMLIMAGE:=detect-bmlimage
-detect: detect-core detect-image detect-bmlimage detect-misc
-	@:
-.PHONY: detect-sources detect-bookml detect-make detect-tex detect-perl \
-  detect-latexml detect-imagemagick detect-ghostscript detect-mutool \
-  detect-dvisvgm detect-latexmk detect-texfot detect-preview detect-zip \
-  detect-curl detect detect-core detect-image detect-bmlimage detect-misc \
-  announce-detect-core announce-detect-image announce-detect-bmlimage \
-  announce-detect-misc detect-pdftosvg-converter
+$(AUX_DIR)/pdf/%/./: | $(AUX_DIR)/PHONY/beforedirs
+	@$(call bml.utils.mkdir,$@)
 
-announce-detect-core:
-	@$(call bml.box,     Required                                                                 )
-	@:
-detect-core: detect-sources detect-bookml detect-make detect-tex detect-perl detect-latexml detect-latexmk detect-zip
-	@:
-detect-sources: announce-detect-core
-	@$(call bml.echo,$(bml.cyan)    Main files:$(if $(SOURCES) \
-	  ,$(bml.green) $(SOURCES),$(bml.red) no .tex files with \documentclass found in this directory))
-	@:
-detect-bookml: announce-detect-core
-	@$(call bml.testver,        BookML,,,@VERSION@)
-	@:
-detect-tex: announce-detect-core
-	@$(eval tex_ver:=$(subst  , ,$(patsubst $(bml.openp)%,%,$(filter $(bml.openp)%,$(subst $(bml.closedp), , \
-	  $(subst $(bml.openp), $(bml.openp),$(subst $(bml.spc), ,$(shell tex -version $(bml.null)))))))))
-	@$(call bml.testver,           TeX,,,$(tex_ver))
-	@:
-detect-make: announce-detect-core
-	@$(call bml.testver,      GNU Make,3.81,4.3,$(MAKE_VERSION))
-	@:
-detect-perl: announce-detect-core
-	@$(eval perl_ver:=$(subst $(bml.closedp),,$(subst $(bml.openp),,$(firstword \
-	  $(filter $(bml.openp)%,$(shell perl --version $(bml.null)))))))
-	@$(call bml.testver,          perl,5.8.1,,$(perl_ver),)
-	@:
-detect-latexml: announce-detect-core
-	@$(eval latexml_ver:=$(subst $(bml.closedp),,$(filter %$(bml.closedp), \
-	  $(shell $(LATEXML) --VERSION 2>&1))))
-	@$(call bml.testver,       LaTeXML,0.8.7,0.8.8,$(latexml_ver))
-	@:
-detect-latexmk: announce-detect-core
-	@$(call bml.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version $(bml.null))))
-	@:
-detect-zip: announce-detect-core
-	@$(eval zip_ver := $(firstword $(subst Zip_,,\
-	  $(filter Zip_%,$(subst Zip ,Zip_,$(shell $(ZIP) -v $(bml.null)))))))
-	@$(call bml.testver,           zip,,,$(zip_ver))
-	@:
+$(AUX_DIR)/%/./:
+	@$(call bml.utils.mkdir,$@)
 
-announce-detect-image: $$(DETECT_CORE)
-	@$(call bml.box,     Optional: for any image handling$(bml.comma) including BookML images                )
-	@:
-detect-image: detect-imagemagick detect-ghostscript detect-mutool detect-dvisvgm
-	@:
-detect-imagemagick: announce-detect-image
-	@$(foreach a,Magick Magick::Q16 Magick::Q16HDRI Magick::Q8, \
-	  $(if $(magick_ver),,$(eval magick_ver:=$(shell perl -MImage::$a -e "print Image::$a->VERSION" $(bml.null)))))
-	@$(call bml.testver, Image::Magick,,,$(magick_ver))
-	@:
-detect-pdftosvg-converter: announce-detect-image
-	@$(call bml.echo,$(bml.magenta) --- PDFTOSVG_CONVERTER is set to '$(PDFTOSVG_CONVERTER)' ---)
-detect-ghostscript: announce-detect-image detect-pdftosvg-converter
-	@$(foreach a, \
-	  $(if $(bml.is.win),gswin64c gswin64 gswin32c gswin32 mgs,gs), \
-	  $(if $(gs_info),,$(eval gs_info:=$(shell $a -v $(bml.null)))))
-	@$(eval gs_ver:=$(firstword $(subst Ghostscript_,,$(filter Ghostscript_%,$(subst Ghostscript ,Ghostscript_,$(gs_info))))))
-	@$(eval gs_ver:=$(firstword $(subst Ghostscript_,,$(filter Ghostscript_%,$(subst Ghostscript ,Ghostscript_,$(gs_info))))))
-	@$(call bml.testver,   Ghostscript,,,$(gs_ver), (BookML images, EPS to SVG, PDF to SVG via dvisvgm))
-	@:
-detect-dvisvgm: announce-detect-image detect-pdftosvg-converter
-	@$(eval dvisvgm_info:=$(if $(DVISVGM),$(shell $(DVISVGM) -V1 $(bml.null))))
-	@$(eval dvisvgm_ver:=$(firstword $(subst dvisvgm_,,$(filter dvisvgm_%,$(subst $(DVISVGM) ,dvisvgm_,$(dvisvgm_info))))))
-	@$(eval gs_ver:=$(wordlist 2,2,$(subst &, ,$(filter Ghostscript:%,$(subst &Ghostscript:, Ghostscript:,$(subst $() ,&,$(dvisvgm_info)))))))
-	@$(eval mutool_ver:=$(wordlist 2,2,$(subst &, ,$(filter mutool:%,$(subst &mutool:, mutool:,$(subst $() ,&,$(dvisvgm_info)))))))
-	@$(eval needs_mutool:=$(if $(call ver.leq,10.01.0,$(gs_ver)),true))
-	@$(call bml.testver,       dvisvgm,1.6,2.7,$(dvisvgm_ver), (BookML images, EPS to SVG$(if $(needs_mutool),,, PDF to SVG via dvisvgm)))
-	@$(call bml.testver, dvisvgm/libgs,,,$(gs_ver), (BookML images, EPS to SVG$(if $(needs_mutool),,, PDF to SVG via dvisvgm)))
-	@$(if $(needs_mutool),$(call bml.testver,       dvisvgm,3.0,,$(dvisvgm_ver), (PDF to SVG via dvisvgm)))
-	@$(if $(needs_mutool),$(call bml.testver,dvisvgm/mutool,,,$(mutool_ver), (PDF to SVG via dvisvgm)))
-	@:
-detect-mutool: announce-detect-image detect-pdftosvg-converter
-	@$(eval mutool_info:=$(shell $(MUTOOL) -v 2>&1))
-	@$(eval mutool_ver:=$(if $(filter-out mutool,$(firstword $(mutool_info))),,$(lastword $(mutool_info))))
-	@$(call bml.testver,        mutool,,,$(mutool_ver), (PDF to SVG via mutool))
-	@:
+bmlimages/svg/%/./:
+	@$(call bml.utils.mkdir,$@)
 
-announce-detect-bmlimage: $$(DETECT_CORE) detect-image
-	@$(call bml.box,     Optional: BookML images (\bmlImageEnvironment and \begin{bmlimage})      )
-	@:
-detect-bmlimage: detect-preview
-	@:
-detect-preview: announce-detect-bmlimage
-	@$(eval preview_loc:=$(shell kpsewhich preview.sty $(bml.null)))
-	@$(eval preview_ver:=$(if $(preview_loc),$(subst },,$(subst _,., \
-	  $(subst RELEASE_,, $(filter RELEASE_%,$(subst \def\pr@version{,RELEASE_,$(subst $$Name: release_,RELEASE_,$(call bml.file,$(preview_loc))))))))))
-	@$(call bml.testver,   preview.sty,11.81,,$(preview_ver))
-	@:
-# } syntax highlighting gets confused by the open curly bracket!
+bmlimages/svg/./ $(AUX_DIR)/./:
+	@$(call bml.utils.mkdir,$@)
 
-announce-detect-misc: $$(DETECT_CORE) $$(DETECT_IMAGE) $$(DETECT_BMLIMAGE)
-	@$(call bml.box,     Optional: misc                                                           )
-	@:
-detect-misc: detect-texfot detect-curl
-	@:
-detect-texfot: announce-detect-misc
-	@$(call bml.testver,        texfot,,,$(wordlist 3,3,$(if $(TEXFOT),$(shell $(TEXFOT) --version $(bml.null)))), (hide irrelevant LaTeX messages))
-	@:
-detect-curl: announce-detect-misc
-	@$(call bml.testver,          curl,,,$(wordlist 2,2,$(shell $(CURL) -V $(bml.null))), (update BookML with 'make update'))
-	@:
+### RECIPE WRAPPER
+# - record the update for the make call in bml-deps.mk
+# - save the new target-specific configuration if it has changed
+# - save the timestamp of the start of the build
+define bml.buildbegin
+	@$(bml.deps.recordupdate)
+	@$(bml.config.save)
+	@$(bml.utils.savetimestamp)
+endef
+# - after the target is built, resets its timestamp to the start of the build
+define bml.buildend
+	@$(bml.utils.restoretimestamp)
+endef
 
-# create directories
-$(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf scorm xml zip): | $(AUX_DIR)
-$(AUX_DIR) $(patsubst %,$(AUX_DIR)/%,deps html latexmlaux pdf scorm xml zip):
-	@$(call bml.mkdir,$@)
+# each recipe using the wrapper must have
+# - before the recipe, a call $(call bml.config.set,FORMAT,flags[,...[,EXT]])
+#   determining which variables, and possibly other data, is part of its
+#   configuration
+# - prerequisite $$(call bml.config.prereq,FORMAT)
+# - order-only prerequisite $(call bml.config.predir,FORMAT)
+# bml.config.prereq requires second expansion
 
-# copy PDF and synctex.gz files from $(AUX_DIR) to main folder
-# use relative paths is possible (with extra work if there are spaces)
-$(subst $(bml.spc),\ ,$(CURDIR))/%.pdf %.pdf: $(AUX_DIR)/pdf/%.pdf
-	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$*.pdf)")
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex.gz)" "$(call bml.ospath,$*.synctex.gz)" $(bml.null)
-	-@$(CP) "$(call bml.ospath,$(AUX_DIR)/pdf/$*.synctex)" "$(call bml.ospath,$*.synctex)" $(bml.null)
+.SECONDEXPANSION:
 
-# build PDF and deps files (in $(AUX_DIR))
+### PDF
 
--include $(wildcard $(AUX_DIR)/deps/*.pdfdeps)
-
-# force rebuild if pdfdeps file is missing
 # typo LATEKMKFLAGS preserved for backwards compatibility
-bml.auxdir.subtree := $(patsubst %,$(AUX_DIR)/pdf/%,$(filter-out $(AUX_DIR)/% bmlimages/% bookml/%,$(patsubst ./%,%,$(call bml.reclist.dir,.))))
-$(AUX_DIR)/pdf/%.pdf: %.tex $$(if $$(wildcard $(AUX_DIR)/deps/$$*.pdfdeps),,FORCE) | $(AUX_DIR)/pdf $(AUX_DIR)/deps $(bml.auxdir.subtree)
-	@$(call bml.prog,pdflatex: $*.tex → $*.pdf)
-	@$(call bml.cmd,$(TEXFOT) $(TEXFOTFLAGS) $(LATEXMK) -pdf -dvi- -ps- $(if $(SYNCTEX),-synctex=$(SYNCTEX),) $(LATEKMKFLAGS) $(LATEXMKFLAGS) \
+$(call bml.config.set,pdf,LATEXMKFLAGS LATEKMKFLAGS)
+
+# the recipe also produces .aux, .fdb_latexmk, .fls, .log
+# generate .xraux too as it would not get updated otherwise
+# generate .mk to skip a step on the next restart
+# .xraux is an order-only dependency to prevent building it in parallel
+$(AUX_DIR)/pdf/%.pdf: %.tex $(BOOKML_DEPS_PDF) $$(call bml.config.prereq,pdf) \
+  | $(AUX_DIR)/pdf/%.xraux $$(@D)/./ $(bml.pdfleafdirs) $(bml.utils.tsprereq) $(call bml.config.predir,pdf)
+	@$(bml.buildbegin)
+	@$(call bml.print.recipe,latexmk,$*.tex,$*.pdf)
+	@$(call bml.print.cmd,$(if $(call bml.utils.autovar,TEXFOT),$(call bml.utils.autovar,TEXFOT) $(call bml.utils.autovar,TEXFOTFLAGS)) \
+	  $(call bml.utils.autovar,LATEXMK) -pdf -dvi- -ps- $(if $(call bml.utils.autovar,SYNCTEX),-synctex=$(call bml.utils.autovar,SYNCTEX),) \
+	  $(call bml.utils.autovar,LATEKMKFLAGS) $(call bml.utils.autovar,LATEXMKFLAGS) \
 	  -g -norc -interaction=nonstopmode -halt-on-error -file-line-error -recorder \
-	  -deps -deps-out="$(AUX_DIR)/deps/$*.pdfdeps" -MP -output-directory="$(AUX_DIR)/pdf" "$<")
-	@$(PERL) -pi -e "if (s/^ +/\t/) { s/ /$(if $(bml.is.win),\\,\\\\) /g; s/^\t/    /; }" "$(AUX_DIR)/deps/$*.pdfdeps"
+	  $(call bml.utils.escape2args,-output-directory=$(@D),$<))
+	@$(bml.buildend)
+	@$(PERL) bookml/xraux.pl --output $(call bml.utils.escape2args,$(AUX_DIR)/pdf/$*.xraux,$(AUX_DIR)/pdf/$*.aux)
+	@$(PERL) bookml/deps.pl $(call bml.utils.escape6args,-a=$(AUX_DIR),-o=$(AUX_DIR)/deps/$*.tex/pdf.mk,$(AUX_DIR)/pdf/$*.fdb_latexmk,$(AUX_DIR)/pdf/$*.fls,$(AUX_DIR)/pdf/$*.log,$(AUX_DIR)/pdf/$*.xraux)
 
-# mirror folder tree under $(AUX_DIR)/pdf to support including files from subfolders
-$(bml.auxdir.subtree): $(AUX_DIR)/pdf/%:
-	@$(call bml.mkdir,$@)
-
-# build XML files
-# (Windows can sometimes set the READONLY attribute on the xml folder,
-#  especially on cloud drives, and this trips LaTeXML)
-$(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $(wildcard *.ltxml) %.pdf | $(AUX_DIR)/latexmlaux $(AUX_DIR)/xml
-	@$(call bml.prog,latexml: $< → $@)
-	@$(if $(bml.is.win),attrib -r "$(call bml.ospath,$(@D))")
-	@$(call bml.cmd,$(LATEXML) --preamble=literal:\RequirePackage{bookml/bookml-init} \
-	  $(LATEXMLFLAGS) $(LATEXMLEXTRAFLAGS) --log="$(AUX_DIR)/latexmlaux/$*.latexml.log" --destination="$@" "$<")
-
-$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_PREPROCESS)
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl "$<" --output "$@" --stringparam AUX_DIR "$(AUX_DIR)" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
-
-# build HTML and deps files
-
-# discover postprocessing dependencies (including bmluser/ files, alternative formats, images)
-# save in .htmldeps- to avoid rebuilding these files when not required
-$(AUX_DIR)/deps/%.htmldeps-: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_HTMLDEPS) | $(AUX_DIR)/deps
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl "$<" --output "$@" --stringparam BML_TARGET "$(AUX_DIR)/html/$*/index.html" $(if $(PDFTOSVG_CONVERTER),,--stringparam AUTOSVG ""))
-
-BMLGOALS.HTML := $(patsubst $(AUX_DIR)/html/%/index.html,%,$(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)))
-BMLGOALS.HTMLDEPS := $(patsubst %,$(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS.HTML))
-
-ifneq ($(BMLGOALS.HTMLDEPS),)
-$(BMLGOALS.HTMLDEPS): $(AUX_DIR)/deps/%.htmldeps: $(AUX_DIR)/deps/%.htmldeps-
-	@$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$@)"
--include $(patsubst %,$(AUX_DIR)/deps/%.htmldeps,$(BMLGOALS.HTML))
+# if .aux, .fls, .log, .pdf are missing, force rebuilding the PDF
+define bml.forcepdf
+ifeq ($(and $(wildcard $1.aux),$(wildcard $1.fdb_latexmk),$(wildcard $1.fls),$(wildcard $1.log),$(wildcard $1.pdf)),)
+$1.pdf: FORCE
 endif
--include $(filter-out $(BMLGOALS.HTMLDEPS),$(wildcard $(AUX_DIR)/deps/*.htmldeps))
+endef
 
-# build recursively to force inclusion of htmldeps files
-$(filter $(AUX_DIR)/html/%/index.html,$(BMLGOALS)): $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HTML) | $(AUX_DIR)/html
-	@$(call bml.prog,latexmlpost: $*.xml → $(AUX_DIR)/html/$*/index.html)
-	@$(call bml.rmdir,$(AUX_DIR)/html/$*)
-	@$(call bml.cmd,$(LATEXMLPOST) $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
-	  $(if $(SPLITAT),--splitat=$(SPLITAT)) --urlstyle=file --pmml --mathtex \
-		$(LATEXMLPOSTFLAGS) $(LATEXMLPOSTEXTRAFLAGS) --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
-	  --dbfile=$(AUX_DIR)/latexmlaux/"$*".LaTeXML.db --log="$(AUX_DIR)/latexmlaux/$*.latexmlpost.log" --destination="$@" "$<")
-	@$(call bml.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)
-	@$(call bml.cmd,$(PERL) bookml/search_index.pl "$(AUX_DIR)/html/$*")
+$(foreach target,$(call bml.utils.filtersubst,$(AUX_DIR)/deps/%.tex/pdf.mk,$(AUX_DIR)/pdf/%,$(bml.deps.rebuild)),$(eval $(call bml.forcepdf,$(target))))
 
-$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HTML) FORCE | $(AUX_DIR)/html
-	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) "$@" "BMLGOALS=$@"
+# restore .xraux if missing and record the update for the benefit of bml-deps
+# .aux order-only dependency helps avoid issues with non-existing files
+$(AUX_DIR)/pdf/%.xraux: $(BOOKML_DEPS_PDF) | %.tex
+	@$(bml.deps.recordupdate)
+	@$(if $(wildcard $(AUX_DIR)/pdf/$*.aux),$(PERL) bookml/xraux.pl --force --output $(call bml.utils.escape2args,$(AUX_DIR)/pdf/$*.xraux,$(AUX_DIR)/pdf/$*.aux))
 
-# copy zip and SCORM files from $(AUX_DIR) to main folder
-$(subst $(bml.spc),\ ,$(CURDIR))/SCORM.%.zip SCORM.%.zip: $(AUX_DIR)/scorm/SCORM.%.zip
-	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$@)")
-$(subst $(bml.spc),\ ,$(CURDIR))/%.zip %.zip: $(AUX_DIR)/zip/%.zip
-	@$(call bml.cmd,$(CP) "$(call bml.ospath,$<)" "$(call bml.ospath,$@)")
+# rebuild the deps makefiles from the log files
+# only when needed since .log files may exist from failed PDF builds
+$(AUX_DIR)/pdf/%.fdb_latexmk $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.log: $(AUX_DIR)/pdf/%.pdf ;
+$(filter $(AUX_DIR)/deps/%.tex/pdf.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.tex/pdf.mk: $(AUX_DIR)/pdf/%.fdb_latexmk $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.log $(AUX_DIR)/pdf/%.xraux $(BOOKML_DEPS_DEPS)
+	@$(if $(wildcard $(AUX_DIR)/pdf/$*.xraux),$(PERL) bookml/deps.pl $(call bml.utils.escape6args,-a=$(AUX_DIR),-o=$@,$(AUX_DIR)/pdf/$*.fdb_latexmk,$(AUX_DIR)/pdf/$*.fls,$(AUX_DIR)/pdf/$*.log,$(AUX_DIR)/pdf/$*.xraux))
 
-# package HTML output and manifest into SCORM package
-$(AUX_DIR)/scorm/SCORM.%.zip: $(AUX_DIR)/scorm/%/imsmanifest.xml
-	@$(call bml.prog,SCORM: $(AUX_DIR)/html/$* → SCORM.$*.zip)
-	@$(call bml.rm,$@)
-	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)html$(bml.pathsep)$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)..$(bml.pathsep)scorm$(bml.pathsep)SCORM.$*.zip" .)
-	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)scorm$(bml.pathsep)$*") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)SCORM.$*.zip" .)
+### XML
+
+$(call bml.config.set,xml,LATEXMLFLAGS LATEXMLEXTRAFLAGS)
+
+# the recipe also produces .latexml.log
+# attrib -r works around an issue where Windows sets the READONLY attribute on
+# the xml folder (common on cloud drives) and LaTeXML *believes it*
+# generate .mk to skip a step on the next restart
+$(AUX_DIR)/xml/%.xml: %.tex $$(call bml.config.prereq,xml) \
+  | $$(@D)/./ $(bml.utils.tsprereq) $(call bml.config.predir,xml)
+	@$(bml.buildbegin)
+	@$(call bml.print.recipe,latexml,$<,$*.xml)
+	@$(if $(bml.utils.iswin),attrib -r $(call bml.utils.escapearg,$(call bml.utils.ospath,$(@D))))
+	@$(call bml.print.cmd,$(call bml.utils.autovar,LATEXML) $(call bml.utils.escapearg,--preamble=literal:\RequirePackage{bookml/bookml-init}) \
+	  $(call bml.utils.autovar,LATEXMLFLAGS) $(call bml.utils.autovar,LATEXMLEXTRAFLAGS) \
+	  $(call bml.utils.escape3args,--log=$(AUX_DIR)/latexmlaux/$*.latexml.log,--destination=$(AUX_DIR)/xml/$*.xml,$<))
+	@$(bml.buildend)
+	@$(PERL) bookml/deps.pl $(call bml.utils.escape3args,-a=$(AUX_DIR),-o=$(AUX_DIR)/deps/$*.tex/xml.mk,$(AUX_DIR)/latexmlaux/$*.latexml.log)
+
+# if .latexml.log is missing, force rebuilding the XML
+define bml.forcexml
+ifeq ($(and $(wildcard $(AUX_DIR)/latexmlaux/$1.latexml.log),$(wildcard $(AUX_DIR)/xml/$1.xml)),)
+$(AUX_DIR)/xml/$1.xml: FORCE
+endif
+endef
+
+$(foreach target,$(call bml.utils.filtersubst,$(AUX_DIR)/deps/%.tex/xml.mk,%,$(bml.deps.rebuild)),$(eval $(call bml.forcexml,$(target))))
+
+# rebuild the deps makefiles from the log file
+$(AUX_DIR)/latexmlaux/%.latexml.log: $(AUX_DIR)/xml/%.xml ;
+$(filter $(AUX_DIR)/deps/%.tex/xml.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.tex/xml.mk: $(AUX_DIR)/latexmlaux/%.latexml.log $(BOOKML_DEPS_DEPS)
+	@$(PERL) bookml/deps.pl $(call bml.utils.escape3args,-a=$(AUX_DIR),-o=$@,$<)
+
+# additional preprocessing to XML files (for EPS/PDF to SVG conversion)
+$(call bml.config.set,preprocessed-xml,,\# AUTOSVG xslt parameter set to '$$(if $$(PDFTOSVG_CONVERTER),pdf) $$(if $$(EPSTOSVG_CONVERTER),eps)')
+
+$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_XML) $$(call bml.config.prereq,preprocessed-xml) \
+  | $(bml.utils.tsprereq) $(call bml.config.predir,preprocessed-xml)
+	@$(bml.buildbegin)
+	@$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl --stringparam AUTOSVG $(call bml.utils.escape3args,$(if $(PDFTOSVG_CONVERTER),pdf) $(if $(EPSTOSVG_CONVERTER),eps),$<,--output=$@))
+	@$(bml.buildend)
+
+### HTML
+
+# the recipe also produces LaTeXML.cache, .LaTeXML.db
+# delete LaTeXML.cache to keep the output clean
+# delete .LaTeXML.db to work around latexmlpost getting stuck when the
+# splitting options change
+$(call bml.config.set,html,LATEXMLPOSTFLAGS LATEXMLPOSTEXTRAFLAGS SPLITAT)
+
+$(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HTML) $$(call bml.config.prereq,html) \
+  | $(bml.utils.tsprereq) $(call bml.config.predir,html)
+	@$(bml.buildbegin)
+	@$(call bml.print.recipe,latexmlpost,$*.xml,$(AUX_DIR)/html/$*/index.html)
+	@$(call bml.utils.rmdir,$(AUX_DIR)/html/$*)
+	@$(call bml.print.cmd,$(call bml.utils.autovar,LATEXMLPOST) \
+	  $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
+	  $(if $(call bml.utils.autovar,SPLITAT),--splitat=$(call bml.utils.autovar,SPLITAT)) \
+	  --urlstyle=file --pmml --mathtex \
+	  $(call bml.utils.autovar,LATEXMLPOSTFLAGS) $(call bml.utils.autovar,LATEXMLPOSTEXTRAFLAGS) \
+	  --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
+	  $(call bml.utils.escape4args,--dbfile=$(AUX_DIR)/latexmlaux/$*.LaTeXML.db,--log=$(AUX_DIR)/latexmlaux/$*.latexmlpost.log,--destination=$@,$<))
+	@$(call bml.utils.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)
+	@$(call bml.utils.rm,$(AUX_DIR)/latexmlaux/$*.LaTeXML.db)
+	@$(call bml.print.cmd,$(PERL) bookml/search_index.pl $(call bml.utils.escapearg,$(AUX_DIR)/html/$*))
+	@$(bml.buildend)
+
+# rebuild the deps makefiles from the preprocessed XML files
+$(filter $(AUX_DIR)/deps/%.tex/html.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.tex/html.mk: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HTMLDEPS)
+	@$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-resources.xsl --stringparam BML_JOB $(call bml.utils.escape3args,$*,$<,--output=$@)
 
 # prevent make from trying to build the files in $(AUX_DIR)/html for which we have no recipe
-$(foreach f,$(call bml.reclist.file,$(AUX_DIR)/html),$(eval $(f):))
+bml.htmltree := $(call bml.utils.tree,$(wildcard $(AUX_DIR)/html/*))
 
-# package HTML output into zip file
-$(AUX_DIR)/zip/%.zip: $(AUX_DIR)/html/%/index.html $$(filter-out $$(AUX_DIR)/html/$$*/index.html,$$(call bml.reclist.file,$$(AUX_DIR)/html/$$*)) | $(AUX_DIR)/zip
-	@$(call bml.prog,zip: $(AUX_DIR)/html/$* → $*.zip)
-	@$(call bml.rm,$@)
-	@$(call bml.cmd,cd "$(AUX_DIR)$(bml.pathsep)html") $(bml;) $(call bml.cmd,$(ZIP) --quiet --recurse-paths "..$(bml.pathsep)zip$(bml.pathsep)$*.zip" "$*")
+bml.htmltree.noindex := $(filter-out $(AUX_DIR)/html/%/index.html,$(bml.htmltree)) \
+  $(foreach filename,$(filter $(AUX_DIR)/html/%/index.html,$(bml.htmltree)),$(if $(findstring /,$(patsubst $(AUX_DIR)/html/%/index.html,%,$(filename))),$(filename)))
+bml.htmltree.for      = $(filter $(AUX_DIR)/html/$1/%,$(bml.htmltree))
+$(bml.htmltree.noindex):
 
-# create BookML minimal manifest (a list of files generated by latexmlpost in XML format)
-$(AUX_DIR)/latexmlaux/%.manifest: $(AUX_DIR)/html/%/index.html bookml/manifest.pl $$(filter-out $$(AUX_DIR)/html/$$*/index.html,$$(call bml.reclist.file,$$(AUX_DIR)/html/$$*)) | $(AUX_DIR)/latexmlaux
-	@$(call bml.cmd,$(PERL) bookml/manifest.pl "$(AUX_DIR)/html/$*" "$@")
+### EPS/PDF TO SVG
 
-# create SCORM manifest
-$(AUX_DIR)/scorm/%/imsmanifest.xml: $(AUX_DIR)/latexmlaux/%.manifest $(BOOKML_DEPS_IMSMANIFEST) | $(AUX_DIR)/scorm
-	@$(call bml.prog,SCORM manifest: $*.xml → $@)
-	@$(call bml.mkdir,$(AUX_DIR)/scorm/$*)
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl "$(AUX_DIR)/xml/$*.xml" --output "$@" \
-	   --stringparam BML_MANIFEST "../latexmlaux/$*.manifest")
+# pick out source prerequisites (which may or may not be $<) and deduce page
+# number from source and output filename
+bml.autosvg.source = $(filter-out $(BOOKML_DEPS_AUTOSVG) BML_UPDATED_CONFIG_%,$^)
+bml.autosvg.page   = $(if $(filter $(notdir $(bml.autosvg.source)),$(notdir $(@D))),$(patsubst p%.svg,%,$(@F)),1)
 
-# image conversions
+# EPS to SVG recipe
+bml.autosvg.epsconverter = $(call bml.utils.autovar,EPSTOSVG_CONVERTER)
+define bml.autosvg.epsrecipe
+	@$(bml.config.save)
+	@$(if $(filter-out bmlimages/svg,$(@D)),$(call bml.utils.mkdir,$(@D)))
+	@$(if $(filter dvisvgm,$(bml.autosvg.epsconverter)),$(if $(call bml.utils.autovar,DVISVGM),$(call bml.print.cmd,$(call bml.utils.autovar,DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --eps $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)),Option EPSTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter inkscape,$(bml.autosvg.epsconverter)),$(if $(call bml.utils.autovar,INKSCAPE),$(call bml.print.cmd,$(call bml.utils.autovar,INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))),Option EPSTOSVG_CONVERTER is 'inkscape', but INKSCAPE is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter-out dvisvgm inkscape,$(bml.autosvg.epsconverter)),$(call bml.print.warning,Option EPSTOSVG_CONVERTER: value '$(bml.autosvg.epsconverter)' not recognised. '$(bml.autosvg.source)' will not be converted to SVG.),	@$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl --stringparam SVGCONVERTER $(bml.autosvg.epsconverter) $(call bml.utils.escape2args,$@,--output=$@)))
+endef
+
+# PDF to SVG recipe
+bml.autosvg.pdfconverter = $(call bml.utils.autovar,PDFTOSVG_CONVERTER)
+# annoyingly, some versions of mutool will mangle the file name with a page
+# number regardless of what was requested! and they will also return invalid
+# SVGs if no page is requested, so '>' must be used
+define bml.autosvg.pdfrecipe
+	@$(bml.config.save)
+	@$(if $(filter dvisvgm,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,DVISVGM),$(call bml.print.cmd,$(call bml.utils.autovar,DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --pdf --page=$(bml.autosvg.page) $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)),Option PDFTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter inkscape,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,INKSCAPE),$(call bml.print.cmd,$(call bml.utils.autovar,INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) --pages=$(bml.autosvg.page) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))),Option PDFTOSVG_CONVERTER is 'inkscape', but INKSCAPE is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter mutool,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,MUTOOL),$(call bml.print.cmd,$(call bml.utils.autovar,MUTOOL) draw $(call bml.utils.autovar,MUTOOLFLAGS) -F svg $(call bml.utils.escapearg,$(bml.autosvg.source)) $(bml.autosvg.page) > $(call bml.utils.escapearg,$(call bml.utils.ospath,$@))),Option PDFTOSVG_CONVERTER is 'mutool', but MUTOOL is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter pdftocairo,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,PDFTOCAIRO),$(call bml.print.cmd,$(call bml.utils.autovar,PDFTOCAIRO) $(call bml.utils.autovar,PDFTOCAIROFLAGS) -f $(bml.autosvg.page) -svg $(call bml.utils.escape2args,$(bml.autosvg.source),$@)),Option PDFTOSVG_CONVERTER is 'pdftocairo', but PDFTOCAIRO is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter-out dvisvgm inkscape mutool pdftocairo,$(bml.autosvg.pdfconverter)),$(call bml.print.warning,Option PDFTOSVG_CONVERTER: value '$(bml.autosvg.pdfconverter)' not recognised. '$(bml.autosvg.source)' will not be converted to SVG.),$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl --stringparam SVGCONVERTER $(bml.autosvg.pdfconverter) $(call bml.utils.escape2args,$@,--output=$@)))
+endef
+
+# automatically pick between PDF and EPS recipe
+bml.autosvg.recipe = $(if $(filter %.pdf %.PDF,$^),$(bml.autosvg.pdfrecipe),$(bml.autosvg.epsrecipe))
+
+$(call bml.config.set,epstosvg,EPSTOSVG_CONVERTER \
+  $$(if $$(filter dvisvgm,$$(bml.autosvg.epsconverter)),DVISVGMFLAGS, \
+    $$(if $$(filter inkscape,$$(bml.autosvg.epsconverter)),INKSCAPEFLAGS)),,eps)
+$(call bml.config.set,pdftosvg,PDFTOSVG_CONVERTER \
+  $$(if $$(filter dvisvgm,$$(bml.autosvg.pdfconverter)),DVISVGMFLAGS, \
+    $$(if $$(filter inkscape,$$(bml.autosvg.pdfconverter)),INKSCAPEFLAGS, \
+      $$(if $$(filter mutool,$$(bml.autosvg.pdfconverter)),MUTOOLFLAGS))),,pdf)
+
 # match EPS first, as dvisvgm is more reliable with it
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.eps $(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.EPS $(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
-	@$(call bml.cmd,$(DVISVGM) $(DVISVGMFLAGS) --eps "$<" --output="$@")
-	@$(call bml.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl "$@" --output "$@")
+bmlimages/svg/%.svg: %.eps $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,epstosvg) \
+  | $$(@D)/./ $(call bml.config.predir,epstosvg)
+	@$(bml.autosvg.recipe)
+bmlimages/svg/%.svg: %.EPS $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,epstosvg) \
+  | $$(@D)/./ $(call bml.config.predir,epstosvg)
+	@$(bml.autosvg.recipe)
+bmlimages/svg/%.svg: %.pdf $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,pdftosvg) \
+  | $$(@D)/./ $(call bml.config.predir,pdftosvg)
+	@$(bml.autosvg.recipe)
+bmlimages/svg/%.svg: %.PDF $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,pdftosvg) \
+  | $$(@D)/./ $(call bml.config.predir,pdftosvg)
+	@$(bml.autosvg.recipe)
 
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.pdf $(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
-	@$(bml.pdftosvg)
-	@$(bml.pdftosvg.proc)
-bmlimages/svg/%.svg: $$(bml.svg.parent)%.PDF $(BOOKML_DEPS_AUTOSVG) | $$(@D)/./
-	@$(bml.pdftosvg)
-	@$(bml.pdftosvg.proc)
+# additional recipes for targets with custom page numbers or source not of the form %.pdf, %.eps
+ifdef bml.autosvg.eps
+$(sort $(bml.autosvg.eps)): bmlimages/svg/%.svg: $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,epstosvg) \
+  | $$(@D)/./ $(call bml.config.predir,epstosvg)
+	@$(bml.autosvg.recipe)
+endif
+ifdef bml.autosvg.pdf
+$(sort $(bml.autosvg.pdf)): bmlimages/svg/%.svg: $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,pdftosvg) \
+  | $$(@D)/./ $(call bml.config.predir,pdftosvg)
+	@$(bml.autosvg.recipe)
+endif
 
-# /./ disambiguates between %.svg, %.pdf targets and actual folders
-# a hack, but required to keep compatibility with GNU make 3.81
-bmlimages/svg/%/./:
-	@$(call bml.mkdir,$@)
-bmlimages/svg/./:
-	@$(call bml.mkdir,$@)
+### SCORM AND ZIP
+# SCORM must come first as GNU Make 3.81 picks the first matching pattern rule
+
+# minimal manifest (a list of files generated by latexmlpost in XML format)
+# it must be refreshed whenever any content has been modified, including the
+# folders (e.g. if a file has been deleted)
+$(AUX_DIR)/latexmlaux/%.manifest: $(AUX_DIR)/html/%/index.html $(BOOKML_DEPS_MANIFEST) $$(call bml.htmltree.for,$$*)
+	@$(call bml.print.cmd,$(PERL) bookml/manifest.pl $(call bml.utils.escape2args,$(AUX_DIR)/html/$*,$@))
+
+# SCORM manifest
+$(AUX_DIR)/scorm/%/imsmanifest.xml: $(AUX_DIR)/latexmlaux/%.manifest $(BOOKML_DEPS_IMSMANIFEST) | $$(@D)/./
+	@$(call bml.print.recipe,SCORM manifest,$*.xml,$(AUX_DIR)/scorm/$*/imsmanifest.xml)
+	@$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-imsmanifest.xsl \
+	  --stringparam BML_MANIFEST $(call bml.utils.escape3args,../latexmlaux/$*.manifest,$(AUX_DIR)/xml/$*.xml,--output=$@))
+
+# SCORM zip
+$(AUX_DIR)/scorm/SCORM.%.zip: $(AUX_DIR)/scorm/%/imsmanifest.xml | $$(@D)/./
+	@$(call bml.print.recipe,SCORM,$(AUX_DIR)/html/$*,SCORM.$*.zip)
+	@$(call bml.utils.rm,$@)
+	@$(call bml.print.cmd,cd $(call bml.utils.escapearg,$(call bml.utils.ospath,$(AUX_DIR)/html/$*))) $(bml.utils.;) $(call bml.print.cmd,$(ZIP) --quiet --recurse-paths $(call bml.utils.escapearg,$(call bml.utils.ospath,../../scorm/SCORM.$*.zip)) .)
+	@$(call bml.print.cmd,cd $(call bml.utils.escapearg,$(call bml.utils.ospath,$(AUX_DIR)/scorm/$*))) $(bml.utils.;) $(call bml.print.cmd,$(ZIP) --quiet --recurse-paths $(call bml.utils.escapearg,$(call bml.utils.ospath,../SCORM.$*.zip)) .)
+
+# zip
+# it must be refreshed whenever any content has been modified, including the
+# folders (e.g. if a file has been deleted)
+$(AUX_DIR)/zip/%.zip: $(AUX_DIR)/html/%/index.html $$(call bml.htmltree.for,$$*) | $$(@D)/./
+	@$(call bml.print.recipe,zip,$(AUX_DIR)/html/$*,$*.zip)
+	@$(call bml.utils.rm,$@)
+	@$(call bml.print.cmd,cd $(call bml.utils.escapearg,$(call bml.utils.ospath,$(AUX_DIR)/html))) $(bml.utils.;) $(call bml.print.cmd,$(ZIP) --quiet --recurse-paths $(call bml.utils.escape2args,$(call bml.utils.ospath,../zip/$*.zip),$*))
+
+### COPY FROM $(AUX_DIR) TO WORKING DIRECTORY
+# use second expansion to force matching $(AUX_DIR)/pdf/$*.pdf instead of
+# $(*D)/$(AUX_DIR)/pdf/$(*F).pdf
+
+# prevent files from outside the current directory or within $(AUX_DIR) from matching
+bml.assertcurdir = $(if $(filter $(AUX_DIR)/% /,$(call bml.utils.relpath,$@)/),$(AUX_DIR)/NON_EXISTENT_TARGET)
+
+%.pdf: $$(AUX_DIR)/pdf/$$(call bml.utils.relpath,$$@) $$(bml.assertcurdir)
+	@$(call bml.print.cmd,$(CP) $(call bml.utils.escape2args,$(call bml.utils.ospath,$<),$(call bml.utils.ospath,$@)))
+	@$(call bml.utils.cp,$(AUX_DIR)/pdf/$*.synctex.gz,$*.synctex.gz)
+	@$(call bml.utils.cp,$(AUX_DIR)/pdf/$*.synctex,$*.synctex)
+
+SCORM.%.zip: $$(AUX_DIR)/scorm/$$(call bml.utils.relpath,$$@) $$(bml.assertcurdir)
+	@$(call bml.print.cmd,$(CP) $(call bml.utils.escape2args,$(call bml.utils.ospath,$<),$(call bml.utils.ospath,$@)))
+
+%.zip: $$(AUX_DIR)/zip/$$(call bml.utils.relpath,$$@) $$(bml.assertcurdir)
+	@$(call bml.print.cmd,$(CP) $(call bml.utils.escape2args,$(call bml.utils.ospath,$<),$(call bml.utils.ospath,$@)))

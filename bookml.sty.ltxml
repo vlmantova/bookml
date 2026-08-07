@@ -108,11 +108,7 @@ my $bml_jobname    = ToString(Expand(T_CS('\jobname')));
 my $bml_htmlsyn    = 1;
 my @bml_download   = ();
 
-for my $ext ('pdf', 'epub') {
-  if (-f "$bml_jobname.$ext") {
-    Info('found', $ext, undef, "bundling '$bml_jobname.$ext' in the output");
-    push(@bml_download, "$bml_jobname.$ext"); }
-}
+push(@bml_download, "$bml_jobname.pdf");
 
 DeclareOption('style=plain',   sub { $bml_style   = 'plain';   return; });
 DeclareOption('style=gitbook', sub { $bml_style   = 'gitbook'; return; });
@@ -513,7 +509,6 @@ my $svgfmt  = pathname_concat('bmlimages',      '%f-%0p.svg');
 my $dpth    = pathname_concat($outdir,          $bml_jobname . '.dpth');
 
 NewCounter('bml@image@counter');
-# TODO use height + totalheight to specify depth during digestion (requires LaTeXML support)
 DefMacro('\bml@image@include', '\bml@image@generate\stepcounter{bml@image@counter}\includegraphics{bmlimages/\jobname-\thebml@image@counter.svg}\bml@image@depth{\thebml@image@counter}');
 DefConstructor('\bml@image@depth{}', sub {
     my ($document, $counter) = @_;
@@ -793,6 +788,32 @@ if ($LaTeXML::VERSION < v0.8.8) {
 # various fixes
 {
 
+  ### Copy HyperVerbatim from v0.9 to support xr
+
+  if ($LaTeXML::VERSION <= v0.8.8) {
+    DefParameterType('HyperVerbatim', sub {
+        my ($gullet) = @_;
+        $gullet->readUntil(T_BEGIN);
+        StartSemiverbatim('%');
+        DefMacroI('\%',              undef, T_OTHER('%'), scope => 'local');
+        DefMacroI('\#',              undef, T_OTHER('#'), scope => 'local');
+        DefMacroI('\&',              undef, T_OTHER('&'), scope => 'local');
+        DefMacroI('\textunderscore', undef, T_OTHER('_'), scope => 'local');
+        Let('\_', '\textunderscore');
+        DefMacroI('\hyper@tilde', undef, T_OTHER('~'), scope => 'local');
+        Let('\~',              '\hyper@tilde');
+        Let('\textasciitilde', '\hyper@tilde');
+        Let('\\\\',            '\@backslashchar');
+        my $arg = $gullet->readBalanced(1);
+        EndSemiverbatim();
+        return $arg; },
+      beforeDigest => sub {
+        $_[0]->bgroup;
+        MergeFont(family => 'typewriter'); },
+      afterDigest => sub {
+        $_[0]->egroup; },
+      reversion => sub { (T_BEGIN, Revert($_[0]), T_END); });
+  }
   ### Rules
 
   if ($LaTeXML::VERSION <= v0.8.8) {
@@ -971,7 +992,7 @@ if ($LaTeXML::VERSION < v0.8.8) {
               # remove the empty identifier if it is not followed by a possible binary operator
               if (!grep { $role eq $_ } ('VERTBAR', 'RELOP', 'ARROW', 'METARELOP', 'MODIFIEROP', 'ADDOP', 'MULOP', 'BINOP', 'APPLYOP', 'COMPOSEOP')) {
                 $document->replaceNode($absent, ()); } }
-        });
+          });
 
         # identical to LaTeXML except for the addition of the empty identifier + cleanup
         DefPrimitive('\@ams@align@bindings', sub {

@@ -21,9 +21,17 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:svg="http://www.w3.org/2000/svg"
   xmlns:b="https://vlmantova.github.io/bookml/functions"
-  exclude-result-prefixes="b svg">
+  xmlns:func="http://exslt.org/functions"
+  extension-element-prefixes="func"
+  exclude-result-prefixes="svg">
 
   <xsl:import href="utils.xsl"/>
+
+  <xsl:param name="SVGCONVERTER" />
+
+  <func:function name="b:mutool">
+    <func:result select="$SVGCONVERTER = 'mutool'" />
+  </func:function>
 
   <xsl:output
     method="xml"
@@ -35,10 +43,20 @@
     </xsl:copy>
   </xsl:template>
 
-  <!-- dvisvgm returns the size in TeX points (1in = 72.27pt), we want CSS pixels (1in = 96px) -->
-  <xsl:template match="/svg:svg/@width[b:ends-with(.,'pt')] | /svg:svg/@height[b:ends-with(.,'pt')]">
+  <!-- CSS pixels satisfy 1in = 96px -->
+  <!-- dvisvgm and pdftocairo return the size in big points with unit pt -->
+  <!-- inkscape returns the size already converted to pixels correctly, without units -->
+  <!-- mutool returns the size in big points (1in = 72bp) without units -->
+
+  <xsl:template match="/svg:svg/@width[b:ends-with(.,'pt') or b:mutool()] | /svg:svg/@height[b:ends-with(.,'pt') or b:mutool()]">
+    <xsl:variable name="size">
+      <xsl:choose>
+        <xsl:when test="b:ends-with(.,'pt')"><xsl:value-of select="substring-before(.,'pt')"/></xsl:when>
+        <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <xsl:attribute name="{local-name()}">
-      <xsl:value-of select="format-number(number(substring-before(.,'pt')) * 96 div 72.27, '#.###')"/>
+      <xsl:value-of select="format-number(number($size) * 96 div 72, '#.###')"/>
     </xsl:attribute>
   </xsl:template>
 

@@ -21,7 +21,7 @@ $1: $(MATHSTESTS:=-$1.tex)
 $(MATHSTESTS): %: $(AUX_DIR)/html/%-$1/index.html
 
 %-$1.tex: test-template.tex.in
-	perl -pe "s/\@OPTIONS\@/$2/; s/\@INPUT\@/$$*.tex/g" "$$<" > "$$@"
+	perl -pe "s!\@OPTIONS\@!$2!; s!\@INPUT\@!$$*.tex!g" "$$<" > "$$@"
 )
 endef
 

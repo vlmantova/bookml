@@ -1,18 +1,13 @@
 ### CONFIGURATION
-# Remove the initial '#' and change the value to customise the build process
-# See CONFIGURATION in bookml/bookml.mk for all the options
-#
-# Options can also be customized on the command line, for instance
-#   make SPLITAT= singlepage.zip
-# will compile singlepage.tex into a single page
-#
-# For example: remove '#' below to split your document by chapter
 
+# For example: remove '#' from the following line to split your documents by chapter
 #SPLITAT = chapter
 
-### END CONFIGURATION
+# remove '#' from the following line to not split exercises and exercises+solutions
+# example will still be split by section, if there are any
+#exercises_SPLITAT=
+#exercises_solutions_SPLITAT=
+
+# see https://vlmantova.github.io/bookml/ for the full list of options
 
 include bookml/bookml.mk
-
-# You may also override SPLITAT and other options for a single file, as follows:
-#singlepage.zip: SPLITAT=

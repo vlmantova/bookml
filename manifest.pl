@@ -22,6 +22,8 @@
 
 =cut
 
+# List the files in a given directory into a simple XML file.
+
 use warnings;
 use strict;
 use XML::LibXML;
@@ -29,16 +31,17 @@ use File::Find qw(find);
 use File::Spec;
 use URI::file;
 
-my $directory = $ARGV[0];
-my $manifest = $ARGV[1];
+use lib 'bookml';
+use bookml;
 
-if (! $directory || ! -d $directory || @ARGV != 2) {
+my $directory = $ARGV[0];
+my $manifest  = $ARGV[1];
+
+if (!$directory || !bookml::test_d($directory) || @ARGV != 2) {
   die 'you must specify exactly one directory and one manifest file';
 }
 
-open(my $fh, '>', $manifest) or die "cannot write '$manifest': $!";
-
-my $doc = XML::LibXML::Document->new('1.0', 'utf-8');
+my $doc  = XML::LibXML::Document->new('1.0', 'utf-8');
 my $root = $doc->createElement('manifest');
 $doc->setDocumentElement($root);
 
@@ -49,14 +52,18 @@ $doc->setDocumentElement($root);
 }
 
 find({
-  no_chdir => 1,
-  preprocess => sub { sort @_; },
-  wanted => sub {
-    my $path = File::Spec->abs2rel($_, $directory);
-    return if -d $path || $path =~ m/^(\.|imsmanifest\.xml|index\.html|LaTeXML\.cache)$/;
-    my $tag = $doc->createElement('file');
-    $tag->appendTextNode(URI::file->new($path));
-    $root->appendChild($tag);
-  }}, $directory);
+    no_chdir   => 1,
+    preprocess => sub { sort @_; },
+    wanted     => sub {
+      $_ = bookml::decode_fs($_);
+      my $path = File::Spec->abs2rel($_, $directory);
+      return if bookml::test_d($path) || $path =~ m/^(\.|index\.html)$/;
+      my $tag = $doc->createElement('file');
+      $tag->appendTextNode(URI::file->new($path));
+      $root->appendChild($tag);
+    } }, $directory);
 
+bookml::mk_path(bookml::dirname($manifest));
+bookml::open_file(my $fh, '>', $manifest) or Fatal('I/O', $manifest, undef, "cannot write to file: $!");
+binmode($fh);
 $doc->toFH($fh, 1);

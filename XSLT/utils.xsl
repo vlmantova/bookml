@@ -44,7 +44,7 @@
 
   <xsl:param name="BMLAUTOIDPREFIX" select="'bml-auto-'"/>
 
-  <xsl:param name="AUTOSVG" select="'dvisvgm'"/>
+  <xsl:param name="AUTOSVG" select="''"/>
 
   <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
   <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
@@ -57,7 +57,7 @@
 
   <!-- utility functions to check variables in template matches -->
   <func:function name="b:auto-svg">
-    <func:result select="$AUTOSVG" />
+    <func:result select="$AUTOSVG != ''" />
   </func:function>
 
   <func:function name="b:gitbook">
@@ -293,82 +293,6 @@
     <xsl:param name="haystack"/>
     <xsl:param name="needle"/>
     <func:result select="substring($haystack,string-length($haystack) - string-length($needle) + 1) = $needle"/>
-  </func:function>
-
-  <!-- auto EPS/PDF to SVG conversion -->
-  <func:function name="b:escape-options">
-    <xsl:param name="options"/>
-    <func:result select="str:replace(str:replace($options,'%','%25'),'\,','%2C')"/>
-  </func:function>
-
-  <func:function name="b:unescape-option">
-    <xsl:param name="escaped-option" />
-    <func:result select="str:replace(str:replace($escaped-option,'%2C',','),'%25','%')" />
-  </func:function>
-
-  <func:function name="b:page-option">
-    <xsl:param name="split-options" select="str:split(b:escape-options(../@options),',')" />
-    <func:result select="substring-after(($split-options/text()[starts-with(.,'page=')])[last()],'page=')" />
-  </func:function>
-
-  <func:function name="b:auto-svg-source">
-    <xsl:param name="candidates" select="str:split(str:replace(.,'\','/'),',')" />
-
-    <func:result>
-      <!-- if we only have EPS/PDF candidates, pick the first, preferring EPS -->
-      <xsl:if test="not($candidates//text()[not(b:ends-with(b:lower-case(.),'.eps') or b:ends-with(b:lower-case(.),'.pdf'))])">
-        <xsl:variable name="eps" select="($candidates//text()[b:ends-with(b:lower-case(.),'.eps')])[1]"/>
-        <xsl:choose>
-          <xsl:when test="$eps != ''">
-            <xsl:value-of select="$eps" />
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="($candidates//text()[b:ends-with(b:lower-case(.),'.pdf')])[1]" />
-          </xsl:otherwise>
-        </xsl:choose>
-      </xsl:if>
-      <!-- otherwise, assume that the author is providing their own conversion -->
-    </func:result>
-  </func:function>
-
-  <func:function name="b:is-within-cwd">
-    <xsl:param name="path"/>
-    <!-- Win32: also check if path starts with drive letter -->
-    <func:result select="not(substring($path,2,1)=':' or starts-with($path,'/') or starts-with($path,'../'))"/>
-  </func:function>
-
-  <func:function name="b:auto-svg-candidate">
-    <xsl:param name="source" select="b:auto-svg-source()"/>
-    <xsl:param name="page" select="b:page-option()"/>
-
-    <func:result>
-      <xsl:if test="$source != ''">
-        <!-- if $source is not below the current folder, we remove the folder, as latexmlpost would do -->
-        <xsl:variable name="source-without-parent">
-          <xsl:choose>
-            <xsl:when test="b:is-within-cwd($source)">
-              <xsl:value-of select="$source" />
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="str:split($source,'/')[last()]//text()" />
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>
-
-        <xsl:text>bmlimages/svg/</xsl:text>
-        <xsl:choose>
-          <xsl:when test="$page != ''">
-            <xsl:value-of select="$source-without-parent" />
-            <xsl:text>/p</xsl:text>
-            <xsl:value-of select="$page" />
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="substring($source-without-parent,1,string-length($source-without-parent)-4)" />
-          </xsl:otherwise>
-        </xsl:choose>
-        <xsl:text>.svg</xsl:text>
-      </xsl:if>
-    </func:result>
   </func:function>
 
 </xsl:stylesheet>

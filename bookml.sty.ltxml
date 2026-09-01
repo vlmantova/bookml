@@ -955,28 +955,26 @@ if ($LaTeXML::VERSION < v0.8.8) {
             (map { T_CS('\hdots'), T_ALIGN } 1 .. $cols - 1), T_CS('\hdots'); });
 
         # empty identifier, followed by clean up routine to minimize the chances of spurious invisible times
-        my $absentCounter = 0;
         DefConstructor('\@bml@ams@absent', '<ltx:XMTok meaning="absent" xml:id="#id"/>',
           afterDigest => sub {
             my ($stomach, $whatsit) = @_;
-            my $id = 'bml-ams-absent-' . ($absentCounter++);
-            AssignValue('BML_AMS_ABSENT_ID' => $id);
-            $whatsit->setProperty(id => $id);
+            my $cnt = LookupValue('BML_AMS_ABSENT_IDEN') // 0;
+            AssignValue('BML_AMS_ABSENT_IDEN' => ++$cnt, 'global');
+            $whatsit->setProperty(id => "bml-ams-absent-iden-$cnt");
             return; },
           reversion => '{}', alias => '');
         DefConstructorI('\@bml@ams@absent@cleanup', undef, '', reversion => '',
           afterDigest => sub {
             my ($stomach, $whatsit) = @_;
-            my $id = LookupValue('BML_AMS_ABSENT_ID') or return;
-            AssignValue('BML_AMS_ABSENT_ID' => undef);
-            $whatsit->setProperty(id => $id);
+            my $cnt = LookupValue('BML_AMS_ABSENT_IDEN') or return;
+            $whatsit->setProperty(id => "bml-ams-absent-iden-$cnt");
             return; },
           beforeConstruct => sub {
             my ($document, $whatsit) = @_;
             my $id = $whatsit->getProperty('id') or return;
-            my $absent = $document->findnode("ancestor-or-self::*//ltx:XMTok[\@xml:id='$id' and \@meaning='absent']", $document->getElement);
+            my $absent = $document->getDocument->getElementById($id);
             if (!$absent) {
-              Warning('expected', 'absent', $document, 'could not find the auto-inserted empty identifier');
+              Warn('expected', 'absent', $document, 'could not find the auto-inserted empty identifier');
               return; }
             $absent->removeAttribute('xml:id');
             my $node = $absent->nextNonBlankSibling;

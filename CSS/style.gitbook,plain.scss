@@ -250,11 +250,14 @@ th > .ltx_p:last-child {
   & .bml_equationgroup, & .bml_equation {
     display: grid;
     grid-template-columns: subgrid;
+    grid-column: leqno / reqno;
+  }
 
-    grid-column: leftpad / rightpad;
-
-    &:has(.ltx_eqn_eqno) {
-      grid-column: leqno / reqno;
+  &, & .bml_equationgroup, & .bml_equation {
+    &:has(>.ltx_eqn_eqno) {
+      & .bml_equationgroup, & .bml_equation {
+        grid-column: leftpad / rightpad;
+      }
     }
   }
 

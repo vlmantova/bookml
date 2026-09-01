@@ -130,7 +130,7 @@ detect-ghostscript: announce-detect-image detect-epstosvg-converter detect-pdfto
 	  $(if $(gs_info),,$(eval gs_info:=$$(shell $$(bin) -v 2>$$(bml.utils.null)))))
 	@$(eval gs_ver:=$$(firstword $$(subst Ghostscript_,,$$(filter Ghostscript_%,$$(subst Ghostscript ,Ghostscript_,$$(gs_info))))))
 	@$(eval gs_ver:=$$(firstword $$(subst Ghostscript_,,$$(filter Ghostscript_%,$$(subst Ghostscript ,Ghostscript_,$$(gs_info))))))
-	@$(call bml.print.testver,   Ghostscript,,,$(gs_ver), (BookML images, EPS to SVG, PDF to SVG via dvisvgm))
+	@$(call bml.print.testver,   Ghostscript,,,$(gs_ver), (BookML images, EPS/PDF to SVG via dvisvgm))
 	@:
 detect-dvisvgm: announce-detect-image detect-epstosvg-converter detect-pdftosvg-converter
 	@$(eval dvisvgm_info:=$$(if $(DVISVGM),$$(shell $(DVISVGM) -V1 2>$$(bml.utils.null))))

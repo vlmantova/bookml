@@ -78,33 +78,33 @@ LATEXMLFLAGS     ?=
 LATEXMLPOSTFLAGS ?=
 
 # dvisvgm command and options
-DVISVGM      ?= dvisvgm
+DVISVGM      ?= $(if $(call bml.utils.which,dvisvgm),$(eval DVISVGM:=dvisvgm)dvisvgm,$(eval DVISVGM:=))
 DVISVGMFLAGS ?= --no-fonts --optimize
 
 # inkscape command and options
-INKSCAPE      ?= inkscape
+INKSCAPE      ?= $(if $(call bml.utils.which,inkscape),$(eval INKSCAPE:=inkscape)inkscape,$(eval INKSCAPE:=))
 INKSCAPEFLAGS ?= --without-gui
 
 # mutool command and options
-MUTOOL      ?= mutool
+MUTOOL      ?= $(if $(call bml.utils.which,mutool),$(eval MUTOOL:=mutool)mutool,$(eval MUTOOL:=))
 MUTOOLFLAGS ?=
 
 # mutool command and options
-PDFTOCAIRO      ?= pdftocairo
+PDFTOCAIRO      ?= $(if $(call bml.utils.which,pdftocairo),$(eval PDFTOCAIRO:=pdftocairo)pdftocairo,$(eval PDFTOCAIRO:=))
 PDFTOCAIROFLAGS ?=
 
 # choice of EPS/PDF to SVG converter
-EPSTOSVG_CONVERTER ?= $(if $(DVISVGM),dvisvgm,$(if $(INKSCAPE),inkscape))
-PDFTOSVG_CONVERTER ?= $(if $(MUTOOL),mutool,$(if $(DVISVGM),dvisvgm,$(if $(INKSCAPE),inkscape,$(if $(PDFTOCAIRO),pdftocairo))))
+# dvisvgm, then inkscape, if available
+EPSTOSVG_CONVERTER ?= auto
+# mutool, then pdftocairo, dvisvgm, inkscape if available
+PDFTOSVG_CONVERTER ?= auto
 
 # how to split into multiple files (section, chapter, etc)
 # set to empty string to disable splitting
 SPLITAT ?= section
 
 # texfot (optional, disable with TEXFOT=)
-ifndef TEXFOT
-  TEXFOT := $(if $(call bml.utils.which,texfot),texfot)
-endif
+TEXFOT      ?= $(if $(call bml.utils.which,texfot),$(eval TEXFOT:=texfot)texfot,$(eval TEXFOT:=))
 TEXFOTFLAGS ?= $(if $(call bml.utils.autovar,TEXFOT),--no-stderr,)
 
 # the following variables CANNOT be customised with 'file_'
@@ -113,12 +113,10 @@ PERL ?= perl
 
 # various terminal commands: by default, use typical Windows or Unix version
 ifneq ($(bml.utils.iswin),)
-  ifndef ZIP
-    ZIP        := $(if $(call bml.utils.which,zip),zip,miktex-zip)
-  endif
+  ZIP          ?= $(if $(call bml.utils.which,zip),$(eval ZIP:=zip)zip,$(eval ZIP:=miktex-zip)miktex-zip)
   ifndef UNZIP
-    UNZIP      := $(if $(call bml.utils.which,tar),tar)
-    UNZIPFLAGS := -x -f
+    UNZIP       = $(if $(call bml.utils.which,tar),$(eval UNZIP:=tar)tar,$(eval UNZIP:=))
+    UNZIPFLAGS ?= -x -f
   endif
   CP           := copy
   MV           := move
@@ -129,8 +127,8 @@ ifneq ($(bml.utils.iswin),)
 else
   ZIP          ?= zip
   ifndef UNZIP
-    UNZIP      := $(if $(call bml.utils.which,unzip),unzip)
-    UNZIPFLAGS := -o
+    UNZIP       = $(if $(call bml.utils.which,unzip),$(eval UNZIP:=unzip)unzip,$(eval UNZIP:=))
+    UNZIPFLAGS ?= -o
   endif
   CP           := cp
   MV           := mv
@@ -140,9 +138,7 @@ else
   TOUCH        := touch
 endif
 ZIP_EXCLUDE ?= -x
-ifndef CURL
-  CURL := $(if $(call bml.utils.which,curl),curl)
-endif
+CURL        ?= $(if $(call bml.utils.which,curl),$(eval CURL:=curl)curl,$(eval CURL:=))
 
 ### END CONFIGURATION
 
@@ -338,13 +334,16 @@ endef
 $(foreach target,$(call bml.utils.filtersubst,$(AUX_DIR)/deps/%.tex/pdf.mk,$(AUX_DIR)/pdf/%,$(bml.deps.rebuild)),$(eval $(call bml.forcepdf,$(target))))
 
 # restore .xraux if missing and record the update for the benefit of bml-deps
-# .aux order-only dependency helps avoid issues with non-existing files
+# .tex order-only dependency helps avoid issues with non-existing files
 $(AUX_DIR)/pdf/%.xraux: $(BOOKML_DEPS_PDF) | %.tex
 	@$(bml.deps.recordupdate)
 	@$(if $(wildcard $(AUX_DIR)/pdf/$*.aux),$(PERL) bookml/xraux.pl --force --output $(call bml.utils.escape2args,$(AUX_DIR)/pdf/$*.xraux,$(AUX_DIR)/pdf/$*.aux))
 
 # rebuild the deps makefiles from the log files
 # only when needed since .log files may exist from failed PDF builds
+# fragility issue: deps.pl expects .fdb_latexmk from *other* files to be in
+# $(AUX_DIR)/pdf to detect xr dependencies correctly; removing some files in
+# $(AUX_DIR)/pdf and in $(AUX_DIR)/deps may lead to an inconsistent state
 $(AUX_DIR)/pdf/%.fdb_latexmk $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.log: $(AUX_DIR)/pdf/%.pdf ;
 $(filter $(AUX_DIR)/deps/%.tex/pdf.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.tex/pdf.mk: $(AUX_DIR)/pdf/%.fdb_latexmk $(AUX_DIR)/pdf/%.fls $(AUX_DIR)/pdf/%.log $(AUX_DIR)/pdf/%.xraux $(BOOKML_DEPS_DEPS)
 	@$(if $(wildcard $(AUX_DIR)/pdf/$*.xraux),$(PERL) bookml/deps.pl $(call bml.utils.escape6args,-a=$(AUX_DIR),-o=$@,$(AUX_DIR)/pdf/$*.fdb_latexmk,$(AUX_DIR)/pdf/$*.fls,$(AUX_DIR)/pdf/$*.log,$(AUX_DIR)/pdf/$*.xraux))
@@ -436,26 +435,26 @@ bml.autosvg.source = $(filter-out $(BOOKML_DEPS_AUTOSVG) BML_UPDATED_CONFIG_%,$^
 bml.autosvg.page   = $(if $(filter $(notdir $(bml.autosvg.source)),$(notdir $(@D))),$(patsubst p%.svg,%,$(@F)),1)
 
 # EPS to SVG recipe
-bml.autosvg.epsconverter = $(call bml.utils.autovar,EPSTOSVG_CONVERTER)
+bml.autosvg.epsconverter = $(if $(filter auto,$(call bml.utils.autovar,EPSTOSVG_CONVERTER)),$(if $(DVISVGM),dvisvgm,$(if $(INKSCAPE),inkscape,not-found)),$(call bml.utils.autovar,EPSTOSVG_CONVERTER))
 define bml.autosvg.epsrecipe
 	@$(bml.config.save)
 	@$(if $(filter-out bmlimages/svg,$(@D)),$(call bml.utils.mkdir,$(@D)))
-	@$(if $(filter dvisvgm,$(bml.autosvg.epsconverter)),$(if $(call bml.utils.autovar,DVISVGM),$(call bml.print.cmd,$(call bml.utils.autovar,DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --eps $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)),Option EPSTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
-	@$(if $(filter inkscape,$(bml.autosvg.epsconverter)),$(if $(call bml.utils.autovar,INKSCAPE),$(call bml.print.cmd,$(call bml.utils.autovar,INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))),Option EPSTOSVG_CONVERTER is 'inkscape', but INKSCAPE is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter dvisvgm,$(bml.autosvg.epsconverter)),$(call bml.print.cmd,$(DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --eps $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)))
+	@$(if $(filter inkscape,$(bml.autosvg.epsconverter)),$(call bml.print.cmd,$(INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))))
 	@$(if $(filter-out dvisvgm inkscape,$(bml.autosvg.epsconverter)),$(call bml.print.warning,Option EPSTOSVG_CONVERTER: value '$(bml.autosvg.epsconverter)' not recognised. '$(bml.autosvg.source)' will not be converted to SVG.),	@$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl --stringparam SVGCONVERTER $(bml.autosvg.epsconverter) $(call bml.utils.escape2args,$@,--output=$@)))
 endef
 
 # PDF to SVG recipe
-bml.autosvg.pdfconverter = $(call bml.utils.autovar,PDFTOSVG_CONVERTER)
+bml.autosvg.pdfconverter = $(if $(filter auto,$(call bml.utils.autovar,PDFTOSVG_CONVERTER)),$(if $(MUTOOL),mutool,$(if $(PDFTOCAIRO),pdftocairo,$(if $(INKSCAPE),inkscape,$(if $(DVISVGM),dvisvgm,not-found)))),$(call bml.utils.autovar,PDFTOSVG_CONVERTER))
 # annoyingly, some versions of mutool will mangle the file name with a page
 # number regardless of what was requested! and they will also return invalid
 # SVGs if no page is requested, so '>' must be used
 define bml.autosvg.pdfrecipe
 	@$(bml.config.save)
-	@$(if $(filter dvisvgm,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,DVISVGM),$(call bml.print.cmd,$(call bml.utils.autovar,DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --pdf --page=$(bml.autosvg.page) $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)),Option PDFTOSVG_CONVERTER is 'dvisvgm', but DVISVGM is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
-	@$(if $(filter inkscape,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,INKSCAPE),$(call bml.print.cmd,$(call bml.utils.autovar,INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) --pages=$(bml.autosvg.page) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))),Option PDFTOSVG_CONVERTER is 'inkscape', but INKSCAPE is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
-	@$(if $(filter mutool,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,MUTOOL),$(call bml.print.cmd,$(call bml.utils.autovar,MUTOOL) draw $(call bml.utils.autovar,MUTOOLFLAGS) -F svg $(call bml.utils.escapearg,$(bml.autosvg.source)) $(bml.autosvg.page) > $(call bml.utils.escapearg,$(call bml.utils.ospath,$@))),Option PDFTOSVG_CONVERTER is 'mutool', but MUTOOL is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
-	@$(if $(filter pdftocairo,$(bml.autosvg.pdfconverter)),$(if $(call bml.utils.autovar,PDFTOCAIRO),$(call bml.print.cmd,$(call bml.utils.autovar,PDFTOCAIRO) $(call bml.utils.autovar,PDFTOCAIROFLAGS) -f $(bml.autosvg.page) -svg $(call bml.utils.escape2args,$(bml.autosvg.source),$@)),Option PDFTOSVG_CONVERTER is 'pdftocairo', but PDFTOCAIRO is empty. '$(bml.autosvg.source)' will not be converted to SVG.))
+	@$(if $(filter dvisvgm,$(bml.autosvg.pdfconverter)),$(call bml.print.cmd,$(DVISVGM) $(call bml.utils.autovar,DVISVGMFLAGS) --pdf --page=$(bml.autosvg.page) $(call bml.utils.escape2args,$(bml.autosvg.source),--output=$@)))
+	@$(if $(filter inkscape,$(bml.autosvg.pdfconverter)),$(call bml.print.cmd,$(INKSCAPE) $(call bml.utils.autovar,INKSCAPEFLAGS) --pages=$(bml.autosvg.page) $(call bml.utils.escape2args,--export-filename=$@,$(bml.autosvg.source))))
+	@$(if $(filter mutool,$(bml.autosvg.pdfconverter)),$(call bml.print.cmd,$(MUTOOL) draw $(call bml.utils.autovar,MUTOOLFLAGS) -F svg $(call bml.utils.escapearg,$(bml.autosvg.source)) $(bml.autosvg.page) > $(call bml.utils.escapearg,$(call bml.utils.ospath,$@))))
+	@$(if $(filter pdftocairo,$(bml.autosvg.pdfconverter)),$(call bml.print.cmd,$(PDFTOCAIRO) $(call bml.utils.autovar,PDFTOCAIROFLAGS) -f $(bml.autosvg.page) -svg $(call bml.utils.escape2args,$(bml.autosvg.source),$@)))
 	@$(if $(filter-out dvisvgm inkscape mutool pdftocairo,$(bml.autosvg.pdfconverter)),$(call bml.print.warning,Option PDFTOSVG_CONVERTER: value '$(bml.autosvg.pdfconverter)' not recognised. '$(bml.autosvg.source)' will not be converted to SVG.),$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-svg.xsl --stringparam SVGCONVERTER $(bml.autosvg.pdfconverter) $(call bml.utils.escape2args,$@,--output=$@)))
 endef
 
@@ -464,11 +463,12 @@ bml.autosvg.recipe = $(if $(filter %.pdf %.PDF,$^),$(bml.autosvg.pdfrecipe),$(bm
 
 $(call bml.config.set,epstosvg,EPSTOSVG_CONVERTER \
   $$(if $$(filter dvisvgm,$$(bml.autosvg.epsconverter)),DVISVGMFLAGS, \
-    $$(if $$(filter inkscape,$$(bml.autosvg.epsconverter)),INKSCAPEFLAGS)),,eps)
+    $$(if $$(filter inkscape,$$(bml.autosvg.epsconverter)),INKSCAPEFLAGS,DVISVGMFLAGS INKSCAPEFLAGS)),,eps)
 $(call bml.config.set,pdftosvg,PDFTOSVG_CONVERTER \
   $$(if $$(filter dvisvgm,$$(bml.autosvg.pdfconverter)),DVISVGMFLAGS, \
     $$(if $$(filter inkscape,$$(bml.autosvg.pdfconverter)),INKSCAPEFLAGS, \
-      $$(if $$(filter mutool,$$(bml.autosvg.pdfconverter)),MUTOOLFLAGS))),,pdf)
+      $$(if $$(filter mutool,$$(bml.autosvg.pdfconverter)),MUTOOLFLAGS, \
+        $$(if $$(filter pdftocairo,$$(bml.autosvg.pdfconverter)),PDFTOCAIROFLAGS,DVISVGMFLAGS INKSCAPEFLAGS MUTOOLFLAGS PDFTOCAIROFLAGS)))),,pdf)
 
 # match EPS first, as dvisvgm is more reliable with it
 bmlimages/svg/%.svg: %.eps $(BOOKML_DEPS_AUTOSVG) $$(call bml.config.prereq,epstosvg) \

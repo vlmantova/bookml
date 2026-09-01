@@ -197,14 +197,16 @@ The following options are available.
 <dd>Spaces-separated list of formats to be generated from SOURCES. Recognised formats are pdf, scorm, zip. Default <i>scorm zip</i>.</dd>
 <dt>SPLITAT</dt>
 <dd>How to split the HTML output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the latexmlpost manual, <code>--split</code> option, for more details. To change splitting for a simple file, use <code>file_SPLITAT</code>. For instance, <code>file_SPLITAT=chapter</code> will split <samp>file.zip</samp> and <samp>SCORM.file.zip</samp> by chapter, while all the other files will be split by section. Default <i>section</i>.</dd>
+<dt>CURL</dt>
+<dd>Command to call curl. Default <i>curl</i> (if present).</dd>
 <dt>DVISVGM</dt>
-<dd>Command to call dvisvgm. Default <i>dvisvgm</i>.</dd>
+<dd>Command to call dvisvgm. Default <i>dvisvgm</i> (if present).</dd>
 <dt>DVISVGMFLAGS</dt>
 <dd>Options to pass to dvisvgm. Default <i>--no-fonts --optimize</i>.</dd>
 <dt>EPSTOSVG_CONVERTER</dt>
-<dd>Select which converter to use for converting EPS images to SVG. Currently supported values are dvisvgm, inkscape. If set to empty, LaTeXML will convert EPS to PNG using ImageMagick. Default <i>dvisvgm</i>.</dd>
+<dd>Select which converter to use for converting EPS images to SVG. Currently supported values are auto, dvisvgm, inkscape; auto will look for dvisvgm, inkscape in that order. If set to empty, LaTeXML will convert EPS to PNG using ImageMagick. Default <i>auto</i>.</dd>
 <dt>INKSCAPE</dt>
-<dd>Command to call mutool. Default <i>inkscape</i>.</dd>
+<dd>Command to call inkscape. Default <i>inkscape</i> (if present).</dd>
 <dt>INKSCAPEFLAGS</dt>
 <dd>Options to pass to inkscape. Default <i>--without-gui</i>.</dd>
 <dt>LATEXMK</dt>
@@ -220,21 +222,24 @@ The following options are available.
 <dt>LATEXMLPOSTFLAGS</dt>
 <dd>Options to pass to latexmlpost.</dd>
 <dt>MUTOOL</dt>
-<dd>Command to call mutool. Default <i>mutool</i>.</dd>
+<dd>Command to call mutool. Default <i>mutool</i> (if present).</dd>
 <dt>MUTOOLFLAGS</dt>
 <dd>Options to pass to mutool draw.</dd>
 <dt>PDFTOCAIRO</dt>
-<dd>Command to call pdftocairo. Default <i>pdftocairo</i>.</dd>
+<dd>Command to call pdftocairo. Default <i>pdftocairo</i> (if present).</dd>
 <dt>PDFTOCAIROFLAGS</dt>
 <dd>Options to pass to pdftocairo.</dd>
 <dt>PDFTOSVG_CONVERTER</dt>
-<dd>Select which converter to use for converting PDF images to SVG. Currently supported values are dvisvgm, inkscape, mutool, pdftocairo. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default <i>mutool</i>.</dd>
+<dd>Select which converter to use for converting PDF images to SVG. Currently supported values are auto, dvisvgm, inkscape, mutool, pdftocairo; auto will look for mutool, pdftocairo, dvisvgm, inkscape in that order. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default <i>auto</i>.</dd>
 <dt>PERL</dt>
 <dd>Command to call Perl. Default <i>perl</i>.</dd>
 <dt>TEXFOT</dt>
-<dd>Command to call tex. Default <i>texfot</i>.</dd>
+<dd>Command to call tex. Default <i>texfot</i> (if present).</dd>
 <dt>TEXFOTFLAGS</dt>
 <dd>Options to pass to texfot. Default <i>--no-stderr</i>.</dd>
+<dt>UNZIP</dt>
+<dd>Command to call unzip. Default <i>tar</i> (if present) on Windows, <i>unzip</i> (if present) on other platforms.</dd>
+</dl>
 <dt>ZIP</dt>
 <dd>Command to call zip. Default <i>zip</i> (or <i>miktex-zip</i> if zip.exe is not available on Windows).</dd>
 </dl>

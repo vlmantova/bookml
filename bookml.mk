@@ -162,8 +162,8 @@ bml.autotargets  = $(sort $(filter-out all html pdf scorm xml zip clean clean-% 
 ifndef bml.autosources
   bml.autosources :=
   ifeq ("$(value SOURCES)","$$(bml.autosources)")
-    ifneq ($(or $(and $(filter all,$(bml.utils.makecmdgoals)),$(filter "$(value TARGETS)","$$(bml.autotargets)"))),\
-             $(filter detect-sources,$(bml.utils.makecmdgoals),\
+    ifneq ($(or $(and $(filter all,$(bml.utils.makecmdgoals)),$(filter "$(value TARGETS)","$$(bml.autotargets)")),\
+             $(filter detect-sources,$(bml.utils.makecmdgoals)),\
              $(filter-out all check-for-update detect-% update %/ %.html %.pdf %.svg %.xml SCORM.%.zip %.zip $(AUX_DIR)/%,$(bml.utils.makecmdgoals))),)
       bml.allsources := $(wildcard *.tex)
       $(if $(filter-out %.tex,$(bml.allsources)),$(call bml.print.warning,Some .tex files have spaces in their names, which is not supported!))
@@ -216,7 +216,7 @@ zip:   $(TARGETS.ZIP)
 
 ### ANNOUNCE TARGETS
 bml.ordinal = $1$(if $(filter %0 %11 %12 %13 %4 %5 %6 %7 %8 %9,$1),th,$(if $(filter %1,$1),st,$(if $(filter %2,$1),nd,$(if $(filter %3,$1),rd))))
-ifeq ($(filter clean clean-% detect detect-%,$(bml.utils.makecmdgoals)),)
+ifeq ($(filter check-for-update update clean clean-% detect detect-%,$(bml.utils.makecmdgoals)),)
   $(if $(filter-out undefined,$(origin MAKE_RESTARTS)),$(call bml.print.yellowbox_,$(call bml.ordinal,$(MAKE_RESTARTS)) make restart),$(call bml.print.redbox_,Targets: $(sort $(TARGETS))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL)))))
 else ifneq ($(filter clean clean-%,$(bml.utils.makecmdgoals)),)
   $(call bml.print.redbox_,Cleaning: $(sort $(patsubst clean,all,$(patsubst clean-%,%,$(bml.utils.makecmdgoals))))$(if $(filter-out undefined,$(origin MAKE_RESTARTS)), (further pass $(MAKE_RESTARTS)))$(if $(filter 0,$(MAKELEVEL)),, (recursion level $(MAKELEVEL))))

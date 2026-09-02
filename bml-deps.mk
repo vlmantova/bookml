@@ -100,10 +100,10 @@ else
     $(filter $(AUX_DIR)/deps/%.mk,$(MAKECMDGOALS)))
 endif
 
-# avoid unnecessary rebuilds if cleaning
-ifneq ($(filter clean clean-%,$(bml.utils.makecmdgoals)),)
+# avoid unnecessary rebuilds if cleaning or updating
+ifneq ($(filter check-for-update clean clean-% update,$(bml.utils.makecmdgoals)),)
   # refuse to build files
-  $(if $(filter-out clean-% clean,$(bml.utils.makecmdgoals)),$(call bml.print.error,Compiling targets while cleaning is not supported!))
+  $(if $(filter-out check-for-update clean-% clean update,$(bml.utils.makecmdgoals)),$(call bml.print.error,Compiling targets while cleaning or updating is not supported!))
   # no file will be compiled
   override bml.deps.updates :=
   override bml.deps.rebuild :=

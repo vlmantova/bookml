@@ -11,10 +11,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: fonttools make python3-brotli sassc zip
-          version: 2.0
+        run: |
+          sudo apt update
+          sudo apt install -y --no-install-recommends fonttools make python3-brotli sassc zip
       - name: Compile release
         env:
           version: ${{ github.ref_name }}
@@ -49,11 +48,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: make
-          version: 1.0
       - name: Download cached release
         uses: actions/download-artifact@v8
         with:
@@ -83,11 +77,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: make
-          version: 1.0
       - name: Download cached release
         uses: actions/download-artifact@v8
         with:
@@ -113,11 +102,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-      - name: Install packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: make
-          version: 1.0
       - name: Log in to GitHub registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Set up Docker Buildx

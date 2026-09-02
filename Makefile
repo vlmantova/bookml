@@ -93,6 +93,7 @@ $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arc
 		--build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --build-arg=TEXLIVE_SCHEME=$(SCHEME) \
 		--build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) \
 		--tag=$(REF)-$(SCHEME):$(TAG) $(if $(IS_LATEST),--tag=$(REF)-$(SCHEME):latest-$(ARCH)) \
+		--output type=docker,compression=zstd \
 		-f "$<" docker-ctx
 
 $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-push-$(scheme)-$(arch))): docker-push-%: docker-build-%

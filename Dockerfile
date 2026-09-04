@@ -137,6 +137,8 @@ EOF
 ### BookML
 FROM latexml-oxide AS bookml
 
+ENV LANG=C.UTF-8
+
 COPY release.zip /release.zip
 
 ARG TEXLIVE_SCHEME

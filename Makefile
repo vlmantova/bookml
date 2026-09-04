@@ -90,12 +90,12 @@ $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arc
 	$(eval TAG=$(BOOKML_VERSION)-$(ARCH))
 	docker buildx build --load --build-arg=BUILDKIT_INLINE_CACHE=1 \
 		$(foreach scheme,$(SCHEMES),$(foreach tag,latest-$(ARCH) cache-$(TAG),--cache-from=type=registry,ref=$(REF)-$(scheme):$(tag))) \
-		--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(TAG),mode=max,compression=zstd --platform linux/$(ARCH) \
+		--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(TAG),mode=max,compression=zstd,oci-mediatypes=true --platform linux/$(ARCH) \
 		--build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --build-arg=TEXLIVE_SCHEME=$(SCHEME) \
 		--build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) \
 		--build-arg=LATEXMLOXIDE_VERSION=$(LATEXMLOXIDE_VERSION) \
 		--tag=$(REF)-$(SCHEME):$(TAG) $(if $(IS_LATEST),--tag=$(REF)-$(SCHEME):latest-$(ARCH)) \
-		--output type=docker,compression=zstd \
+		--output type=docker,compression=zstd,oci-mediatypes=true \
 		-f "$<" docker-ctx
 
 $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-push-$(scheme)-$(arch))): docker-push-%: docker-build-%

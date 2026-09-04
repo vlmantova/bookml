@@ -52,18 +52,30 @@
   </xsl:template>
 
   <!-- replace PDF, EPS images with auto-generated SVGs if no other candidates are available -->
-  <xsl:template match="ltx:graphics[not(@candidates) and b:auto-svg-source() != '']/@graphic">
+  <xsl:template match="ltx:graphics[b:auto-svg-source() != '']/@graphic">
     <xsl:attribute name="graphic">
-      <xsl:value-of select="." />
-    </xsl:attribute>
-    <xsl:attribute name="candidates">
       <xsl:value-of select="b:auto-svg-candidate()" />
     </xsl:attribute>
+    <xsl:if test="not(../@candidates)">
+      <xsl:attribute name="candidates">
+        <xsl:value-of select="b:auto-svg-candidate()" />
+      </xsl:attribute>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="ltx:graphics/@candidates[b:auto-svg-source() != '']">
     <xsl:attribute name="candidates">
       <xsl:value-of select="b:auto-svg-candidate()" />
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="ltx:graphics[b:auto-svg-source() != '' and b:page-option() != '']/@options">
+    <xsl:variable name="split-options" select="str:split(b:escape-options(self::ltx:graphics/@options | ../@options),',')" />
+    <xsl:attribute name="options">
+      <xsl:for-each select="$split-options/text()[not(starts-with(.,'page='))]" >
+        <xsl:value-of select="b:unescape-option(.)" />
+        <xsl:text>,</xsl:text>
+      </xsl:for-each>
     </xsl:attribute>
   </xsl:template>
 
@@ -90,9 +102,18 @@
     <func:result select="substring-after(($split-options/text()[starts-with(.,'page=')])[last()],'page=')" />
   </func:function>
 
-  <func:function name="b:auto-svg-source">
-    <xsl:param name="candidates" select="str:split(str:replace(concat(self::ltx:graphics/@candidates,',',self::ltx:graphics/@graphic,',',../@candidates,',',../@graphic),'\','/'),',')" />
+  <func:function name="b:if">
+    <xsl:param name="test" />
+    <xsl:param name="yes" />
+    <xsl:param name="no" />
+    <xsl:choose>
+      <xsl:when test="$test"><func:result select="$yes" /></xsl:when>
+      <xsl:otherwise><func:result select="$no" /></xsl:otherwise>
+    </xsl:choose>
+  </func:function>
 
+  <func:function name="b:auto-svg-source">
+    <xsl:param name="candidates" select="str:split(str:replace(b:if(self::ltx:graphics,b:if(@candidates,@candidates,@graphic),b:if(../self::ltx:graphics,b:if(../@candidates,../@candidates,../@graphic))),'\','/'),',')" />
     <func:result>
       <!-- if we only have EPS/PDF candidates, pick the first, preferring EPS -->
       <!-- .tex files are considered candidates (why exactly?) -->

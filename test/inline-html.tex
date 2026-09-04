@@ -1,0 +1,115 @@
+\documentclass{article}
+
+\usepackage{bookml/bookml}
+\usepackage[T1]{fontenc}
+\usepackage[pdfusetitle]{hyperref}
+
+\title{BookML test: inline HTML}
+\author{Vincenzo Mantova}
+\date{2026-09-02}
+
+\input{test-info}
+
+\bmlRawHTML{<script defer="">document.addEventListener("DOMContentLoaded", (event) => { let out = document.getElementById('bml-output'); out.value="Javascript loaded successfully from \\\\bmlRawHTML"; })</script>}
+
+\begin{document}
+
+\section{HTML via environments}
+\begin{h:details}
+  \begin{h:summary}Click to open\end{h:summary}
+  Paragraph of text.
+\end{h:details}
+
+\begin{h:details}[open]
+  \begin{h:summary}Click to close\end{h:summary}
+  Paragraph of text.
+\end{h:details}
+
+\begin{h:details}
+  \begin{h:summary}Click to open\end{h:summary}
+  \begin{h:span}Inline run of text.\end{h:span}
+\end{h:details}
+
+\begin{itemize}
+  \item \begin{h:b}inline tags\end{h:b} should not eat the following spaces.
+\end{itemize}
+
+\begin{figure}
+  \centering
+  \begin{h:a}[href={https://en.wikipedia.org/wiki/Surreal_number#/media/File:Surreal_number_tree.svg}]\begin{h:img}[src={https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal_number_tree.svg},width=256,height=323]\end{h:img}\end{h:a}
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{h:a}[href={https://en.wikipedia.org/wiki/Surreal\_number\#/media/File:Surreal\_number\_tree.svg}]\begin{h:img}[src={https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal\_number\_tree.svg},width=256,height=323]\end{h:img}\end{h:a}
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{h:iframe}[width=560,height=315,src={https://www.youtube-nocookie.com/embed/ldxFjLJ3rVY?si=mOi1rzTE1j3gzHwd},title={YouTube video player},frameborder=0,allow={accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share},referrerpolicy={strict-origin-when-cross-origin},allowfullscreen]\end{h:iframe}
+  \caption{3Blue1Brown ``How (and why) to take the logarithm of an image''}
+\end{figure}
+
+\section{HTML via \texttt{\textbackslash <}}
+
+\<details>
+  \<summary>Click to open\</summary>
+  Paragraph of text.
+\</details>
+
+\<details open>
+  \<summary>Click to close\</summary>
+  Paragraph of text.
+\</details>
+
+\<details>
+  \<summary>Click to open\</summary>
+  \<span>Inline run of text.\</span>
+\</details>
+
+\begin{itemize}
+  \item \<b>inline tags\</b> should not eat the following spaces.
+\end{itemize}
+
+Output of Javascript added to preamble: \<output id="bml-output"/>.
+
+\begin{figure}
+  \centering
+  \<a href="https://en.wikipedia.org/wiki/Surreal_number#/media/File:Surreal_number_tree.svg">\<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal_number_tree.svg" width="256" height="323"/>\</a>
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \<a href="https://en.wikipedia.org/wiki/Surreal\_number\#/media/File:Surreal\_number\_tree.svg">\<img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal\_number\_tree.svg" width="256" height="323"/>\</a>
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/ldxFjLJ3rVY?si=mOi1rzTE1j3gzHwd" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>\</iframe>
+  \caption{3Blue1Brown ``How (and why) to take the logarithm of an image''}
+\end{figure}
+
+\section{HTML via \texttt{\textbackslash bmlRawHTML}}
+\begin{figure}
+  \centering
+  \bmlRawHTML{<a href="https://en.wikipedia.org/wiki/Surreal_number#/media/File:Surreal_number_tree.svg"><img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal_number_tree.svg" width="256" height="323"/></a>}
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \bmlRawHTML{<a href="https://en.wikipedia.org/wiki/Surreal\_number\#/media/File:Surreal\_number\_tree.svg"><img src="https://upload.wikimedia.org/wikipedia/commons/4/49/Surreal\_number\_tree.svg" width="256" height="323"/></a>}
+  \caption{Surreal number tree by \href{https://commons.wikimedia.org/wiki/User:Luk\%C3\%A1\%C5\%A1_L\%C3\%A1nsk\%C3\%BD}{Lukáš Lánský}, \href{https://creativecommons.org/licenses/by-sa/3.0}{CC BY-SA 3.0}.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \bmlRawHTML{<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/ldxFjLJ3rVY?si=mOi1rzTE1j3gzHwd" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen=""></iframe>}
+  \caption{3Blue1Brown ``How (and why) to take the logarithm of an image''}
+\end{figure}
+
+\end{document}

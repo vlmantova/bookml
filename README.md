@@ -7,14 +7,14 @@ Automated LaTeX to [bookdown](https://bookdown.org/yihui/bookdown/html.html#gitb
 
 BookML is a small wrapper around [LaTeXML](https://dlmf.nist.gov/LaTeXML/) for the production of accessible HTML content straight from LaTeX files, and for packaging it as SCORM. Created by and maintained for maths lecturers at the University of Leeds. Its main features:
 - simple installation: simply drop the <samp>bookml/</samp> directory next to the files to be compiled and copy <samp>GNUmakefile</samp> in the same place (well, uhm, that is a bit of a lie: you need to install LaTeXML first!)
-- Overleaf and GitHub integration: BookML can also be used with Overleaf by adding a single file to your project, or using the [BookML template](https://www.overleaf.com/latex/templates/bookml-template/nycbmrhpscpx), and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub
+- Overleaf and GitHub integration: BookML can be used with Overleaf by adding a single file to your project or using the [BookML template](https://www.overleaf.com/latex/templates/bookml-template/nycbmrhpscpx), and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub (no subscription required)
 - accessible and mobile friendly output: virtually identical to the [GitBook style](https://bookdown.org/yihui/bookdown/html.html#gitbook-style) of [bookdown](https://bookdown.org), including font selection and dark mode, tweaked to meet the [Web Content Accessibility Guidelines 2.1](https://www.w3.org/TR/WCAG21/) level AA
 - fully automated (re-)compilation based on which files have changed on disk, powered by [GNU make](https://www.gnu.org/software/make/): just run
   ```shell
   make
   ```
   to zip together all PDF and HTML outputs from all the main <samp>.tex</samp> files in the directory (one package per main <samp>.tex</samp> file)
-- high quality conversion of external EPS and PDF figures to SVG via [dvisvgm](https://dvisvgm.de), rather than ImageMagick used by LaTeXML
+- high quality conversion of external EPS and PDF figures to SVG via [mutool](https://mupdf.readthedocs.io/en/latest/tools/mutool.html), [pdftocairo](https://poppler.freedesktop.org/), [Inkscape](https://inkscape.org/) or [dvisvgm](https://dvisvgm.de), rather than ImageMagick used by LaTeXML
 - transparent generation of SVG images from [Ti*k*Z](https://tikz.net/) pictures, [animate](https://ctan.org/pkg/animate) animations, Xy-matrices, and virtually any other picture-like environment: just add a few lines of code in the preamble
   ```latex
   \usepackage{bookml/bookml}
@@ -70,20 +70,23 @@ Or you can unpack the [template](https://github.com/vlmantova/bookml/releases/la
 
 #### Prerequisites
 - [Perl](https://www.perl.org/)
-- [LaTeXML](https://dlmf.nist.gov/LaTeXML/get.html) (minimum 0.8.7, recommended 0.8.8 or later)
+- [LaTeXML](https://dlmf.nist.gov/LaTeXML/get.html) (minimum 0.8.8 or later)
 - for any image handling: the Perl module [Image::Magick](https://metacpan.org/pod/Image::Magick)
 - for BookML images (see <code>bmlimage</code> below): [Ghostscript](https://www.ghostscript.com/), [latexmk](https://ctan.org/pkg/latexmk), [preview.sty](https://ctan.org/pkg/preview), [dvisvgm](https://ctan.org/pkg/dvisvgm) (minimum 1.6, recommended 2.7 or later)
 - for automatic PDF, HTML, zip, SCORM packaging, EPS/PDF to SVG automatic conversion: [GNU make](https://www.gnu.org/software/make/), [latexmk](https://ctan.org/pkg/latexmk), [zip](https://sourceforge.net/projects/infozip/), optionally [texfot](https://ctan.org/pkg/texfot)
 - for autoconverting EPS images to SVG, when using GNU make: [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) or [inkscape](https://inkscape.org/)
-- for autoconverting PDF images to SVG, when using GNU make: [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html) is the default and most reliable option; otherwise, BookML can try using any [dvisvgm](https://ctan.org/pkg/dvisvgm) with [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html), or [inkscape](https://inkscape.org/)
+- for autoconverting PDF images to SVG, when using GNU make: [mutool](https://mupdf.readthedocs.io/en/latest/tools/mutool.html) gives the best results, otherwise BookML will try using [pdftocairo](https://poppler.freedesktop.org/), [dvisvgm](https://ctan.org/pkg/dvisvgm), [Inkscape](https://inkscape.org/)
+- if using dvisvgm for PDF to SVG conversions, [Ghostscript](https://www.ghostscript.com/) *before* version 10.01.0, or [dvisvgm](https://ctan.org/pkg/dvisvgm) minimum 3.0 with [mutool](https://mupdf.readthedocs.io/en/1.26.10/tools/mutool.html)
+
+There is also preliminary support for using the much faster [latexml-oxide](https://github.com/dginev/latexml-oxide) (version 0.7.6). This is not documented yet as it is not ready for general use, but testers are welcome. Be warned that the latexml-oxide API is likely to change in backwards incompatible before it stabilizes, so upgrades *will* break your work.
 
 ### Running locally on your device (calling latexml, latexmlpost, latexmlc directly)
-You can also run BookML as a simple addition to LaTeXML. You will lose some functionality, such as conversion of EPS and PDF figures to SVG and SCORM packaging.
+You can also run BookML as a simple addition to LaTeXML without using make, or if your existing makefile cannot be integrated with the one in BookML. You will lose some functionality, such as conversion of EPS and PDF figures to SVG and SCORM packaging.
 
 1. Install the [prerequisites](#prerequisites).
 2. **Install/upgrade:** unpack the latest [BookML release](https://github.com/vlmantova/bookml/releases) and put the <samp>bookml/</samp> directory next to your <samp>.tex</samp> files.
 3. **First time only:** copy <samp>bookml/LaTeXML-html5.xsl</samp> next to your <samp>.tex</samp> files.
-4. Add `\usepackage{bookml/bookml}` to each <samp>.tex</samp> file.
+4. Add `\RequirePackage{bookml/bookml-init}` to each <samp>.tex</samp> file **before `\documentclass`**.
 5. Run latexml, latexmlpost, or latexmlc as you normally would without BookML. You are responsible for recompiling PDF files and other alternative formats before running latexmlpost.
 
 ### GitHub and Overleaf
@@ -100,7 +103,7 @@ jobs:
       - name: Compile with BookML
         uses: vlmantova/bookml-action@v1
 ```
-When using Overleaf, you must also synchcronize your project with a GitHub repository (requires an Overleaf Pro account).
+When using Overleaf, you must also synchronize your project with a GitHub repository (requires an Overleaf Pro account).
 
 On every push, GitHub will compile every <samp>.tex</samp> file containing the string `\documentclass`, then create a GitHub release containing all outputs generated by BookML. You will receive an email from GitHub on completion, unless you have changed your notification settings.
 
@@ -113,13 +116,13 @@ BookML is also available as a Docker image. To run it in the current directory, 
 docker run --rm -i -t -v.:/source ghcr.io/vlmantova/bookml
 ```
 
-Please note that the image contains a complete copy of TeX Live 2021. For a smaller image, use one of `ghcr.io/vlmantova/bookml-basic`, `ghcr.io/vlmantova/bookml-small`, `ghcr.io/vlmantova/bookml-medium`, `ghcr.io/vlmantova/bookml`.
+Please note that the image contains a complete copy of TeX Live 2021. For a smaller image, use one of `ghcr.io/vlmantova/bookml-basic`, `ghcr.io/vlmantova/bookml-small`, `ghcr.io/vlmantova/bookml-medium`.
 
 ## Reference manual
 
 ### Package options
 
-Certain options can be passed to BookML like with any other LaTeX packages, for instance  ```\usepackage[mathjax=3]{bookml/bookml}```. The following options are available:
+Certain options can be passed to BookML like with any other LaTeX packages, for instance `\usepackage[mathjax=3]{bookml/bookml}`. Class options, such as `\documentclass[draft]{article}`, are also recognised. The following options are available:
 
 <dl>
 <dt>style=&lt;<i>name</i>&gt;</dt>
@@ -132,6 +135,10 @@ Certain options can be passed to BookML like with any other LaTeX packages, for 
 <dd>(Deprecated) Rescale all images generated via LaTeX (using <code>bmlimage</code>, see below) by the desired factor. Images are normally sized so that fonts inside the image match the font size of the browser, but there are cases where BookML is wrong, and images turn out too small or too large. When that happens, tweak <i>imagescale</i>.</dd>
 <dt>nohtmlsyntax</dt>
 <dd>Do not define the command <code>\<</code> used for writing HTML tags directly in TeX.</dd>
+<dt>draft</dt>
+<dd>Do not compile and include the alternative formats and do not generate the BookML images. BookML images will be replaced by file names.</dd>
+<dt>final</dt>
+<dd>Compile and include the alternative formats and generate the BookML images (default behaviour if neither of <code>draft</code>, <code>final</code> is specified).</dd>
 </dl>
 
 ### Package commands and environments
@@ -143,13 +150,13 @@ Loading `\usepackage{bookml/bookml}` makes the following commands available. It 
 <dt>\bmlAltFormat[&lt;<i>opts</i>&gt;]{&lt;<i>file</i>&gt;}{&lt;<i>label</i>&gt;}</dt>
 <dd>Compile (if necessary) and include &lt;<i>file</i>&gt; in the download menu with label &lt;<i>label</i>&gt;. An empty label removes the file from the download menu. The optional argument &lt;<i>opts</i>&gt; is a key-value list passed internally to <code>\lxRequireResource</code> (for instance, use <code>type=application/octet-stream</code> if LaTeXML is not able to recognise the MIME type of the file). Only available in the <i>gitbook</i> style.</dd>
 <dt>\&lt;</dt>
-<dd>Open or close an HTML tag, as in <code>\&lt;span class="example"&gt;some \LaTeX{} code\&lt;/span&gt;</code>. The content between the tags is normal LaTeX code. Tags will normally generate an additional <code>&lt;p&gt;...&lt;/p&gt;</code> tag, unless they can only contain 'phrasing content'. If necessary, the behaviour of each tag can be changed with the <code>\bmlHTML*Environment</code> commands.</dd>
+<dd>Open or close an HTML5 tag, as in <code>\&lt;details open&gt;&lt;summary&gt;some \LaTeX{} code ...\&lt;/summary&gt;</code>. The content between the tags is normal LaTeX code. Tags will normally generate an additional <code>&lt;p&gt;...&lt;/p&gt;</code> wrapper around their content, unless the HTML5 spec says that they can only contain 'phrasing content' or that they are 'transparent', or if their direct descendants are also HTML tags. If necessary, the classification of each tag can be changed with the <code>\bmlHTML*Environment</code> commands. The text between <code>\&lt;</code> and <code>&gt;</code> is parsed following the HTML5 spec, except that <code>/&gt;</code> will close non-void tags, and only the basic XML enties are supported.</dd>
 <dt>\bmlHTMLEnvironment{&lt;<i>tag</i>&gt;}</dt>
 <dd>Introduce or redefine an HTML tag environment <code>\begin{h:&lt;<i>tag</i>&gt;}[attr1=val1,...]...\end{h:&lt;<i>tag</i>&gt;}</code> and corresponding <code>\&lt;<i>tag</i>&gt;</code>.</dd>
 <dt>\bmlHTMLInlineEnvironment{&lt;<i>tag</i>&gt;}</dt>
-<dd>Introduce or redefine an HTML tag environment <code>\begin{h:&lt;<i>tag</i>&gt;}...\end{h:&lt;<i>tag</i>&gt;}</code> and corresponding <code>\&lt;<i>tag</i>&gt;</code> which accept phrasing content only.</dd>
+<dd>Introduce or redefine an HTML tag environment <code>\begin{h:&lt;<i>tag</i>&gt;}...\end{h:&lt;<i>tag</i>&gt;}</code> and corresponding <code>\&lt;<i>tag</i>&gt;</code> which accepts 'phrasing content' only or is 'transparent'.</dd>
 <dt>\bmlRawHTML{&lt;<i>html</i>&gt;}</dt>
-<dd>Insert &lt;<i>html</i>&gt; directly in the output document, after expanding all the TeX macros. When the command appears in the preamble, &lt;<i>html</i>&gt; will be part of the head and will be copied in every output page. &lt;<i>html</i>&gt; must be written in valid XML syntax, with either no namespace or the correct namespace for HTML.</dd>
+<dd>Insert &lt;<i>html</i>&gt; directly in the output document, after expanding all the TeX macros. Special characters are handled like in <code>\href</code> from the hyperref package: you should use <code>\\</code> to enter a literal backslash, while other special characters can be escaped as <code>\#</code>, <code>\%</code>, <code>\&</code>, <code>\&</code> when necessary. When the command appears in the preamble, &lt;<i>html</i>&gt; will be part of the head and will be copied in every output page. &lt;<i>html</i>&gt; must be written in valid XML syntax, with either no namespace or the correct namespace for HTML. The HTML5 syntax is currently <b>not</b> supported.</dd>
 <dt>\begin{bmlimage}</dt>
 <dd>The body of this environment is compiled directly into an SVG image via LaTeX, instead of running through LaTeXML.</dd>
 <dt>\bmlImageEnvironment{&lt;<i>env</i>&gt;}</dt>

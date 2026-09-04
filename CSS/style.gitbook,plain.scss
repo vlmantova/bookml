@@ -356,11 +356,9 @@ th > .ltx_p:last-child {
 }
 
 .bml_eqn_cell {
-  &.ltx_align_left + &.ltx_align_left,
-  &.ltx_align_left + &.ltx_align_center,
-  &.ltx_align_left + &.ltx_align_right,
-  &.ltx_align_center + &.ltx_align_center,
-  &.ltx_align_center + &.ltx_align_right {
+  &:not(.ltx_align_right):not(.ltx_align_center) + &.ltx_align_left,
+  &:not(.ltx_align_right) + &.ltx_align_center,
+  &:not(.ltx_align_right) + &.ltx_align_right {
     padding-left: 3em;
   }
 }

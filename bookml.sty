@@ -1,5 +1,5 @@
 % BookML: bookdown flavoured GitBook port for LaTeXML
-% Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+% Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -17,63 +17,269 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{bookml/bookml}[@DATE@ @VERSION@ BookML: bookdown flavoured GitBook port for LaTeXML]
 
+\IfFileExists{latexml.sty}{\RequirePackage[nocomments, noguesstabularheaders]{latexml}}{\RequirePackage[nocomments, noguesstabularheaders]{bookml/latexml}}
+
+\iflatexml
+  \RequirePackage{bookml/bookml-init}
+\fi
+
+\newcommand{\BookMLversion}{@VERSION@}
+
+\newif\ifbml@draft
 \newif\ifbml@images
 \newif\ifbml@htmlsyntax
 \bml@htmlsyntaxtrue
 
-\DeclareOption{style=plain}{}
-\DeclareOption{style=gitbook}{}
-\DeclareOption{mathjax=2}{}
-\DeclareOption{mathjax=3}{}
-\DeclareOption{mathjax=4}{}
-\DeclareOption{nomathjax}{}
-\DeclareOption{_bmlimages}{\bml@imagestrue}
-\DeclareOption{htmlsyntax}{\bml@htmlsyntaxtrue}
-\DeclareOption{nohtmlsyntax}{\bml@htmlsyntaxfalse}
-\DeclareOption*{}
+\DeclareOption{draft}{\bml@drafttrue}
+\DeclareOption{final}{\bml@draftfalse}
 
-\ProcessOptions
+\def\bml@style{2}
+\DeclareOption{style=plain}{\def\bml@style{1}}
+\DeclareOption{style=gitbook}{\def\bml@style{2}}
+\DeclareOption{style=none}{\def\bml@style{0}}
 
-\newcommand{\BookMLversion}{@VERSION@}
+\def\bml@mathjax{4}
+\DeclareOption{mathjax=2}{\def\bml@mathjax{2}}
+\DeclareOption{mathjax=3}{\def\bml@mathjax{3}}
+\DeclareOption{mathjax=4}{\def\bml@mathjax{4}}
+\DeclareOption{nomathjax}{\def\bml@mathjax{0}}
 
-% import system latexml.sty if available, otherwise use local copy
-\IfFileExists{latexml.sty}{
-  \RequirePackage{latexml}
-}{
-  \RequirePackage{bookml/latexml}
-}
-
-% Include alternative format
-\providecommand{\bmlAltFormat}[2]{}
-
-% HTML environments
-\def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
-\def\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\newenvironment{h:\name}[1][]{}{}}}
-
-% HTML syntax
-\ifbml@htmlsyntax
-\def\<#1>{}
+\iflatexml\else
+  \DeclareOption{_bmlimages}{\bml@imagestrue}
 \fi
 
-% Raw HTML
-\long\def\bmlRawHTML#1{}
+\DeclareOption{htmlsyntax}{\bml@htmlsyntaxtrue}
+\DeclareOption{nohtmlsyntax}{\bml@htmlsyntaxfalse}
 
-% Image generation via LaTeX
-\ifbml@images
-\RequirePackage[noconfig,delayed,active,tightpage]{preview}
-\def\bmlImageEnvironment#1{\@for\name:=#1\do{\PreviewEnvironment{\name}}}
+\def\bml@image@scale{1}
+
+\DeclareOption*{
+  \edef\@tempa{\CurrentOption}
+  \def\bml@image@checkscale imagescale=#1\relax{
+    \def\@tempa{#1}
+    \ifx\@tempa\@empty
+    \else
+      \PackageWarning{bookml}{the option imagescale is deprecated and may be ignored in future releases}
+      \bml@image@savescale#1\relax
+    \fi
+  }
+  \def\bml@image@savescale #1imagescale=\relax{
+    \def\bml@image@scale{#1}
+  }
+  \expandafter\bml@image@checkscale\@tempa imagescale=\relax
+}
+
+\ProcessOptions\relax
+
+\iflatexml
+  \ifcase\bml@style % none
+    \or % plain
+    \or % gitbook
+    \lxRequireResource{bookml/gitbook/css/style.css}
+    \lxRequireResource{bookml/gitbook/css/plugin-table.css}
+    \lxRequireResource{bookml/gitbook/css/plugin-search.css}
+    \lxRequireResource{bookml/gitbook/css/plugin-bookdown.css}
+    \lxRequireResource{bookml/gitbook/css/plugin-fontsettings.css}
+    \lxRequireResource[type=font/woff2]{bookml/gitbook/css/fontawesome/fontawesome-webfont.woff2}
+    \lxRequireResource[type=application/octet-stream]{bookml/gitbook/js/app.min.js}
+    \lxRequireResource[type=application/octet-stream]{bookml/gitbook/js/jquery.highlight.js}
+    \lxRequireResource[type=application/octet-stream]{bookml/gitbook/js/plugin-search.js}
+    \lxRequireResource[type=application/octet-stream]{bookml/gitbook/js/plugin-fontsettings.js}
+    \lxRequireResource[type=application/octet-stream]{bookml/gitbook/js/plugin-bookdown.js}
+  \fi
+
+  \ifcase\bml@mathjax % 0
+    \or % 1
+    \or\lxRequireResource[type=application/octet-stream]{bookml/js/mathjax2.js}
+    \or\lxRequireResource[type=application/octet-stream]{bookml/js/mathjax3.js}
+    \or\lxRequireResource[type=application/octet-stream]{bookml/js/mathjax4.js}
+  \fi
+\fi
+
+%%% Alternative formats
+\iflatexml
+  \ifbml@draft\else
+    \let\bml@alt@formats\@empty
+    \let\bml@alt@formats@\@empty
+    \newcommand{\bmlAltFormat}[2]{%
+      \edef\@tempa{#1}%
+      \expandafter\edef\csname bml@alt@format@label@\@tempa\endcsname{#2}%
+      \edef\bml@alt@formats{\@tempa"\bml@alt@formats}}
+    \def\bml@process@alt@formats#1"#2\relax{%
+      \expandafter\ifx\csname bml@alt@format@label@#1\endcsname\@empty%
+      \else%
+        \edef\@tempa{[type={application/octet-stream;bmllocation=download;bmlname=\csname bml@alt@format@label@#1\endcsname}]}%
+        \expandafter\let\csname bml@alt@format@label@#1\endcsname\@empty%
+        \edef\bml@alt@formats@{\lxRequireResource\@tempa{#1}\bml@alt@formats@}%
+      \fi%
+      \def\@tempa{#2}%
+      \ifx\@tempa\@empty%
+      \else%
+        \bml@process@alt@formats#2\relax%
+      \fi}
+    \AtBeginDocument{\expandafter\bml@process@alt@formats\bml@alt@formats\relax\bml@alt@formats@}
+    \bmlAltFormat{\jobname.pdf}{PDF}
+  \fi
 \else
-\let\bmlImageEnvironment\@gobble
+  \let\bmlAltFormat\@gobbletwo
+\fi
+
+%%% BookML resources
+\iflatexml
+  \AtEndDocument{\bml@resources}
+\fi
+
+%%% HTML
+
+% mimic how hyperref parses URLs with the following additions:
+% - preserve newlines
+% - expand \textbackslash to '\'
+% - expand \{, \} to '{', '}'
+\def\bml@html@beginvrb{%
+  \begingroup%
+  \catcode`\^^M=12%
+  \catcode`\%=12%
+  \catcode`\#=12%
+  \catcode`\_=12%
+  \catcode`\$=12%
+  \catcode`\&=12%
+  \edef\{{\expandafter\@gobble\string\{}%
+  \edef\}{\expandafter\@gobble\string\}}%
+  \let\%\@percentchar%
+  \edef\#{\string##}%
+  \edef\&{\string&}%
+  \edef\textunderscore{\string_}%
+  \let\_\textunderscore%
+  \edef\textasciitilde{\string~}%
+  \let\~\textasciitilde%
+  \let~\textasciitilde%
+  \let\\\@backslashchar%
+  \let\textbackslash\@backslashchar%
+  \obeyspaces\obeylines}
+\let\bml@html@endvrb\endgroup
+
+%%% Inline HTML tags via environments
+% \begin{h:TAG}[attr1=value,attr2] ... \end{h:TAG}
+\iflatexml
+  \def\bml@html@env#1#2{%
+    \bml@html@setinline{#1}{#2}%
+    \ifcsname h:#1\endcsname\else%
+      \newenvironment{h:#1}%
+        {\begin{bml@html@env@}{#1}%
+          \@ifnextchar[{\bml@html@beginvrb\bml@html@attrs}{}}%
+        {\end{bml@html@env@}}%
+    \fi}
+  \def\bml@html@attrs[#1]{%
+    \edef\@tempa{#1}%
+    \expandafter\bml@html@attrs@\@tempa,\relax,\bml@html@endvrb}
+  % parse attributes exactly like keyval.sty
+  \def\bml@html@attrs@#1,{%
+    \ifx\relax#1\@empty\else%
+      \bml@html@attr#1==\relax%
+      \expandafter\bml@html@attrs@\fi}
+  \def\bml@html@attr#1=#2=#3\relax{\bml@html@attr@{#1}{#2}}
+\else
+  \def\bml@html@env#1#2{\newenvironment{h:#1}[1][]{}{}}
+\fi
+\def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{}}}
+\def\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{inline}}}
+
+% grossly simplified HTML model based on whether a tag admits flow content and
+% is not 'transparent'
+% - tags with flow content, and not transparent, emit a block-like element
+% - otherwise they emit an inline-like element
+% list based on HTML living standard, index of elements
+\bmlHTMLEnvironment{address,area,article,aside,base,blockquote,body,caption,col,colgroup,dd,details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,head,header,hgroup,hr,html,legend,li,link,main,menu,meta,nav,ol,optgroup,option,p,pre,search,section,selectedcontent,source,style,table,tbody,td,tfoot,th,thead,title,tr,track,ul}
+\bmlHTMLInlineEnvironment{a,abbr,acronym,audio,b,bdi,bdo,big,br,button,
+canvas,cite,code,data,datalist,del,dfn,em,embed,i,iframe,img,
+input,ins,kbd,label,map,mark,math,meter,noscript,object,output,
+picture,progress,q,rp,rt,ruby,s,samp,script,select,slot,small,span,
+strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
+
+%%% Inline HTML tags via \<
+% \<tag attr1="value" attr>
+\ifbml@htmlsyntax
+  \iflatexml
+    \def\<{%
+      \bml@html@beginvrb%
+      \long\def\<#1>{%
+        \edef\@tempa{#1}%
+        \expandafter\bml@html@tag\expandafter{\@tempa}\bml@html@endvrb}%
+      \<}
+  \else
+    \long\def\<#1>{}
+  \fi
+\fi
+
+%%% Inline HTML via \bmlRawHTML
+\iflatexml
+  \long\def\bmlRawHTML{%
+    \bml@html@beginvrb%
+    \bml@html@raw}
+  \def\bml@html@raw#1{%
+    \edef\@tempa{#1}%
+    \expandafter\bml@html@raw@\expandafter{\@tempa}\bml@html@endvrb}
+\else
+  \long\def\bmlRawHTML#1{}
+\fi
+
+%%% Image generation via LaTeX
+% \begin{bmlimage} ... \end{bmlimage}
+% \bmlImageEnvironment{tikzipicture}
+\iflatexml
+  \RequirePackage{graphicx}
+  \newcounter{bml@image@counter}
+
+  \def\bmlImageEnvironment#1{%
+    \@for\@tempa:=#1\do{\expandafter\bml@image@env\expandafter{\@tempa}}}
+  \def\bml@image@env#1{%
+    \AtBeginDocument{\bml@image@env@{#1}}}
+  \def\bml@image@env@#1{
+    \expandafter\def\csname begin{#1}\endcsname{%
+      \bml@image@env@replace{#1}}}
+
+  \def\bml@image@env@replace#1{%
+    \edef\bml@image@env@name{#1}%
+    \bml@image@env@findend}
+  \def\bml@image@env@findend#1\end{%
+    \bml@image@env@maybeclose}
+  \def\bml@image@env@maybeclose#1{%
+    \def\@tempa{#1}%
+    \ifx\@tempa\bml@image@env@name%
+      \bml@image@include%
+    \else%
+      \bml@image@env@findend%
+    \fi}
+  \ifbml@draft
+    \def\bml@image@include{\stepcounter{bml@image@counter}%
+      \texttt{{bmlimages/\jobname-\thebml@image@counter.svg}}}
+  \else
+    \def\bml@image@include{%
+      \bml@image@generate%
+      \stepcounter{bml@image@counter}%
+      \includegraphics{bmlimages/\jobname-\thebml@image@counter.svg}%
+      \bml@image@depth{\thebml@image@counter}}
+  \fi
+\else
+  \ifbml@images
+    \RequirePackage[noconfig,delayed,active,tightpage]{preview}
+    \def\bmlImageEnvironment#1{%
+      \@for\@tempa:=#1\do{\PreviewEnvironment{\@tempa}}}
+  \else
+    \let\bmlImageEnvironment\@gobble
+  \fi
 \fi
 
 \newenvironment{bmlimage}{}{}
-\bmlImageEnvironment{bmlimage}
+\bmlImageEnvironment{preview,bmlimage}
 
-% Alternative text
+\iflatexml\else
+%%% Alternative text
 \newcommand\bmlDescription[1]{}
 
-% Add class to previous node
+%%% Add class to previous node
 \newcommand\bmlPlusClass[1]{}
 
-% Disable MathJax locally
+%%% Disable MathJax locally
 \let\bmlDisableMathJax\relax
+\fi

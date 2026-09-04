@@ -1,2 +1,2 @@
-\RequirePackage[@OPTIONS@]{bookml/bookml}
+\PassOptionsToPackage{@OPTIONS@}{bookml/bookml}
 \input{@INPUT@}

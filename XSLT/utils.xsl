@@ -35,10 +35,9 @@
 
   <xsl:param name="BMLSTYLE">
     <xsl:choose>
-      <xsl:when test="b:if-option('style=plain')">plain</xsl:when>
-      <xsl:when test="b:if-option('style=gitbook')">gitbook</xsl:when>
-      <xsl:when test="b:if-option('style=none')">none</xsl:when>
-      <xsl:otherwise>gitbook</xsl:otherwise>
+      <xsl:when test="$PLAIN">plain</xsl:when>
+      <xsl:when test="$GITBOOK">gitbook</xsl:when>
+      <xsl:otherwise>none</xsl:otherwise>
     </xsl:choose>
   </xsl:param>
 
@@ -46,12 +45,11 @@
 
   <xsl:param name="AUTOSVG" select="''"/>
 
-  <xsl:variable name="GITBOOK" select="$BMLSTYLE='gitbook'"/>
-  <xsl:variable name="PLAIN" select="$BMLSTYLE='plain'"/>
-  <xsl:variable name="MATHJAX2" select="b:if-option('mathjax=2')"/>
-  <xsl:variable name="MATHJAX3" select="b:if-option('mathjax=3')"/>
-  <xsl:variable name="MATHJAX4"
-    select="not(b:if-option('nomathjax') or $MATHJAX2 or $MATHJAX3)"/>
+  <xsl:variable name="GITBOOK"  select="boolean(//ltx:resource[@src='bookml/CSS/style.gitbook.css'])"/>
+  <xsl:variable name="PLAIN"    select="boolean(//ltx:resource[@src='bookml/CSS/style.plain.css'])"/>
+  <xsl:variable name="MATHJAX2" select="boolean(//ltx:resource[@src='bookml/js/mathjax2.js'])"/>
+  <xsl:variable name="MATHJAX3" select="boolean(//ltx:resource[@src='bookml/js/mathjax3.js'])"/>
+  <xsl:variable name="MATHJAX4" select="boolean(//ltx:resource[@src='bookml/js/mathjax4.js'])"/>
 
   <xsl:variable name="BMLALIGNEDEQUATIONS" select="true()"/>
 
@@ -224,9 +222,13 @@
   </func:function>
 
   <!-- test that the LaTeXML version is at most $v -->
+  <func:function name="b:oxide">
+    <func:result select="boolean(/processing-instruction('latexml')[.='bml-generator=&quot;latexml-oxide&quot;'])"/>
+  </func:function>
+
   <func:function name="b:max-version">
     <xsl:param name="v"/>
-    <func:result select="b:version-leq($LATEXML_VERSION,$v)"/>
+    <func:result select="not(b:oxide()) and b:version-leq($LATEXML_VERSION,$v)"/>
   </func:function>
 
   <xsl:template match="ltx:xmlelem">

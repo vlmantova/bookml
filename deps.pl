@@ -3,7 +3,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -104,11 +104,13 @@ for my $log (@ARGV) {
     while (<$log_fh>) {
       my $file;
 
-      if (m/^\(Loading (?:RelaxNG schema from |compiled schema )([^()]+\.(?:model|rng))\.\.\./) {
+      if (m/^\(Loading (?:RelaxNG schema from |compiled schema )([^()]+\.(?:model|rng))\.\.\.(?: |$)/) {
         $file = $1;
-      } elsif (m/^\((?:Loading RelaxNG [^()]+|Preparsing Bibliography <Unknown>|Processing (?:content|definitions) (?:Literal String|Anonymous String))\.\.\./) {
+      } elsif (m/^\((?:Loading RelaxNG [^()]+|Preparsing Bibliography <Unknown>|Processing (?:content|definitions) (?:Literal String|Anonymous String))\.\.\.(?: |$)/) {
         next;
-      } elsif (m/^\((?:Processing (?:content|definitions) |Loading |Preparsing Bibliography )([^())]+)\.\.\./) {
+      } elsif (m/^\(Loading ([^())]+)_([a-z0-9]+)\.rs\.\.\.(?: |$)/) {
+        next;
+      } elsif (m/^\((?:Processing (?:content|definitions) |Loading |Preparsing Bibliography )([^())]+)\.\.\.(?: |$)/) {
         $file = $1;
       } else {
         next;

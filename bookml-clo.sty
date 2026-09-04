@@ -1,0 +1,770 @@
+% BookML: bookdown flavoured GitBook port for LaTeXML
+% Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bookml/bookml-clo}[@DATE@ @VERSION@ BookML: bookdown flavoured GitBook port for LaTeXML (class options package)]
+
+\IfFileExists{latexml.sty}{\RequirePackage[nocomments, noguesstabularheaders]{latexml}}{\RequirePackage[nocomments, noguesstabularheaders]{bookml/latexml}}
+
+\iflatexml
+
+\RequirePackage{bookml/bookml-init}
+
+\ifx\bml@class@name\@empty
+\PackageWarning{bookml/bookml-clo}{unrecognised class, loading font sizes from the article class}
+\def\bml@class@name{article}
+\fi
+
+\expandafter\def\csname bml@clo@options@a0poster\endcsname{}
+
+\def\bml@clo@options@aastex{
+  \DeclareOption{10pt}{\def\aas@ptsize{0}}
+  \DeclareOption{11pt}{\def\aas@ptsize{1}}
+  \DeclareOption{12pt}{\def\aas@ptsize{2}}
+
+  \DeclareOption{manuscript}{\def\aas@ptsize@forced{2}}
+  \DeclareOption{aasms4}{\def\aas@ptsize@forced{2}}
+
+  \DeclareOption{preprint}{\def\@ptsize@maybe{1}}
+  \DeclareOption{aaspp4}{\def\@ptsize@maybe{1}}
+  \DeclareOption{aj_pt4}{\def\@ptsize@maybe{1}}
+  \DeclareOption{apjpt4}{\def\@ptsize@maybe{1}}
+
+  \DeclareOption{preprint2}{\def\@ptsize@maybe{0}}
+  \DeclareOption{aas2pp4}{\def\@ptsize@maybe{0}}
+
+  \ExecuteOptions{manuscript}
+
+  \def\bml@clo@apply{
+    \ifcsname aas@ptsize@forced\endcsname
+      \let\aas@ptsize\aas@ptsize@forced
+    \else
+      \ifcsname aas@ptsize\endcsname
+      \else
+        \let\aas@ptsize\aas@ptsize@maybe
+      \fi
+    \fi
+    \input{size1\aas@ptsize.clo}
+  }
+}
+
+\def\bml@clo@options@acmart{
+  \bml@clo@amscls
+
+  \DeclareOption{8pt}{\def\ACM@fontsize@explicit{8}}
+  \DeclareOption{9pt}{\def\ACM@fontsize@explicit{9}}
+  \DeclareOption{10pt}{\def\ACM@fontsize@explicit{10}}
+  \DeclareOption{11pt}{\def\ACM@fontsize@explicit{11}}
+  \DeclareOption{12pt}{\def\ACM@fontsize@explicit{12}}
+
+  \DeclareOption{manuscript}{\def\ACM@fontsize@format{9}}
+  \DeclareOption{acmsmall}{\def\ACM@fontsize@format{10}}
+  \DeclareOption{acmlarge}{\def\ACM@fontsize@format{10}}
+  \DeclareOption{acmtog}{\def\ACM@fontsize@format{9}}
+  \DeclareOption{sigconf}{\def\ACM@fontsize@format{9}}
+  \DeclareOption{siggraph}{\def\ACM@fontsize@format{9}}
+  \DeclareOption{sigplan}{\def\ACM@fontsize@format{10}}
+  \DeclareOption{sigchi}{\def\ACM@fontsize@format{9}}
+  \DeclareOption{sigchi-a}{\def\ACM@fontsize@format{10}}
+  \DeclareOption{acmengage}{\def\ACM@fontsize@format{10}}
+  \DeclareOption{acmp}{\def\ACM@fontsize@format{9}}
+
+  \def\bml@clo@apply{
+    \ifcsname ACM@fontsize@explicit\endcsname
+      \let\ACM@fontsize\ACM@fontsize@explicit
+    \else
+      \let\ACM@fontsize\ACM@fontsize@format
+    \fi
+    \ifcase\ACF@fontsize
+      \or\or\or\or\or\or\or
+      \or\bml@clo@amscls@viiipt
+      \or\bml@clo@amscls@ixpt
+      \or\bml@clo@amscls@xpt
+      \or\bml@clo@amscls@xipt
+      \or\bml@clo@amscls@xiipt
+    \fi
+    \edef\ACF@fontsize{\ACF@fontsize pt}
+    \ClassInfo{acmart}{Using fontsize \ACM@fontsize}
+  }
+}
+
+\def\bml@clo@amscls{
+  \def\@adjustvertspacing{%
+    \bigskipamount.7\baselineskip plus.7\baselineskip
+    \medskipamount\bigskipamount \divide\medskipamount\tw@
+    \smallskipamount\medskipamount \divide\smallskipamount\tw@
+    \abovedisplayskip\medskipamount
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip\abovedisplayskip
+    \advance\abovedisplayshortskip-1\abovedisplayskip
+    \belowdisplayshortskip\abovedisplayshortskip
+    \advance\belowdisplayshortskip 1\smallskipamount
+    \jot\baselineskip \divide\jot 4 \relax
+  }
+  \renewcommand\normalsize{\@xsetfontsize\normalsize 6%
+    \@adjustvertspacing \let\@listi\@listI}
+  \DeclareRobustCommand{\Tiny}{\@xsetfontsize\Tiny 1}
+  \DeclareRobustCommand{\tiny}{\@xsetfontsize\tiny 2}
+  \DeclareRobustCommand{\SMALL}{\@xsetfontsize\SMALL 3}
+  \DeclareRobustCommand{\Small}{\@xsetfontsize\Small 4%
+    \@adjustvertspacing
+    \def\@listi{\topsep\smallskipamount \parsep\z@skip \itemsep\z@skip
+      \leftmargin=\leftmargini
+      \labelwidth=\leftmargini \advance\labelwidth-\labelsep
+    }%
+  }
+  \DeclareRobustCommand{\small}{\@xsetfontsize\small 5\@adjustvertspacing}
+  \def\footnotesize{\Small}
+  \def\scriptsize{\SMALL}
+  \DeclareRobustCommand{\large}{\@xsetfontsize\large 7\@adjustvertspacing}
+  \DeclareRobustCommand{\Large}{\@xsetfontsize\Large 8\@adjustvertspacing}
+  \DeclareRobustCommand{\LARGE}{\@xsetfontsize\LARGE 9}
+  \DeclareRobustCommand{\huge}{\@xsetfontsize\huge{10}}
+  \DeclareRobustCommand{\Huge}{\@xsetfontsize\Huge{11}}
+  \def\@xsetfontsize#1#2{%
+    \chardef\@currsizeindex#2\relax
+    \edef\@tempa{\@nx\@setfontsize\@nx#1%
+      \@xp\ifcase\@xp\@currsizeindex\@typesizes
+        \else{99}{99}\fi}%
+    \@tempa
+  }
+
+  \def\bml@clo@amscls@xpt{\def\@mainsize{10}\def\@ptsize{0}%
+    \def\@typesizes{%
+      \or{5}{6}\or{6}{7}\or{7}{8}\or{8}{10}\or{9}{11}%
+      \or{10}{12}% normalsize
+      \or{\@xipt}{13}\or{\@xiipt}{14}\or{\@xivpt}{17}%
+      \or{\@xviipt}{20}\or{\@xxpt}{24}}%
+    \normalsize \linespacing=\baselineskip}
+  \def\bml@clo@amscls@xipt{\def\@mainsize{11}\def\@ptsize{1}%
+    \def\@typesizes{%
+      \or{6}{7}\or{7}{8}\or{8}{10}\or{9}{11}\or{10}{12}%
+      \or{\@xipt}{13}% normalsize
+      \or{\@xiipt}{14}\or{\@xivpt}{17}\or{\@xviipt}{20}%
+      \or{\@xxpt}{24}\or{\@xxvpt}{30}}%
+    \normalsize \linespacing=\baselineskip
+  }
+  \def\bml@clo@amscls@xiipt{\def\@mainsize{12}\def\@ptsize{2}%
+    \def\@typesizes{%
+      \or{7}{8}\or{8}{10}\or{9}{11}\or{10}{12}\or{\@xipt}{13}%
+      \or{\@xiipt}{14}% normalsize
+      \or{\@xivpt}{17}\or{\@xviipt}{20}\or{\@xxpt}{24}%
+      \or{\@xxvpt}{30}\or{\@xxvpt}{30}}%
+    \normalsize \linespacing=\baselineskip
+  }
+  \def\bml@clo@amscls@viiipt{\def\@mainsize{8}\def\@ptsize{8}%
+    \def\@typesizes{%
+      \or{5}{6}\or{5}{6}\or{5}{6}\or{6}{7}\or{7}{8}%
+      \or{8}{10}% normalsize
+      \or{9}{11}\or{10}{12}\or{\@xipt}{13}%
+      \or{\@xiipt}{14}\or{\@xivpt}{17}}%
+    \normalsize \linespacing=\baselineskip
+  }
+  \def\bml@clo@amscls@ixpt{\def\@mainsize{9}\def\@ptsize{9}%
+    \def\@typesizes{%
+      \or{5}{6}\or{5}{6}\or{6}{7}\or{7}{8}\or{8}{10}%
+      \or{9}{11}% normalsize
+      \or{10}{12}\or{\@xipt}{13}\or{\@xiipt}{14}%
+      \or{\@xivpt}{17}\or{\@xviipt}{20}}%
+    \normalsize \linespacing=\baselineskip
+  }
+}
+
+\def\bml@clo@options@amsart{
+  \bml@clo@amscls
+
+  \DeclareOption{10pt}{\bml@clo@amscls@xpt}
+  \DeclareOption{11pt}{\bml@clo@amscls@xipt}
+  \DeclareOption{12pt}{\bml@clo@amscls@xiipt}
+  \DeclareOption{8pt}{\bml@clo@amscls@viiipt}
+  \DeclareOption{9pt}{\bml@clo@amscls@ixpt}
+
+  \ExecuteOptions{10pt}
+}
+
+% upon manual inspection, they are identical
+\let\bml@clo@options@amsbook\bml@clo@options@amsart
+\let\bml@clo@options@amsproc\bml@clo@options@amsart
+
+\def\bml@clo@options@article{
+  \DeclareOption{10pt}{\def\@ptsize{0}}
+  \DeclareOption{11pt}{\def\@ptsize{1}}
+  \DeclareOption{12pt}{\def\@ptsize{2}}
+
+  \ExecuteOptions{10pt}
+
+  \def\bml@clo@apply{\input{size1\@ptsize.clo}}
+}
+
+\let\bml@clo@options@report\bml@clo@options@article
+
+\def\bml@clo@options@extarticle{
+  % extsizes .clo files use '\newcommand', need to clear out existing
+  % definitions to make it work
+  \let\normalsize\undefined
+  \let\small\undefined
+  \let\footnotesize\undefined
+  \let\scriptsize\undefined
+  \let\tiny\undefined
+  \let\large\undefined
+  \let\Large\undefined
+  \let\LARGE\undefined
+  \let\huge\undefined
+  \let\Huge\undefined
+
+  \DeclareOption{8pt}{\def\@ptsize{8}}
+  \DeclareOption{9pt}{\def\@ptsize{9}}
+  \DeclareOption{10pt}{\def\@ptsize{10}}
+  \DeclareOption{11pt}{\def\@ptsize{11}}
+  \DeclareOption{12pt}{\def\@ptsize{12}}
+  \DeclareOption{14pt}{\def\@ptsize{14}}
+  \DeclareOption{17pt}{\def\@ptsize{17}}
+  \DeclareOption{20pt}{\def\@ptsize{20}}
+
+  \ExecuteOptions{10pt}
+
+  \def\bml@clo@apply{\input{size\@ptsize.clo}}
+}
+
+\let\bml@clo@options@extletter\bml@clo@options@extarticle
+\let\bml@clo@options@extproc\bml@clo@options@extarticle
+\let\bml@clo@options@extreport\bml@clo@options@extarticle
+
+\def\bml@clo@options@extbook{
+  \DeclareOption{8pt}{\def\@ptsize{8}}
+  \DeclareOption{9pt}{\def\@ptsize{9}}
+  \DeclareOption{10pt}{\def\@ptsize{0}}
+  \DeclareOption{11pt}{\def\@ptsize{1}}
+  \DeclareOption{12pt}{\def\@ptsize{2}}
+  \DeclareOption{14pt}{\def\@ptsize{14}}
+  \DeclareOption{17pt}{\def\@ptsize{17}}
+  \DeclareOption{20pt}{\def\@ptsize{20}}
+
+  \ExecuteOptions{10pt}
+
+  \def\bml@clo@apply{
+    \ifnum\@ptsize<3
+      \input{bk1\@ptsize.clo}
+    \else
+      \input{size\@ptsize.clo}
+    \fi
+  }
+}
+
+\def\bml@clo@options@beamer{
+  \DeclareOption{bigger}{\def\beamer@size{{size12.clo}}}
+  \DeclareOption{smaller}{\def\beamer@size{{size10.clo}}}
+
+  \DeclareOption{8pt}{\def\beamer@size{{size8.clo}}}
+  \DeclareOption{9pt}{\def\beamer@size{{size9.clo}}}
+  \DeclareOption{10pt}{\def\beamer@size{{size10.clo}}}
+  \DeclareOption{11pt}{\def\beamer@size{{size11.clo}}}
+  \DeclareOption{12pt}{\def\beamer@size{{size12.clo}}}
+  \DeclareOption{14pt}{\def\beamer@size{{size14.clo}}}
+  \DeclareOption{17pt}{\def\beamer@size{{size17.clo}}}
+  \DeclareOption{20pt}{\def\beamer@size{{size20.clo}}}
+
+  \ExecuteOptions{11pt}
+
+  \def\bml@clo@apply{\expandafter\input\beamer@size}
+}
+
+\def\bml@clo@options@book{
+  \DeclareOption{10pt}{\def\@ptsize{0}}
+  \DeclareOption{11pt}{\def\@ptsize{1}}
+  \DeclareOption{12pt}{\def\@ptsize{2}}
+
+  \ExecuteOptions{10pt}
+
+  \def\bml@clo@apply{\input{bk1\@ptsize.clo}}
+}
+
+\def\bml@clo@options@elsart{
+  \def\normalsize{\@setfontsize\normalsize\@xiipt{14.5}%
+  \def\@ptsize{2}
+  \abovedisplayskip 12\p@ \@plus 2\p@ \@minus 2\p@%
+  \belowdisplayskip \abovedisplayskip
+  \abovedisplayshortskip \z@ \@plus 2\p@%
+  \belowdisplayshortskip 3.5\p@ \@plus 2\p@ \@minus 2\p@
+  \let\@listi\@listI}
+  \def\small{\@setfontsize\small\@xipt{13.6}%
+  \abovedisplayskip 11\p@ \@plus3\p@ minus6\p@
+  \belowdisplayskip \abovedisplayskip
+  \abovedisplayshortskip  \z@ \@plus3\p@
+  \belowdisplayshortskip  6.5\p@ \@plus3.5\p@ minus3\p@
+  \def\@listi{\leftmargin\leftmargini
+  \parsep 4.5\p@ \@plus2\p@ minus\p@ \itemsep \parsep
+              \topsep 9\p@ \@plus3\p@ minus5\p@}}
+  \let\footnotesize=\small
+  \let\@xviiipt\@xviipt
+  \def\scriptsize{\@setfontsize\scriptsize\@viiipt{9.5}}
+  \def\tiny{\@setfontsize\tiny\@vipt{7}}
+  \def\large{\@setfontsize\large\@xivpt{18}}
+  \def\Large{\@setfontsize\Large\@xviipt{22}}
+  \def\LARGE{\@setfontsize\LARGE\@xxpt{22}}
+  \def\huge{\@setfontsize\huge\@xxvpt{27}}
+  \let\Huge=\huge
+  \normalsize
+}
+
+\def\bml@clo@options@IEEEtran{
+  % omitted in latexml-oxide!
+  \DeclareOption{9pt}{\def\CLASSOPTIONpt{9}\def\@ptsize{0}}
+  \DeclareOption{10pt}{\def\CLASSOPTIONpt{10}\def\@ptsize{0}}
+  \DeclareOption{11pt}{\def\CLASSOPTIONpt{11}\def\@ptsize{1}}
+  \DeclareOption{12pt}{\def\CLASSOPTIONpt{12}\def\@ptsize{2}}
+
+  \def\bml@clo@apply{
+    \newdimen\@IEEEnormalsizeunitybaselineskip
+    \@IEEEnormalsizeunitybaselineskip\baselineskip
+
+    \def\@IEEEptsizenine{9}
+    \def\@IEEEptsizeten{10}
+    \def\@IEEEptsizeeleven{11}
+    \def\@IEEEptsizetwelve{12}
+
+    \ifx\CLASSOPTIONpt\@IEEEptsizenine
+    \typeout{-- This is a 9 point document.}
+    \def\normalsize{\@setfontsize{\normalsize}{9}{11.0476pt}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{11.0476pt}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 3pt minus 1pt
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 3pt
+    \belowdisplayshortskip 1.5ex plus 3pt minus 1pt
+    \def\small{\@setfontsize{\small}{8.5}{10pt}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{8}{9pt}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{7}{8pt}}
+    \def\tiny{\@setfontsize{\tiny}{5}{6pt}}
+    % sublargesize is the same as large - 10pt
+    \def\sublargesize{\@setfontsize{\sublargesize}{10}{12pt}}
+    \def\large{\@setfontsize{\large}{10}{12pt}}
+    \def\Large{\@setfontsize{\Large}{12}{14pt}}
+    \def\LARGE{\@setfontsize{\LARGE}{14}{17pt}}
+    \def\huge{\@setfontsize{\huge}{17}{20pt}}
+    \def\Huge{\@setfontsize{\Huge}{20}{24pt}}
+    \fi
+    %
+    % 10pt option defaults
+    \ifx\CLASSOPTIONpt\@IEEEptsizeten
+    \typeout{-- This is a 10 point document.}
+    \def\normalsize{\@setfontsize{\normalsize}{10}{12.00pt}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{12pt}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 4pt minus 2pt
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 4pt
+    \belowdisplayshortskip 1.5ex plus 4pt minus 2pt
+    \def\small{\@setfontsize{\small}{9}{10pt}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{8}{9pt}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{7}{8pt}}
+    \def\tiny{\@setfontsize{\tiny}{5}{6pt}}
+    % sublargesize is a tad smaller than large - 11pt
+    \def\sublargesize{\@setfontsize{\sublargesize}{11}{13.4pt}}
+    \def\large{\@setfontsize{\large}{12}{14pt}}
+    \def\Large{\@setfontsize{\Large}{14}{17pt}}
+    \def\LARGE{\@setfontsize{\LARGE}{17}{20pt}}
+    \def\huge{\@setfontsize{\huge}{20}{24pt}}
+    \def\Huge{\@setfontsize{\Huge}{24}{28pt}}
+    \fi
+    %
+    % 11pt option defaults
+    \ifx\CLASSOPTIONpt\@IEEEptsizeeleven
+    \typeout{-- This is an 11 point document.}
+    \def\normalsize{\@setfontsize{\normalsize}{11}{13.3846pt}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{13.3846pt}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 5pt minus 3pt
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 5pt
+    \belowdisplayshortskip 1.5ex plus 5pt minus 3pt
+    \def\small{\@setfontsize{\small}{10}{12pt}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{9}{10.5pt}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{8}{9pt}}
+    \def\tiny{\@setfontsize{\tiny}{6}{7pt}}
+    % sublargesize is the same as large - 12pt
+    \def\sublargesize{\@setfontsize{\sublargesize}{12}{14pt}}
+    \def\large{\@setfontsize{\large}{12}{14pt}}
+    \def\Large{\@setfontsize{\Large}{14}{17pt}}
+    \def\LARGE{\@setfontsize{\LARGE}{17}{20pt}}
+    \def\huge{\@setfontsize{\huge}{20}{24pt}}
+    \def\Huge{\@setfontsize{\Huge}{24}{28pt}}
+    \fi
+    %
+    % 12pt option defaults
+    \ifx\CLASSOPTIONpt\@IEEEptsizetwelve
+    \typeout{-- This is a 12 point document.}
+    \def\normalsize{\@setfontsize{\normalsize}{12}{13.92pt}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{13.92pt}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 6pt minus 4pt
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 6pt
+    \belowdisplayshortskip 1.5ex plus 6pt minus 4pt
+    \def\small{\@setfontsize{\small}{10}{12pt}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{9}{10.5pt}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{8}{9pt}}
+    \def\tiny{\@setfontsize{\tiny}{6}{7pt}}
+    % sublargesize is the same as large - 14pt
+    \def\sublargesize{\@setfontsize{\sublargesize}{14}{17pt}}
+    \def\large{\@setfontsize{\large}{14}{17pt}}
+    \def\Large{\@setfontsize{\Large}{17}{20pt}}
+    \def\LARGE{\@setfontsize{\LARGE}{20}{24pt}}
+    \def\huge{\@setfontsize{\huge}{22}{26pt}}
+    \def\Huge{\@setfontsize{\Huge}{24}{28pt}}
+    \fi
+
+    % V1.8a compsoc font sizes
+    % compsoc font sizes use bp "Postscript" point units (1/72in) 
+    % rather than the traditional pt (1/72.27)
+    \ifCLASSOPTIONcompsoc
+    % -- compsoc defaults --
+    % ** will override some of these values later **
+    % 9pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizenine
+    \def\normalsize{\@setfontsize{\normalsize}{9bp}{11bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{11bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 3bp minus 1bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0bp plus 3bp
+    \belowdisplayshortskip 1.5ex plus 3bp minus 1bp
+    \def\small{\@setfontsize{\small}{8.5bp}{10bp}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{8bp}{9bp}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{7bp}{8bp}}
+    \def\tiny{\@setfontsize{\tiny}{5bp}{6bp}}
+    % sublargesize is the same as large - 10bp
+    \def\sublargesize{\@setfontsize{\sublargesize}{10bp}{12bp}}
+    \def\large{\@setfontsize{\large}{10bp}{12bp}}
+    \def\Large{\@setfontsize{\Large}{12bp}{14bp}}
+    \def\LARGE{\@setfontsize{\LARGE}{14bp}{17bp}}
+    \def\huge{\@setfontsize{\huge}{17bp}{20bp}}
+    \def\Huge{\@setfontsize{\Huge}{20bp}{24bp}}
+    \fi
+    %
+    % 10pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeten
+    \def\normalsize{\@setfontsize{\normalsize}{10bp}{12bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{12bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 4bp minus 2bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 4bp
+    \belowdisplayshortskip 1.5ex plus 4bp minus 2bp
+    \def\small{\@setfontsize{\small}{9bp}{10bp}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{8bp}{9bp}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{7bp}{8bp}}
+    \def\tiny{\@setfontsize{\tiny}{5bp}{6bp}}
+    % sublargesize is a tad smaller than large - 11bp
+    \def\sublargesize{\@setfontsize{\sublargesize}{11bp}{13.5bp}}
+    \def\large{\@setfontsize{\large}{12bp}{14bp}}
+    \def\Large{\@setfontsize{\Large}{14bp}{17bp}}
+    \def\LARGE{\@setfontsize{\LARGE}{17bp}{20bp}}
+    \def\huge{\@setfontsize{\huge}{20bp}{24bp}}
+    \def\Huge{\@setfontsize{\Huge}{24bp}{28bp}}
+    \fi
+    %
+    % 11pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeeleven
+    \def\normalsize{\@setfontsize{\normalsize}{11bp}{13.5bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{13.5bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 5bp minus 3bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 5bp
+    \belowdisplayshortskip 1.5ex plus 5bp minus 3bp
+    \def\small{\@setfontsize{\small}{10bp}{12bp}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{9bp}{10.5bp}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{8bp}{9bp}}
+    \def\tiny{\@setfontsize{\tiny}{6bp}{7bp}}
+    % sublargesize is the same as large - 12bp
+    \def\sublargesize{\@setfontsize{\sublargesize}{12bp}{14bp}}
+    \def\large{\@setfontsize{\large}{12bp}{14bp}}
+    \def\Large{\@setfontsize{\Large}{14bp}{17bp}}
+    \def\LARGE{\@setfontsize{\LARGE}{17bp}{20bp}}
+    \def\huge{\@setfontsize{\huge}{20bp}{24bp}}
+    \def\Huge{\@setfontsize{\Huge}{24bp}{28bp}}
+    \fi
+    %
+    % 12pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizetwelve
+    \def\normalsize{\@setfontsize{\normalsize}{12bp}{14bp}}%
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{14bp}%
+    \normalsize
+    \abovedisplayskip 1.5ex plus 6bp minus 4bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 6bp
+    \belowdisplayshortskip 1.5ex plus 6bp minus 4bp
+    \def\small{\@setfontsize{\small}{10bp}{12bp}}
+    \def\footnotesize{\@setfontsize{\footnotesize}{9bp}{10.5bp}}
+    \def\scriptsize{\@setfontsize{\scriptsize}{8bp}{9bp}}
+    \def\tiny{\@setfontsize{\tiny}{6bp}{7bp}}
+    % sublargesize is the same as large - 14bp
+    \def\sublargesize{\@setfontsize{\sublargesize}{14bp}{17bp}}
+    \def\large{\@setfontsize{\large}{14bp}{17bp}}
+    \def\Large{\@setfontsize{\Large}{17bp}{20bp}}
+    \def\LARGE{\@setfontsize{\LARGE}{20bp}{24bp}}
+    \def\huge{\@setfontsize{\huge}{22bp}{26bp}}
+    \def\Huge{\@setfontsize{\Huge}{24bp}{28bp}}
+    \fi
+    %
+    % -- override defaults: compsoc journals use special normalsizes --
+    \ifCLASSOPTIONconference
+    % 
+    % compsoc conferences
+    % 9pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizenine
+    \def\normalsize{\@setfontsize{\normalsize}{9bp}{10.8bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{10.8bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 3bp minus 1bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0bp plus 3bp
+    \belowdisplayshortskip 1.5ex plus 3bp minus 1bp
+    \fi
+    % 10pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeten
+    \def\normalsize{\@setfontsize{\normalsize}{10bp}{11.2bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{11.2bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 4bp minus 2bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 4bp
+    \belowdisplayshortskip 1.5ex plus 4bp minus 2bp
+    \fi
+    % 11pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeeleven
+    \def\normalsize{\@setfontsize{\normalsize}{11bp}{13.2bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{13.2bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 5bp minus 3bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 5bp
+    \belowdisplayshortskip 1.5ex plus 5bp minus 3bp
+    \fi
+    % 12pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizetwelve
+    \def\normalsize{\@setfontsize{\normalsize}{12bp}{14.4bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{14.4bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 6bp minus 4bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 6bp
+    \belowdisplayshortskip 1.5ex plus 6bp minus 4bp
+    \fi
+    % 
+    % compsoc nonconferences
+    \else
+    % 9pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizenine
+    \def\normalsize{\@setfontsize{\normalsize}{9bp}{10.8bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{10.8bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 3bp minus 1bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0bp plus 3bp
+    \belowdisplayshortskip 1.5ex plus 3bp minus 1bp
+    \fi
+    % 10pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeten
+    % the official spec is 9.5bp with 11.4bp leading for 10pt,
+    % but measurements of proofs suggest upto 11.723bp leading
+    % here we'll use 11.54bp which gives 61 lines per column
+    % with the standard compsoc margins
+    \def\normalsize{\@setfontsize{\normalsize}{9.5bp}{11.54bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{11.54bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 4bp minus 2bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 4bp
+    \belowdisplayshortskip 1.5ex plus 4bp minus 2bp
+    \fi
+    % 11pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizeeleven
+    \def\normalsize{\@setfontsize{\normalsize}{11bp}{13.2bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{13.2bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 5bp minus 3bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 5bp
+    \belowdisplayshortskip 1.5ex plus 5bp minus 3bp
+    \fi
+    % 12pt
+    \ifx\CLASSOPTIONpt\@IEEEptsizetwelve
+    \def\normalsize{\@setfontsize{\normalsize}{12bp}{14.4bp}}
+    \setlength{\@IEEEnormalsizeunitybaselineskip}{14.4bp}
+    \normalsize
+    \abovedisplayskip 1.5ex plus 6bp minus 4bp
+    \belowdisplayskip \abovedisplayskip
+    \abovedisplayshortskip 0pt plus 6bp
+    \belowdisplayshortskip 1.5ex plus 6bp minus 4bp
+    \fi
+    \fi\fi
+
+    % V1.6 The Computer Modern Fonts will issue a substitution warning for
+    % 24pt titles (24.88pt is used instead, but the default and correct
+    % Times font will scale exactly as needed) increase the substitution
+    % tolerance to turn off this warning.
+    % 
+    % V1.8a, the compsoc bp font sizes can also cause bogus font substitution
+    % warnings with footnote or scriptsize math and the $\bullet$ itemized
+    % list of \IEEEcompsocitemizethanks. So, increase this to 1.5pt or more.
+    \def\fontsubfuzz{1.7bp}
+
+
+    % warn the user in case they forget to use the 9pt option with
+    % technote
+    \ifCLASSOPTIONtechnote%
+    \ifx\CLASSOPTIONpt\@IEEEptsizenine\else%
+      \typeout{** ATTENTION: Technotes are normally 9pt documents.}%
+    \fi%
+    \fi
+
+    \def\baselinestretch{1}
+    \ifCLASSOPTIONdraftcls
+      \def\baselinestretch{1.5}% default baselinestretch for draft modes
+    \fi 
+
+
+    % process CLASSINPUT baselinestretch
+    \ifx\CLASSINPUTbaselinestretch\@IEEEundefined
+    \else
+      \edef\baselinestretch{\CLASSINPUTbaselinestretch} % user CLASSINPUT override
+      \typeout{** ATTENTION: Overriding \string\baselinestretch\space to
+              \baselinestretch\space via \string\CLASSINPUT.}
+    \fi
+
+    \small\normalsize % make \baselinestretch take affect
+  }
+}
+
+\def\bml@clo@options@iopart{
+  \DeclareOption{10pt}{\def\@ptsize{0}}
+  \DeclareOption{11pt}{\def\@ptsize{2}} % No 11pt version
+  \DeclareOption{12pt}{\def\@ptsize{2}}
+
+  \ExecuteOptions{10pt}
+
+  \def\bml@clo@apply{\input{iopart1\@ptsize.clo}}
+}
+
+\def\bml@clo@options@JHEP{
+  \DeclareOption{proceedings}{\def\@ptsize{0}}
+  \DeclareOption{published}{\def\@ptsize{1}}
+
+  \ExecuteOptions{published}
+
+  \def\bml@clo@apply{\input{size1\@ptsize.clo}}
+}
+
+\expandafter\let\csname bml@clo@options@JHEP2\endcsname\bml@clo@options@JHEP
+\expandafter\let\csname bml@clo@options@JHEP3\endcsname\bml@clo@options@JHEP
+
+\def\bml@clo@options@minimal{
+  \renewcommand\normalsize{\fontsize{10pt}{12pt}\selectfont}
+  \normalsize
+}
+
+\def\bml@clo@options@slides{
+  \def\normalsize{%
+        \@setfontsize\normalsize\itwentypt{28\p@ plus3\p@ minus4\p@}%
+        \@setfontsize@parms
+              {2pt}%
+              {30\p@ plus18\p@ minus9\p@}%
+              {15\p@ plus3\p@ minus3\p@}%
+              {10\p@ plus3\p@ minus3\p@}%
+              {10\p@ plus3\p@}
+              \abovedisplayshortskip
+              {17}{7}}
+  \normalsize
+  \def\small{\@setfontsize\small\iseventeenpt{19\p@ plus3\p@ minus\p@}%
+            \@setfontsize@parms
+              {2\p@}%
+              {15\p@ plus15\p@ minus7\p@}%
+              {12\p@ plus3\p@ minus3\p@}%
+              {9\p@ plus3\p@ minus3\p@}%
+              {6\p@ plus3\p@}%
+              \abovedisplayshortskip
+              {13.5}{5.6}}
+  \let\footnotesize=\small
+  \let\scriptsize=\small
+  \def\tiny{\@setfontsize\tiny\ifourteenpt{16\p@ plus2\p@ minus\p@}%
+            \@setfontsize@parms
+              {2pt}%
+              {14\p@ plus3\p@ minus10\p@}%
+              {11\p@ plus3\p@ minus10\p@}%
+              \abovedisplayskip
+              {8\p@ plus3\p@ minus5\p@}%
+              {\z@ plus3\p@}%
+              {10}{4}}
+  \def\large{\@setfontsize\large\itwentyfourpt{42\p@ plus8\p@ minus5\p@}%
+            \@setfontsize@parms
+              {2\p@}%
+              {40\p@ plus20\p@ minus4\p@}%
+              {20\p@ plus8\p@ minus3\p@}%
+              \abovedisplayskip
+              {10\p@ plus5\p@}%
+              \abovedisplayshortskip
+              {20}{8.5}}
+
+  \def\Large{\@setfontsize\Large\itwentyninept{48\p@ plus10\p@ minus6\p@}%
+            \@setfontsize@parms
+              {2\p@}%
+              {48\p@ plus30\p@ minus6\p@}%
+              {24\p@ plus10\p@ minus6\p@}%
+              \abovedisplayskip
+              {12\p@ plus8\p@}%
+              \abovedisplayshortskip
+              {27}{11}}
+
+  \def\LARGE{\@setfontsize\LARGE\ithirtyfourpt{52\p@ plus10\p@ minus6\p@}%
+            \@setfontsize@parms
+              {2\p@}%
+              {52\p@ plus30\p@ minus6\p@}%
+              {24\p@ plus10\p@ minus6\p@}%
+              \abovedisplayskip
+              {12\p@ plus8\p@}%
+              \abovedisplayshortskip
+              {27}{11}}
+
+  \def\huge{\@setfontsize\huge\ifortyonept{60\p@ plus10\p@ minus6\p@}%
+            \@setfontsize@parms
+              {2\p@}%
+              {60\p@ plus30\p@ minus6\p@}%
+              {24\p@ plus10\p@ minus6\p@}%
+              \abovedisplayskip
+              {12\p@ plus8\p@}%
+              \abovedisplayshortskip
+              {27}{11}}
+
+  \let\Huge\huge
+  \renewcommand\baselinestretch{}
+}
+
+\ifcsname bml@clo@options@\bml@class@name\endcsname
+\csname bml@clo@options@\bml@class@name\endcsname
+\else
+\PackageWarning{bookml}{BookML does not know how the class '\bml@class@name', falling back to extarticle sizes}
+\bml@clo@options@extarticle
+\fi
+
+\ProcessOptions\relax
+
+\ifcsname bml@clo@apply\endcsname\bml@clo@apply\fi
+
+\AtBeginDocument{{\normalsize\lx@save@parameter{bml-font-size}{\f@size}}}
+
+\fi % \iflatexml

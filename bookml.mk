@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -203,7 +203,7 @@ BOOKML_DEPS_AUTOSVG     = bookml/XSLT/proc-svg.xsl bookml/XSLT/utils.xsl bookml/
 ### MAIN TARGETS
 # use ':' to silence 'Nothing to be done' if something actually happened
 all html pdf scorm xml zip: %:
-	@$(if $(SOURCES)$^,,$$(call bml.print.warning,Warning: no .tex files with \documentclass found in this directory))
+	@$(if $(SOURCES)$^,,$(call bml.print.warning,Warning: no .tex files with \documentclass found in this directory))
 	@$(if $(MAKE_RESTARTS),:)
 
 all:   $(TARGETS)
@@ -264,7 +264,7 @@ bml.builtpdfdirs := $(patsubst $(AUX_DIR)/pdf/%,%,$(filter %/,$(call bml.utils.t
 # not be true .PHONY or the depending recipes will also run every time
 $(filter-out $(bml.builtpdfdirs),$(bml.curleafdirs)):
 $(AUX_DIR)/PHONY/beforedirs: $(filter-out $(bml.builtpdfdirs),$(bml.curleafdirs))
-	@$(call bml.print.echo,$(bml.print.cyan)creating $(words $?) folder$(if $(filter-out 1,$(words $?)),s) in $$(AUX_DIR)/pdf in case $(if $(filter-out 1,$(words $?)),they are,it is) needed by '\include'; this may take some time)
+	@$(if $?,$(call bml.print.echo,$(bml.print.cyan)creating $(words $?) folder$(if $(filter-out 1,$(words $?)),s) in $$(AUX_DIR)/pdf in case $(if $(filter-out 1,$(words $?)),they are,it is) needed by '\include'; this may take some time))
 
 $(AUX_DIR)/pdf/%/./: | $(AUX_DIR)/PHONY/beforedirs
 	@$(call bml.utils.mkdir,$@)
@@ -350,7 +350,8 @@ $(filter $(AUX_DIR)/deps/%.tex/pdf.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.te
 
 ### XML
 
-$(call bml.config.set,xml,LATEXMLFLAGS LATEXMLEXTRAFLAGS)
+bml.latexmlgenerator = $(if $(bml.utils.ifoxide),latexml-oxide,LaTeXML)
+$(call bml.config.set,xml,LATEXMLFLAGS LATEXMLEXTRAFLAGS,LATEXMLGENERATOR=$$(bml.latexmlgenerator))
 
 # the recipe also produces .latexml.log
 # attrib -r works around an issue where Windows sets the READONLY attribute on
@@ -396,20 +397,21 @@ $(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_XML) $$(ca
 # delete LaTeXML.cache to keep the output clean
 # delete .LaTeXML.db to work around latexmlpost getting stuck when the
 # splitting options change
-$(call bml.config.set,html,LATEXMLPOSTFLAGS LATEXMLPOSTEXTRAFLAGS SPLITAT)
+$(call bml.config.set,html,LATEXMLPOSTFLAGS LATEXMLPOSTEXTRAFLAGS SPLITAT,LATEXMLGENERATOR=$$(bml.latexmlgenerator))
 
 $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HTML) $$(call bml.config.prereq,html) \
   | $(bml.utils.tsprereq) $(call bml.config.predir,html)
 	@$(bml.buildbegin)
 	@$(call bml.print.recipe,latexmlpost,$*.xml,$(AUX_DIR)/html/$*/index.html)
 	@$(call bml.utils.rmdir,$(AUX_DIR)/html/$*)
-	@$(call bml.print.cmd,$(call bml.utils.autovar,LATEXMLPOST) \
+	@$(call bml.print.cmd,$(call bml.utils.autovar,$(if $(bml.utils.ifoxide),LATEXML,LATEXMLPOST)) \
 	  $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(call bml.utils.autovar,SPLITAT),--splitat=$(call bml.utils.autovar,SPLITAT)) \
 	  --urlstyle=file --pmml --mathtex \
 	  $(call bml.utils.autovar,LATEXMLPOSTFLAGS) $(call bml.utils.autovar,LATEXMLPOSTEXTRAFLAGS) \
 	  --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
-	  $(call bml.utils.escape4args,--dbfile=$(AUX_DIR)/latexmlaux/$*.LaTeXML.db,--log=$(AUX_DIR)/latexmlaux/$*.latexmlpost.log,--destination=$@,$<))
+	  $(if $(bml.utils.ifoxide),,--dbfile=$(AUX_DIR)/latexmlaux/$*.LaTeXML.db) \
+	  $(call bml.utils.escape3args,--log=$(AUX_DIR)/latexmlaux/$*.latexmlpost.log,--destination=$@,$<))
 	@$(call bml.utils.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)
 	@$(call bml.utils.rm,$(AUX_DIR)/latexmlaux/$*.LaTeXML.db)
 	@$(call bml.print.cmd,$(PERL) bookml/search_index.pl $(call bml.utils.escapearg,$(AUX_DIR)/html/$*))

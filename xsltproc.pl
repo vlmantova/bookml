@@ -3,7 +3,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
 =cut
 
+package bookml::xsltproc;
+
 # Minimal implementation of xsltproc based on XML::LibXSLT
 
 use warnings;
@@ -37,57 +39,72 @@ use XML::LibXSLT;
 use lib 'bookml';
 use bookml;
 
-my ($stylefile, $input, $output);
-my @stringparams;
+__PACKAGE__->main unless caller;
 
-local $SIG{__WARN__} = sub {
-  my ($msg) = @_;
-  my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
-  $severity = $severity // 'Error';
-  $object   = $object   // 'unknown';
-  $category = $category // 'internal';
-  $summary  = $summary  // $msg;
-  Message($severity, $category, $object, $input, decode('console_out', $summary));
-};
+sub proc {
+  my ($stylefile, $input, $output, %params) = @_;
 
-local $SIG{__DIE__} = sub {
-  my ($msg) = @_;
-  Fatal('error', 'xsltproc.pl', undef, decode('console_out', $msg));
-};
+  local $SIG{__WARN__} = sub {
+    my ($msg) = @_;
+    my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
+    $severity = $severity // 'Error';
+    $object   = $object   // 'unknown';
+    $category = $category // 'internal';
+    $summary  = $summary  // $msg;
+    Message($severity, $category, $object, $input, decode('console_out', $summary));
+  } unless $bookml::IN_LATEXML;
 
-GetOptions('--output=s' => \$output,
-  '--stringparam=s@{2}' => \@stringparams);
+  local $SIG{__DIE__} = sub {
+    my ($msg) = @_;
+    Fatal('error', 'xsltproc.pl', undef, decode('console_out', $msg));
+  } unless $bookml::IN_LATEXML;
 
-my %params = @stringparams;
+  bookml::open_file(my $fh_style, '<', $stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open the stylesheet: $!");
+  binmode($fh_style);
+  my $style_doc = XML::LibXML->load_xml(IO => $fh_style, URI => URI::file->new(bookml::dirname($stylefile))->as_string) or Fatal('I/O', 'stylesheet', $stylefile, "cannot parse the stylesheet: $!");
 
-for (keys %params) {
-  $params{$_} = "'$params{$_}'";
+  my $parser = XML::LibXSLT->new();
+  my $stylesheet = $parser->parse_stylesheet($style_doc) or Fatal('I/O', 'stylesheet', $stylefile, "invalid stylesheet: $!");
+
+  bookml::open_file(my $fh_input, '<', $input) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet: $!");
+  binmode($fh_input);
+  my $input_doc = XML::LibXML->load_xml(IO => $fh_input, URI => URI::file->new(bookml::dirname($input))->as_string) or Fatal('I/O', 'input', $input, "cannot open or parse the input file: $!");
+
+  my $result = $stylesheet->transform($input_doc, %params) or Fatal('I/O', 'input', $input, "cannot transform the input file: $!");
+
+  if ($output ne '-') {
+    bookml::open_file(my $fh_output, '>', $output) or Fatal('I/O', $output, undef, "cannot write to file: $!");
+    binmode($fh_output);
+    $stylesheet->output_fh($result, $fh_output);
+  } else {
+    print $result->toString();
+  }
+
+  return 1;
 }
 
-($stylefile, $input) = @ARGV;
+sub main {
+  my ($stylefile, $input, $output);
+  my @stringparams;
 
-Fatal('expected', 'input',      undef, 'you must specify an input file')  unless defined $input;
-Fatal('expected', 'stylesheet', undef, 'you must specify a stylesheet')   unless defined $stylefile;
-Fatal('expected', 'output',     undef, 'you must specify an output file') unless defined $output;
+  GetOptions('--output=s' => \$output,
+    '--stringparam=s@{2}' => \@stringparams);
 
-bookml::open_file(my $fh_style, '<', $stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open the stylesheet: $!");
-binmode($fh_style);
-my $style_doc = XML::LibXML->load_xml(IO => $fh_style, URI => URI::file->new(bookml::dirname($stylefile))->as_string) or Fatal('I/O', 'stylesheet', $stylefile, "cannot parse the stylesheet: $!");
+  my %params = @stringparams;
 
-my $parser = XML::LibXSLT->new();
-my $stylesheet = $parser->parse_stylesheet($style_doc) or Fatal('I/O', 'stylesheet', $stylefile, "invalid stylesheet: $!");
+  for (keys %params) {
+    $params{$_} = "'$params{$_}'";
+  }
 
-bookml::open_file(my $fh_input, '<', $input) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet: $!");
-binmode($fh_input);
-my $input_doc = XML::LibXML->load_xml(IO => $fh_input, URI => URI::file->new(bookml::dirname($input))->as_string) or Fatal('I/O', 'input', $input, "cannot open or parse the input file: $!");
+  ($stylefile, $input) = @ARGV;
 
-my $result = $stylesheet->transform($input_doc, %params) or Fatal('I/O', 'input', $input, "cannot transform the input file: $!");
+  Fatal('expected', 'stylesheet', undef, 'you must specify a stylesheet')   unless defined $stylefile;
+  Fatal('expected', 'input',      undef, 'you must specify an input file')  unless defined $input;
+  Fatal('expected', 'output',     undef, 'you must specify an output file') unless defined $output;
 
-if ($output ne '-') {
-  bookml::mk_path(bookml::dirname($output));
-  bookml::open_file(my $fh_output, '>', $output) or Fatal('I/O', $output, undef, "cannot write '$output': $!");
-  binmode($fh_output);
-  $stylesheet->output_fh($result, $fh_output);
-} else {
-  print $result->toString();
+  proc($stylefile, $input, $output, %params);
+
+  return 1;
 }
+
+1;

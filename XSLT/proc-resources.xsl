@@ -44,15 +44,30 @@
 
     <xsl:value-of select="$TARGET" /><xsl:text>:</xsl:text>
 
-    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
+    <xsl:for-each select="//ltx:resource/@src">
       <xsl:text> \&#x0A;  </xsl:text>
-      <xsl:value-of select="." />
+      <xsl:value-of select="str:replace(.,' ','\ ')" />
     </xsl:for-each>
+
+    <xsl:for-each select="//ltx:graphics/@candidates">
+      <xsl:for-each select="str:split(.,',')">
+        <xsl:text> \&#x0A;  </xsl:text>
+        <xsl:value-of select="str:replace(.,' ','\ ')" />
+      </xsl:for-each>
+    </xsl:for-each>
+
     <xsl:text>&#x0A;&#x0A;</xsl:text>
 
-    <xsl:for-each select="//ltx:resource/@src | //ltx:graphics/@candidates">
-      <xsl:apply-templates select="." />
+    <xsl:for-each select="//ltx:resource/@src">
+      <xsl:value-of select="str:replace(.,' ','\ ')" />
       <xsl:text>:&#x0A;</xsl:text>
+    </xsl:for-each>
+
+    <xsl:for-each select="//ltx:graphics/@candidates">
+      <xsl:for-each select="str:split(.,',')">
+        <xsl:value-of select="str:replace(.,' ','\ ')" />
+        <xsl:text>:&#x0A;</xsl:text>
+      </xsl:for-each>
     </xsl:for-each>
 
     <xsl:if test="//ltx:graphics[@bml:source]">

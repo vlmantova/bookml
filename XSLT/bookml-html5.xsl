@@ -84,15 +84,6 @@
     <xsl:attribute name="encoding">text/html</xsl:attribute>
   </xsl:template>
 
-  <!-- modern and mobile friendly tags (backported from 0.8.6) -->
-  <xsl:template match="/" mode="head-begin">
-    <xsl:if test="b:max-version('0.8.5')">
-      <meta charset="UTF-8"/>
-      <meta name="viewport"
-        content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    </xsl:if>
-  </xsl:template>
-
   <!-- add BookML resources at the end of the body, including MathJax -->
   <xsl:template match="/" mode="body-end">
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=body')]" mode="bml-resource"/>

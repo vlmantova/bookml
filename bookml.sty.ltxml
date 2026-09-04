@@ -4,7 +4,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -38,189 +38,28 @@ use IPC::Open3;
 use XML::LibXML;
 use DB_File;
 
-RequirePackage('bookml/bookml-init');
+use lib 'bookml';
+require 'bmlimages.pl';
+require 'resources.pl';
 
-my $bmlVersion = '@VERSION@';
+### BookML resources
+DefPrimitiveI('\bml@resources', undef, sub {
+    my $jobname = ToString(Expand(T_CS('\jobname')));
+    my $style   = ToString(Expand(T_CS('\bml@style')));
+    my @styles  = ('none', 'plain', 'gitbook');
+    $style = $styles[$style];
 
-my ($bml_ProgressSpinup, $bml_ProgressSpindown, $bml_ProgressStep, $bml_Note, $bml_NoteLog, $bml_NoteSTDERR);
+    map { RequireResource($_) } bookml::resources::find($style, $jobname);
 
-my $bml_mathjax = 4;
-
-if (!defined &ProgressSpinup) {
-  # pre-0.8.6 reporting
-  $bml_ProgressSpinup   = \&NoteBegin;
-  $bml_ProgressSpindown = \&NoteEnd;
-  $bml_ProgressStep     = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bml_Note             = sub { my $text = shift; if (defined $text) { \&NoteProgress("\n$text"); } };
-  $bml_NoteLog = sub { my $text = shift; if (defined $text) { \&NoteProgressDetailed("\n$text"); } };
-  $bml_NoteSTDERR = sub { };
-} else {
-  $bml_ProgressSpinup   = \&ProgressSpinup;
-  $bml_ProgressSpindown = \&ProgressSpindown;
-  $bml_ProgressStep     = \&ProgressStep;
-  $bml_Note             = \&Note;
-  $bml_NoteLog          = \&NoteLog;
-  $bml_NoteSTDERR       = \&NoteSTDERR;
-}
-
-# Helper function to add resources at the *end* of head or body
-# Partly copied from RequireResource
-my $bml_resource_options = {
-  type => 1, location => 1, content => 1, name => 1 };
-my $bml_resource_types = {
-  css   => 'text/css',
-  js    => 'text/javascript',
-  ttf   => 'font/ttf',
-  woff2 => 'font/woff2',
-  pdf   => 'application/pdf',
-  epub  => 'application/epub+zip'
-};
-
-sub BMLRequireResource {
-  my ($resource, %options) = @_;
-  CheckOptions('BMLRequireResource', $bml_resource_options, %options);
-
-  if (!$options{content} && !$resource) {
-    Warn('expected', 'resource', undef, 'Resource must have a resource pathname or content; skipping');
-    return; }
-
-  if (!$options{location}) {
-    $options{location} = 'head'; }
-
-  if (!$options{type}) {
-    my $ext = $resource && pathname_type($resource);
-    $options{type} = $ext && $$bml_resource_types{$ext}; }
-  if (!$options{type}) {
-    Warn('expected', 'type', undef, 'Resource must have a mime-type; skipping');
-    return; }
-  $options{type} .= ';bmllocation=' . $options{location};
-  if ($options{name}) {
-    $options{type} .= ';bmlname=' . $options{name}; }
-
-  delete $options{location};
-  delete $options{name};
-  return RequireResource($resource, %options);
-}
-
-my $bml_style      = 'gitbook';
-my $bml_imagescale = 1;
-my $bml_jobname    = ToString(Expand(T_CS('\jobname')));
-my $bml_htmlsyn    = 1;
-my @bml_download   = ();
-
-push(@bml_download, "$bml_jobname.pdf");
-
-DeclareOption('style=plain',   sub { $bml_style   = 'plain';   return; });
-DeclareOption('style=gitbook', sub { $bml_style   = 'gitbook'; return; });
-DeclareOption('style=none',    sub { $bml_style   = 'none';    return; });
-DeclareOption('htmlsyntax',    sub { $bml_htmlsyn = 1;         return; });
-DeclareOption('nohtmlsyntax',  sub { $bml_htmlsyn = 0;         return; });
-DeclareOption('mathjax=2',     sub { $bml_mathjax = 2;         return; });
-DeclareOption('mathjax=3',     sub { $bml_mathjax = 3;         return; });
-DeclareOption('mathjax=4',     sub { $bml_mathjax = 4;         return; });
-DeclareOption('nomathjax',     sub { $bml_mathjax = 0;         return; });
-
-DeclareOption(undef, sub {
-    my ($stomach) = @_;
-    my $opt = ToString(Expand(T_CS('\CurrentOption')));
-    if ($opt =~ m/^imagescale\s*=\s*(.*)$/) {
-      Warn('deprecated', 'imagescale', $stomach, 'the option imagescale is deprecated and may be ignored in future releases');
-      my $val = $1;
-      if ($val =~ m/^(?:\d+|\d*\.\d+)$/) {
-        $bml_imagescale = $val; }
-      else {
-        Error('malformed', $opt, $stomach, "Value '$val' of imagescale= for bookml.sty must be a decimal number"); } }
-    else {
-      Error('unexpected', $opt, $stomach, "Unexpected option '$opt' passed to bookml.sty"); }
     return;
 });
 
-ProcessOptions();
-
-DefMacroI('\BookMLversion', undef, $bmlVersion);
-
-RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
-
-if ($bml_style eq 'gitbook') {
-  # anywhere in the head
-  for my $res (qw(
-    bookml/gitbook/css/style.css
-    bookml/gitbook/css/plugin-table.css
-    bookml/gitbook/css/plugin-search.css
-    bookml/gitbook/css/plugin-bookdown.css
-    bookml/gitbook/css/plugin-fontsettings.css
-    )
-  ) { RequireResource($res); }
-
-  # end of body
-  for my $res (qw(
-    bookml/gitbook/js/app.min.js
-    bookml/gitbook/js/jquery.highlight.js
-    bookml/gitbook/js/plugin-search.js
-    bookml/gitbook/js/plugin-fontsettings.js
-    bookml/gitbook/js/plugin-bookdown.js
-  )) { RequireResource($res, type => 'application/octet-stream'); }
-
-  # additional files to be copied over
-  RequireResource('bookml/gitbook/css/fontawesome/fontawesome-webfont.woff2', type => 'font/woff2');
-}
-
-if ($bml_mathjax == 3) {
-  RequireResource('bookml/js/mathjax3.js', type => 'application/octet-stream'); }
-elsif ($bml_mathjax == 4) {
-  RequireResource('bookml/js/mathjax4.js', type => 'application/octet-stream'); }
-elsif ($bml_mathjax == 2) {
-  RequireResource('bookml/js/mathjax2.js', type => 'application/octet-stream'); }
-
-# CSS files
-DefConstructorI('\bml@css', undef, sub {
-    my ($document) = @_;
-    File::Find::find({
-        preprocess => sub { sort @_; },
-        no_chdir   => 1,
-        wanted     => sub {
-          if (-f $_ && m/\.(?:css|js|ttf|woff|woff2)$/i) {
-            my $styles = ',_all,';
-            if ($_ =~ /\.([^.]+)\.[^.]+$/i) {
-              $styles = ",$1,"; }
-            if ($styles =~ /,(?:_all|\Q$bml_style\E|\Q$bml_style-$bml_jobname\E),/) {
-              RequireResource($_); } }
-        }
-      },
-      'bookml/CSS', (-d 'bmluser') ? 'bmluser' : ());
-    # move <ltx:resource> up to the top or they will not work
-    my ($firstnonresource) = $document->findnodes('/*/*[local-name()!="resource"]');
-    for my $node ($document->findnodes('//ltx:resource')) {
-      $node->unbindNode();
-      $document->documentElement->insertBefore($node, $firstnonresource); }
-    return;
-});
-
-# Include alternative format
-DefPrimitive('\bmlAltFormat OptionalKeyVals {} {}', sub {
-    my ($stomach, $kv, $path, $name) = @_;
-    $path = ToString(Expand($path));
-    $name = ToString(Expand($name));
-    BMLRequireResource($path, location => 'download', name => $name, $kv ? $kv->getHash : ()) if $name;
-    @bml_download = grep { !($_ eq $path) } @bml_download;
-    return;
-});
-
-AtBeginDocument(sub {
-    for my $file (@bml_download) {
-      BMLRequireResource($file, location => 'download', name => uc(pathname_type($file))); }
-    return;
-});
-
+### BookML colors
 # Compute colors for sepia and dark mode (mimicking CSS filters)
 # note that xcolor.sty and LaTeXML::Common::Color use the linear RGB space
 AtEndDocument(sub {
-    return unless $bml_style eq 'gitbook';
+    return unless ToString(Expand(T_CS('\bml@style'))) eq '2';
     return T_CS('\bml@colors');
-});
-
-AtEndDocument(sub {
-    return T_CS('\bml@css');
 });
 
 # CSS filter invert(100%) hue-rotate(180deg)
@@ -269,7 +108,7 @@ my ($bml_colors_css, %bml_colors_darkmode, %bml_colors_sepiamode, %bml_colors) =
 DefConstructorI('\bml@colors', undef, sub {
     my ($document) = @_;
 
-    &$bml_ProgressSpinup('BookML colors');
+    ProgressSpinup('BookML colors');
 
     sub genColors {
       my ($attr, $color) = @_;
@@ -339,453 +178,294 @@ DefConstructorI('\bml@colors', undef, sub {
 
     if ($bml_colors_css) {
       (mkdir("bmluser") or die "cannot create directory bmluser: $!") unless -d "bmluser";
-      my $cssfile = "bmluser/colors.gitbook-$bml_jobname.css";
+      my $jobname = ToString(Expand(T_CS('\jobname')));
+      my $cssfile = "bmluser/colors.gitbook-$jobname.css";
       open(my $fh, '>', $cssfile) or die "cannot write to $cssfile: $!";
       print $fh $bml_colors_css;
       close($fh); }
 
-    &$bml_ProgressSpindown('BookML colors');
+    ProgressSpindown('BookML colors');
     return;
 });
 
-# HTML-in-LaTeX mechanism
-my %bml_html_innerctx = ();
-my @bml_html_inline   = ('a', 'abbr', 'acronym', 'audio', 'b', 'bdi', 'bdo', 'big', 'br', 'button',
-  'canvas',  'cite', 'code',  'data',  'datalist', 'del',  'dfn', 'em', 'embed', 'i', 'iframe', 'img',
-  'input',   'ins',  'kbd',   'label', 'map',      'mark', 'meter', 'noscript', 'object', 'output',
-  'picture', 'progress', 'q', 'ruby',  's',      'samp', 'script',  'select', 'slot', 'small', 'span',
-  'strong',  'sub', 'sup',    'svg', 'template', 'textarea', 'time', 'u', 'tt', 'var', 'video', 'wbr',
-  'summary');    # summary is not 'inline' per spec, but we must avoid the ltx:p wrapper
+### Minimal HTML5 parser
+# Deviations from spec:
+# - only XML entities are decoded
+# - ambiguous & allowed in attributes
+# - final / closes all elements, including non-void, unless part of attribute
+# - limited error checking
+sub decodeHTMLEntities {
+  my ($str) = @_;
 
-AtBeginDocument(sub { RelaxNGSchema('bookml/schema'); });
+  $str =~ s/&lt;/</g;
+  $str =~ s/&gt;/>/g;
+  $str =~ s/&apos;/'/g;
+  $str =~ s/&quot;/"/g;
 
-# switch to T1 encoding for proper parsing of <, >
-sub BMLStartHTMLFontEncoding {
-  my ($stomach) = @_;
-  $stomach->bgroup;
-  if (LoadFontMap('T1')) {
-    MergeFont(encoding => 'T1'); }
-  else {
-    Warning('bookml', 'html', $stomach, 'Can\'t load T1 encoding, raw HTML likely to be garbled'); }
-  return; }
+  while ($str =~ m/&#([^;]+);/) {
+    my $num = $1;
+    my $char;
 
-sub BMLEndHTMLFontEncoding {
-  $_[0]->egroup;
-  return; }
-
-sub BMLHTMLEnvironment {
-  my ($name, %opts) = @_;
-
-  DefEnvironment("{h:$name} OptionalKeyVals", sub {
-      my ($document, $kv, %properties) = @_;
-      my $body = $properties{body};
-      $kv = $kv && $kv->getKeyVals;
-
-      my $innercontext = $opts{innercontext} // '';
-      my $elem         = "ltx:xml${innercontext}elem";
-
-      my $curr_qname = $document->getNodeQName($document->getElement);
-      if (!$document->canContain($curr_qname, $elem)) {
-        if (my $wrapper = $document->canContainIndirect($curr_qname, $elem)) {
-          $document->openElement($wrapper); } }
-
-      my $node = $document->openElement($elem,
-        ns   => 'http://www.w3.org/1999/xhtml',
-        name => $name, innercontext => $opts{innercontext});
-
-      for my $attr (keys %$kv) {
-        $document->insertElement('ltx:xmlattr', undef, name => lc($attr),
-          value => ToString($$kv{$attr})); }
-
-      $document->absorb($body);    # emit content of the environment
-
-      $document->closeElement($elem);
-    },
-    scope => 'global'
-  );
-
-  return;
-}
-
-DefPrimitive('\bmlHTMLEnvironment{}', sub {
-    my ($gullet, $names) = @_;
-    my @names = split(/,/, ToString(Expand($names)));
-    for my $name (@names) {
-      if (!defined $bml_html_innerctx{$name} || '' ne $bml_html_innerctx{$name}) {
-        $bml_html_innerctx{$name} = '';
-        BMLHTMLEnvironment($name); } }
-    return;
-});
-
-DefPrimitive('\bmlHTMLInlineEnvironment{}', sub {
-    my ($gullet, $names) = @_;
-    my @names = split(/,/, ToString(Expand($names)));
-    for my $name (@names) {
-      if (!defined $bml_html_innerctx{$name} || 'inline' ne $bml_html_innerctx{$name}) {
-        $bml_html_innerctx{$name} = 'inline';
-        BMLHTMLEnvironment($name, innercontext => 'inline'); } }
-    return;
-});
-
-DefPrimitive('\bmlHTMLBlockEnvironment{}', sub {
-    my ($gullet, $names) = @_;
-    my @names = split(/,/, ToString(Expand($names)));
-    for my $name (@names) {
-      if (!defined $bml_html_innerctx{$name} || 'block' ne $bml_html_innerctx{$name}) {
-        $bml_html_innerctx{$name} = 'block';
-        BMLHTMLEnvironment($name); } }
-    return;
-});
-
-# HTML syntax
-if ($bml_htmlsyn) {
-  DefMacro('\< Until:>', sub {
-      my ($gullet, $tokens) = @_;
-      my ($elem, $attrs)    = split(/\s+/, ToString(Expand($tokens)), 2);
-      $elem  = lc($elem);
-      $attrs = $attrs // '';
-
-      my $output = '';
-      if ($elem =~ m!^/(.+)!) {
-        $output = "\\end{h:$1}"; }
-      else {
-        my $opts = '';
-        while ($attrs =~ m!\s*([^=]+)\s*=\s*('|")(.*?)\g2!g) {
-          $opts = $opts . "$1={$3},"; }
-        $opts = $opts ? "[$opts]" : '';
-
-        if ($elem =~ m!^([^/]+)/$!) {
-          $elem = $1; $output = "\\end{h:$elem}"; }
-        elsif ($attrs =~ m!/$!) {
-          $output = "\\end{h:$elem}"; }
-
-        $output = "\\begin{h:$elem}$opts$output";
-        if (!defined $bml_html_innerctx{$elem}) {
-          my $innercontext = grep(/^$elem$/, @bml_html_inline) ? 'inline' : '';
-          Info('found', 'html', $gullet, "new HTML tag <$elem>" . ($innercontext ? " ($innercontext)" : ''));
-          BMLHTMLEnvironment($elem, innercontext => $innercontext);
-          $bml_html_innerctx{$elem} = $innercontext; }
-      }
-
-      $gullet->openMouth(LaTeXML::Core::Mouth->new($output), 0);
-  });
-}
-
-# Raw HTML mechanism
-
-my $parser = XML::LibXML->new();
-
-DefConstructor('\bmlRawHTML Digested', sub {
-    my ($document, $arg, %options) = @_;
-
-    # wrap in <span> to set the XHTML namespace
-    my $html = $parser->parse_balanced_chunk('<span xmlns="http://www.w3.org/1999/xhtml">'
-        . ToString($arg) . '</span>');
-    my @elems = $html->firstChild->findnodes('node()');
-
-    my $inpreamble = $options{inPreamble};
-    my $savenode   = $document->floatToElement('ltx:resource') if $inpreamble;
-
-    my $tag  = $inpreamble ? 'ltx:resource' : 'ltx:rawhtml';
-    my $node = $document->openElement($tag, ($inpreamble ? (type => 'text/html') : ()));
-    map { $document->appendClone($node, $_) } @elems;
-    $document->closeElement($tag);
-
-    $document->setNode($savenode) if $savenode;
-  },
-  beforeDigest => \&BMLStartHTMLFontEncoding,
-  afterDigest  => \&BMLEndHTMLFontEncoding,
-  properties   => {
-    inPreamble => sub { LookupValue('inPreamble'); }
-  }
-);
-
-# Image generation via LaTeX
-my $bml_depth;
-my $source  = LookupValue('SOURCEFILE');
-my $outdir  = pathname_concat('bmlimages/dvi/', $bml_jobname);
-my $dvifile = pathname_concat($outdir,          $bml_jobname . '.dvi');
-my $svgfmt  = pathname_concat('bmlimages',      '%f-%0p.svg');
-my $dpth    = pathname_concat($outdir,          $bml_jobname . '.dpth');
-
-NewCounter('bml@image@counter');
-DefMacro('\bml@image@include', '\bml@image@generate\stepcounter{bml@image@counter}\includegraphics{bmlimages/\jobname-\thebml@image@counter.svg}\bml@image@depth{\thebml@image@counter}');
-DefConstructor('\bml@image@depth{}', sub {
-    my ($document, $counter) = @_;
-    $counter = ToString($counter);
-    my $node = $document->getLastChildElement($document->getElement);
-    return Error('expected', 'dpth', $document,
-      'could not find depth for BookML image ' . $node->getAttribute('graphic')
-        . "; read the log for more details, and try deleting $dpth")
-      unless defined $bml_depth && exists $$bml_depth{"$counter-depth"};
-    $document->setAttribute($node, 'imagedepth', int(0.5 + $$bml_depth{"$counter-depth"} * $bml_imagescale * 96 / 72));
-    return;
-});
-
-DefPrimitive('\bml@image@generate', sub {
-    my ($gullet) = @_;
-
-    # skip if we have already generated the images
-    return if defined $bml_depth;
-    $bml_depth = {};
-
-    return Error('expected', 'latexmk', undef, 'No latexmk command found; BookML images will be missing.',
-      'Please install latexmk to let BookML generate images from LaTeX')
-      unless which 'latexmk';
-    return Error('expected', 'dvisvgm', undef, 'No dvisvgm command found; BookML images will be missing.',
-      'Please install dvisvgm to let BookML generate images from LaTeX')
-      unless which 'dvisvgm';
-    return Error('expected', 'preview.sty', undef, 'Package preview.sty not found; BookML images will be missing.',
-      'Please install preview.sty to let BookML generate images from LaTeX')
-      unless pathname_kpsewhich('preview.sty');
-
-    &$bml_ProgressSpinup('BookML images');
-
-    # code to activate bmlimages and add dvisvgm,hypertex as global options
-    # hypertex ensures hyperref does not emit PDF specials which confuse dvisvgm
-    my $preclass = '\PassOptionsToPackage{_bmlimages}{bookml/bookml}';       # activate bmlimages
-    $preclass .= '\makeatletter';
-    $preclass .= '\let\bml@dcl@ss\documentclass';                            # save \documentclass
-    $preclass .= '\renewcommand{\documentclass}[1][]{';                      # renew \documentclass[]
-    $preclass .= '\def\bml@dcl@ss@pts{#1}';                                  # save options
-    $preclass .= '\let\documentclass\bml@dcl@ss';                            # restore \documentclass
-    $preclass .= '\ifx\bml@dcl@ss@pts\@empty';                               # no options?
-    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm,hypertex]}';       # add dvisvgm,hypertex
-    $preclass .= '\else';                                                    # with options?
-    $preclass .= '\def\bml@dcl@ss@{\documentclass[dvisvgm,hypertex,#1]}';    # prepend dvisvgm,hypertex
-    $preclass .= '\fi\bml@dcl@ss@}';                                         # close definition
-    $preclass .= '\makeatother';
-
-    # compile $source to DVI with latexmk
-    my @lmk_invocation = ('latexmk', '-output-format=dvi',
-      '-interaction=nonstopmode',     '-halt-on-error',
-      '-output-directory=' . $outdir, '-usepretex=' . $preclass,
-      '-jobname=' . $bml_jobname,     $source);
-    if ($^O =~ /^(MSWin|cygwin)/) {
-      require Win32::ShellQuote;
-      @lmk_invocation = Win32::ShellQuote::quote_system_list(@lmk_invocation); }
-    &$bml_NoteLog('Calling ' . join(' ', @lmk_invocation));
-    my $lmk_pid = IPC::Open3::open3(undef, my $lmk_stdout, undef,
-      @lmk_invocation);
-
-    my $rebuild    = 1;
-    my $print_next = 0;
-
-    # report progress and remember if latexmk did anything
-    while (<$lmk_stdout>) {
-      if (!$rebuild || m/^Latexmk: Nothing to do for/) {
-        $rebuild = 0; }
-      if (m/^Latexmk: Run number (.*)/) {
-        &$bml_ProgressStep("latexmk: run number $1"); }
-      else {
-        chomp;
-        # copied from texfot.pl v1.47 by Karl Berry (public domain)
-        if ($print_next) {
-          &$bml_NoteSTDERR($_);
-          $print_next = 0; }
-        # lines that can be ignored
-        elsif (/^\ (
-        LaTeX\ Warning:\ You\ have\ requested\ package
-        |LaTeX\ Font\ Warning:\ Some\ font\ shapes
-        |LaTeX\ Font\ Warning:\ Size\ substitutions
-        |Package\ auxhook\ Warning:\ Cannot\ patch
-        |Package\ biditools\ Warning:\ Patching
-        |Package\ caption\ Warning:\ Un(supported|known)\ document\ class
-        |Package\ fixltx2e\ Warning:\ fixltx2e\ is\ not\ required
-        |Package\ frenchb?\.ldf\ Warning:\ (Figures|The\ definition)
-        |Package\ layouts\ Warning:\ Layout\ scale
-        |\*\*\*\ Reloading\ Xunicode\ for\ encoding  # spurious ***
-        |This\ is\ `?(epsf\.tex|.*\.sty|TAP) # so what
-        |pdfTeX\ warning:.*inclusion:\ fou   #nd PDF version ...
-        |pdfTeX\ warning:.*inclusion:\ mul   #tiple pdfs with page group
-        |libpng\ warning:\ iCCP:\ Not\ recognizing
-        |!\ $
-        )/x) {
-          &$bml_ProgressStep(); }
-        # error messages followed by an additional line
-        elsif (/^\ (
-        .*?:[0-9]+:         # usual file:lineno: form
-        |!                  # usual ! form
-        |>\ [^<]            # from \show..., but not "> <img.whatever"
-        |.*pdfTeX\ warning  # pdftex complaints often cross lines
-        |LaTeX\ Font\ Warning:\ Font\ shape
-        |Package\ hyperref\ Warning:\ Token\ not\ allowed
-        |removed\ on\ input\ line  # hyperref
-        |Runaway\ argument
-        )/x) {
-          $print_next = 1;
-          &$bml_NoteSTDERR($_); }
-        # remaining errors and diagnostic messages
-        elsif (/^\ (
-        This\ is
-        |Output\ written
-        |No\ pages\ of\ output
-        |\(.*end\ occurred\ inside\ a\ group
-        # |(Und|Ov)erfull                           # bookml does not care about und|overfulls
-        |(LaTeX|Package|Class).*(Error) # |Warning) # bookml can ignore warnings
-        |.*Citation.*undefined                      # bookml can ignore warnings
-        |.*\ Error           # as in \Url Error ->...
-        |Missing\ character: # good to show (need \tracinglostchars=1)
-        |\\endL.*problem     # XeTeX?
-        |\*\*\*\s            # *** from some packages or subprograms
-        |l\.[0-9]+\          # line number marking
-        |all\ text\ was\ ignored\ after\ line
-        |.*Fatal\ error
-        |.*for\ symbol.*on\ input\ line
-        |\#\#
-        )/x) {
-          &$bml_NoteSTDERR($_); }
-        &$bml_ProgressStep();
-        &$bml_NoteLog($_); }
+    if ($num =~ /^\d+$/) {
+      $char = chr($1);
+    } elsif ($num =~ /^(?:x|X)([0-9a-fA-F]+)$/) {
+      $char = chr(hex($1));
+    } else {
+      # invalid reference, deactivate & (it will be decoded at the end)
+      $char = "&amp;#$num;";
     }
 
-    close($lmk_stdout);
-    waitpid($lmk_pid, 0);
-    if ($! || $?) {
-      &$bml_ProgressSpindown('BookML images');
-      my $log = ($LaTeXML::Common::Error::LOG && !ref $LaTeXML::Common::Error::LOG_PATH) ? "the log" : "$outdir/$bml_jobname.log";
-      return Error('bookml', 'latexmk', undef, "problem while running latexmk, some images will be missing; read $log for more details",
-        $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
-        'Invocation:', @lmk_invocation); }
+    # keep & encoded (it will be decoded at the end)
+    $char = '&amp;' if $char eq '&';
 
-    if (!$rebuild) {
-      # open the depth cache
-      if (tie my %bml_depth_db, 'DB_File', $dpth, O_RDONLY) {
-        # restore the saved depth
-        while (my ($k, $v) = each(%bml_depth_db)) {
-          $$bml_depth{$k} = $v; }
-        untie %bml_depth_db; }
+    $str =~ s/&#\Q$num\E;/$char/g;
+  }
+
+  # encode & for unterminated references (it will be decoded at the end)
+  $str =~ s/&#/&amp;#/g;
+
+  $str =~ s/&amp;/&/g;
+
+  return $str;
+}
+
+sub parseHTMLAfterElem {
+  my ($where, $rawtag) = @_;
+  my %parsed = (selfclose => 0, attrs => {});
+
+  my $state = 3;
+  my $name  = '';
+  my $value = '';
+
+  my $ws = qr/ \n\f\r/;
+
+  # states like bookml.sty.rhai, simplified
+  # 3/4/5. after attribute/attribute name/'='
+  while ($rawtag) {
+    $_ = $state . substr($rawtag, 0, 1);
+    if    (m!.[$ws]!) { $rawtag =~ s!^[$ws]*!!; }    # skip whitespace
+    elsif (m![34]/!) {
+      $rawtag =~ s!^/!!;
+      if ($rawtag) {
+        Error('malformed', $rawtag, $where, 'skipping invalid character \'/\' in attribute list'); }
       else {
-        # delete the depth cache
-        Info('I/O', 'dpth', undef, "Couldn't open the depth cache ($dpth) for $bml_jobname.tex, message was '$!'; SVGs and depth cache will be recreated");
-        $rebuild = 1; } }
+        $parsed{selfclose} = 1; } }
+    elsif (m!4=!) { $rawtag =~ s!^=!!; $state = 5; }
+    elsif (m!^5('|"|)!) {
+      my $delim = $1;
+      if ($delim) {
+        $rawtag =~ s!^$delim([^$delim]*)(?:$delim|$)!!;
+        $value = $1; }
+      else {
+        $rawtag =~ s!^([^$ws]*)!!;
+        $value = $1; }
+      if ($name) {
+        $parsed{attrs}->{$name} = decodeHTMLEntities($value);
+        $name = ''; }
+      else {
+        Error('malformed', "=$delim$value$delim", $where, 'skipping HTML attribute without name'); }
+      $value = '';
+      $state = 3; }
+    else {
+      $parsed{attrs}->{$name} = '' if m!^4! && $name;
+      $rawtag =~ s!^([^=$ws/]*)!!;
+      $name  = $1;
+      $state = 4; }
+  }
 
-    # if the DVI has changed, or the depth cache is invalid, rebuild the images
-    if ($rebuild) {
-      # convert DVI to images
-      my $dsvg_version = version->parse(split(' ', `dvisvgm --version`));
-      return Error('bookml', 'dvisvgm', undef, "version $dsvg_version is too old, please upgrade to v1.6 or above") if $dsvg_version < v1.6;
-      my @dsvg_invocation = ('dvisvgm', '--page=1-', '--bbox=preview',
-        '--no-fonts', '--exact', '--zoom=' . $bml_imagescale,
-        ('--optimize') x ($dsvg_version >= v2.7),
-        '--output=' . $svgfmt, $dvifile);
-      if ($^O =~ /^(MSWin|cygwin)/) {
-        require Win32::ShellQuote;
-        @dsvg_invocation = Win32::ShellQuote::quote_system_list(@dsvg_invocation); }
-      &$bml_NoteLog('Calling ' . join(' ', @dsvg_invocation));
-      my $dsvg_pid = IPC::Open3::open3(undef, my $dsvg_stdout, undef,
-        @dsvg_invocation);
+  $parsed{attrs}->{$name} = $value if $name;
 
-      # report progress
-      my $counter;
-      while (<$dsvg_stdout>) {
-        if (m/^processing page (\d+)/) {
-          $counter = $1;
-          &$bml_ProgressStep("dvisvgm: processing image $counter"); }
-        elsif (m/.*=(\d*(?:\.\d+)?)pt,.*=(\d*(?:\.\d+)?)pt,.*=(\d*(?:\.\d+)?)pt/) {
-          $$bml_depth{"$counter-width"}  = $1;
-          $$bml_depth{"$counter-height"} = $2;
-          $$bml_depth{"$counter-depth"}  = $3; }
-        else { &$bml_ProgressStep(); }
-        chomp $_;
-        &$bml_NoteLog($_);
+  return %parsed;
+}
+
+### Inline HTML tags via enviroments
+# \begin{h:TAG}[attr1=value,attr2] ... \end{h:TAG}
+DefPrimitive('\bml@html@setinline Expanded Expanded', sub {
+    my ($stomach, $tag, $inline) = @_;
+    AssignMapping('bml@html@inline', ToString($tag) => ToString($inline));
+});
+
+DefEnvironment('{bml@html@env@} Undigested',
+  '?#inline
+    (<ltx:xmlinlineelem name="#elem" ns="http://www.w3.org/1999/xhtml">#body</ltx:xmlinlineelem>)
+    (<ltx:xmlelem name="#elem" ns="http://www.w3.org/1999/xhtml">#body</ltx:xmlelem>)',
+  ($LaTeXML::VERSION > v0.8.8) ? (afterDigestBegin => sub {
+      my ($stomach, $whatsit) = @_;
+      $whatsit->getProperty("inline") ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
+  properties => sub {
+    my ($stomach, $elem) = @_;
+    $elem = ToString($elem);
+    return (elem => $elem, inline => LookupMapping('bml@html@inline', $elem));
+  },
+  reversion => ''
+);
+
+DefConstructor('\bml@html@attr@ Undigested Undigested',
+  '?#1(<ltx:xmlattr name="#1" value="#value"/>)',
+  properties => sub {
+    my ($stomach, $name, $value) = @_;
+    return (value => decodeHTMLEntities(ToString($value)));
+  },
+  reversion => ''
+);
+
+### Inline HTML tags via \<
+# \<TAG attr1="value" attr>
+DefConstructor('\bml@html@tag Undigested', sub {
+    my ($document, $rawtag, %props) = @_;
+    my $close  = $props{'close'};
+    my $elem   = $props{'elem'};
+    my $inline = $props{'inline'};
+    my $qname  = "ltx:xml${inline}elem";
+
+    if (!$close) {
+      my %parsed = parseHTMLAfterElem($document, $props{'afterElem'});
+
+      $document->openElement($qname, name => $elem, ns => 'http://www.w3.org/1999/xhtml');
+
+      for my $a (keys %{ $parsed{attrs} }) {
+        my $attr = $document->insertElement('ltx:xmlattr', undef, name => $a);
+        $attr->setAttribute('value', $parsed{attrs}->{$a}); }
+
+      $document->closeElement($qname) if $parsed{selfclose};
+    } else {
+      $document->closeElement($qname);
+    }
+  },
+  ($LaTeXML::VERSION > v0.8.8) ? (afterDigest => sub {
+      my ($stomach, $whatsit) = @_;
+      $whatsit->getProperty("inline") ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
+  properties => sub {
+    my ($stomach, $rawtag) = @_;
+    my %props = ();
+
+    if (ToString($rawtag) =~ m!^(/?)([^ \n\f\r/]*)(.*)$!) {
+      my ($close, $elem, $afterElem) = ($1, $2, $3);
+      # TeX uses carriage return to represent newlines
+      $afterElem =~ s/\r/\n/g;
+
+      my $inline = LookupMapping('bml@html@inline', $elem) // '';
+
+      return (
+        afterElem => $afterElem,
+        close     => $close,
+        elem      => $elem,
+        inline    => $inline
+      );
+    } else {
+      return ();
+    }
+  },
+  reversion => ''
+);
+
+### Inline HTML via \bmlRawHTML
+my $parser = XML::LibXML->new();
+
+DefConstructor('\bml@html@raw@ Undigested', sub {
+    my ($document, $rawhtml, %options) = @_;
+    # TeX uses carriage return to represent newlines
+    $rawhtml = ToString($rawhtml);
+    $rawhtml =~ s/\r/\n/g;
+
+    my $nodes = $parser->parse_balanced_chunk("<div xmlns='http://www.w3.org/1999/xhtml'>$rawhtml</div>");
+
+    if ($nodes) {
+      my $inPreamble = $options{inPreamble};
+      my $qname      = $inPreamble ? "ltx:resource" : "ltx:rawhtml";
+
+      my $node = $document->openElement($qname, ($inPreamble ? (type => 'application/xhtml+xml') : ()));
+
+      map { $document->appendClone($node, $_) } $nodes->firstChild->findnodes('node()');
+      $document->closeElement($qname);
+    }
+  },
+  properties => sub {
+    return (inPreamble => LookupValue('inPreamble'));
+  },
+  reversion => ''
+);
+
+### Image generation via LaTeX
+# \begin{bmlimage} ... \end{bmlimage}
+# \bmlImageEnvironment{tikzpicture}
+DefPrimitive('\bml@image@generate', sub {
+    my $jobname = ToString(Expand(T_CS('\jobname')));
+    my $source  = LookupValue('SOURCEFILE');
+    my $imagescale = ToString(Expand(T_CS('\bml@image@scale')));
+
+    if ($imagescale !~ m/^(?:\d+|\d*\.\d+)$/) {
+      Error('malformed', 'imagescale', undef, "ignoring non-decimal value '$imagescale' for option imagescale of bookml.sty");
+      DefMacroI('\bml@image@scale', undef, 1);
+      $imagescale = 1; }
+
+    ProgressSpinup('BookML images');
+
+    my @depths = bookml::bmlimages::generate($source, $jobname, $imagescale);
+
+    for (@depths) {
+      if (m/^(\d+):.*:.*:(\d+(?:\.\d+)?)/) {
+        AssignMapping('bml@image@depth', $1, $2);
       }
+    }
 
-      close($dsvg_stdout);
-      waitpid($dsvg_pid, 0);
-      if ($! || $?) {
-        &$bml_ProgressSpindown('BookML images');
-        return Error('bookml', 'dvisvgm', undef, "problem while running dvisvgm, some images will be missing or misaligned; read the log for more details",
-          $! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8),
-          'Invocation:', @dsvg_invocation); }
-
-      my $xslt       = XML::LibXSLT->new();
-      my $stylesheet = $xslt->parse_stylesheet_file('bookml/XSLT/proc-svg.xsl');
-
-      while (my ($k, $v) = each(%$bml_depth)) {
-        if ($k =~ m/(\d+)-width/) {
-          my $svg    = pathname_concat('bmlimages', "$bml_jobname-$1.svg");
-          my $result = $stylesheet->transform_file($svg);
-          if ($result) {
-            $stylesheet->output_file($result, $svg); }
-          else {
-            Error('bookml', 'proc-svg', undef, "could not fix the size of $svg"); } } }
-
-      # create the depth cache
-      unlink $dpth if -f $dpth;
-      if (tie my %bml_depth_db, 'DB_File', $dpth, O_RDWR | O_CREAT) {
-        # save the depth
-        while (my ($k, $v) = each(%$bml_depth)) {
-          $bml_depth_db{$k} = $v; }
-        untie %bml_depth_db; }
-      else {
-        # delete the depth cache
-        Error('I/O', 'dpth', undef, "Couldn't create the depth cache ($dpth) for $bml_jobname.tex, message was '$!'; deleting $dpth");
-        unlink $dpth if -f $dpth; } }
-
-    &$bml_ProgressSpindown('BookML images');
+    ProgressSpindown('BookML images');
 
     # do not run twice!
     Let('\bml@image@generate', '\relax');
     return;
 });
 
-sub BMLImageEnvironment {
-  my ($gullet, $names) = @_;
-  my @names = split(/,/, ToString($names));
-  for my $name (@names) {
-    AtBeginDocument(sub {
-        RequirePackage('graphicx');
-        DefMacroI(T_CS("\\begin{$name}"), undef, sub {
-            my ($ingullet) = @_;
-            while ($ingullet->readUntil(T_CS('\end'))) {
-              my $arg = $ingullet->readArg;
-              last if (ToString($arg) eq $name);
-            }
-            return T_CS('\bml@image@include');
-        });
-    });
+DefConstructor('\bml@image@depth{}', sub {
+    my ($document, $counter, %props) = @_;
+    my $depth = LookupMapping('bml@image@depth', ToString($counter));
+
+    if ($depth) {
+      my $node = $document->getLastChildElement($document->getElement);
+      my $imagescale = $props{imagescale} || 1;
+
+      $document->setAttribute($node, 'imagedepth', int((0.5 + $depth) * $imagescale * 96 / 72)); }
+    return;
+  },
+  properties => sub {
+    return (imagescale => ToString(Expand(T_CS('\bml@image@scale'))));
   }
-  return;    # or perltidy complains
-}
+);
 
-DefPrimitive('\bmlImageEnvironment{}', \&BMLImageEnvironment);
-
-BMLImageEnvironment(undef, 'preview');    # predefined by the preview package
-BMLImageEnvironment(undef, 'bmlimage');
-
-# Alternative text
+### Alternative text
 DefConstructor('\bmlDescription Semiverbatim', sub {
     my ($document, $text) = @_;
     my $node = $document->getLastChildElement($document->getElement);
     $document->setAttribute($node, 'description', ToString($text));
-});
+  },
+  reversion => ''
+);
 
-# Add class to previous node
+### Add class to previous node
 DefConstructor('\bmlPlusClass Semiverbatim', sub {
     my ($document, $class) = @_;
     my $node = $document->getLastChildElement($document->getElement);
     $document->addClass($node, ToString($class));
-});
+  },
+  reversion => ''
+);
 
-# Disable MathJax locally
+### Disable MathJax locally
 DefConstructor('\bmlDisableMathJax', sub {
     my ($document) = @_;
-    my $node       = $document->getElement;
-    my @eqnodes    = $document->findnode('ancestor-or-self::ltx:equation[1]//ltx:Math', $node);
-    if (!@eqnodes) {
-      @eqnodes = ($node); }
-    for my $eqnode (@eqnodes) {
-      $document->addClass($eqnode, 'bml_disable_mathjax'); }
-}, reversion => '');
+    my $elem       = $document->getElement;
+    my $eqelem     = $document->findnode('ancestor-or-self::ltx:equation[1]//ltx:Math', $elem);
 
-# Unicode variation sequences
+    if ($eqelem) {
+      $document->addClass($eqelem, 'bml_disable_mathjax'); }
+  },
+  reversion => ''
+);
+
+### Unicode variation sequences
 DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID', meaning => 'empty-set');
 
-if ($LaTeXML::VERSION < v0.8.8) {
-  DefMathI('*', undef, "\x{2217}", role => 'MULOP', meaning => 'times'); }
-
-# various fixes
+### LaTeXML bugfixes and improvements
 {
 
   ### Copy HyperVerbatim from v0.9 to support xr
@@ -834,6 +514,15 @@ if ($LaTeXML::VERSION < v0.8.8) {
     # relativise the rule sizes
     push(@{ $$hrule{beforeConstruct} }, $relativize);
     push(@{ $$vrule{beforeConstruct} }, $relativize);
+    push(@{ $$rule{beforeConstruct} }, sub {
+        my ($document, $whatsit) = @_;
+        my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('width', 'height', 'offset');
+        my $em = $STATE->lookupValue('font')->getEMWidth;
+        ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
+        $whatsit->setProperty('width',  $w) if defined $w;
+        $whatsit->setProperty('height', $h) if defined $h;
+        $whatsit->setProperty('offset', $d) if defined $d;
+    });
 
     # add CSS classes
     push(@{ $$hrule{afterConstruct} }, sub {
@@ -862,16 +551,6 @@ if ($LaTeXML::VERSION < v0.8.8) {
         if (!inSVG) {
           my $node = $document->getElement;
           $document->openElement('ltx:p') if !$document->canContain($node, '#PCDATA'); }
-    });
-
-    push(@{ $$rule{beforeConstruct} }, sub {
-        my ($document, $whatsit) = @_;
-        my ($w, $h, $d) = map { $whatsit->getProperty($_); } ('width', 'height', 'offset');
-        my $em = $STATE->lookupValue('font')->getEMWidth;
-        ($w, $h, $d) = map { defined $_ && $_ !~ /%$/ ? roundto(Dimension($_)->spValue / $em, 2) . 'em' : $_; } ($w, $h, $d);
-        $whatsit->setProperty('width',  $w) if defined $w;
-        $whatsit->setProperty('height', $h) if defined $h;
-        $whatsit->setProperty('offset', $d) if defined $d;
     });
 
     AtBeginDocument(sub {
@@ -1083,5 +762,7 @@ if ($LaTeXML::VERSION < v0.8.8) {
       return;
   });
 }
+
+InputDefinitions('bookml/bookml.sty', noltxml => 1);
 
 1;

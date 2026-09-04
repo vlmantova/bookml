@@ -1,8 +1,9 @@
 ### TeX Live base layers
 ARG TEXLIVE_SCHEME=small
 ARG LATEXML_VERSION=0.8.8
+ARG LATEXMLOXIDE_VERSION=0.7.6
 # freeze Ubuntu version to minimize rebuilds
-FROM ubuntu:24.04@sha256:b359f1067efa76f37863778f7b6d0e8d911e3ee8efa807ad01fbf5dc1ef9006b AS base
+FROM ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 # TL 2021 is the latest version for which expl3 loads in reasonable time
@@ -13,15 +14,16 @@ RUN <<EOF
   set -eux
   apt update -qq
   apt install -qy tzdata curl perl-modules
-  apt install -qy gpg ghostscript libgetopt-long-descriptive-perl libdigest-perl-md5-perl libncurses6 libunicode-linebreak-perl libfile-homedir-perl libyaml-tiny-perl ghostscript libsm6 python3 python3-pygments gnuplot-nox libglut3.12 dvisvgm imagemagick librsvg2-bin mupdf-tools make unzip zip --no-install-recommends
+  apt install -qy gpg ghostscript libgetopt-long-descriptive-perl libdigest-perl-md5-perl libncurses6 libunicode-linebreak-perl libfile-homedir-perl libyaml-tiny-perl ghostscript libsm6 python3 python3-pygments gnuplot-nox libglut3.12 dvisvgm imagemagick librsvg2-bin mupdf-tools make unzip zip patch poppler-utils --no-install-recommends
 EOF
 # install texlive-local equiv pacakge
-RUN <<EOF
+# original equiv from https://wiki.debian.org/TeXLive?action=AttachFile&do=get&target=debian-equivs-${TEXLIVE_VERSION}-ex.txt
+RUN --mount=target=/docker-ctx <<EOF
   set -eux
   cd /tmp
-  curl -L "https://wiki.debian.org/TeXLive?action=AttachFile&do=get&target=debian-equivs-${TEXLIVE_VERSION}-ex.txt" | grep -v '^Depends:' > texlive-equiv
+  grep -v '^Depends:' < /docker-ctx/texlive-equiv-${TEXLIVE_VERSION}.txt > texlive-equiv
   apt update -qq
-  apt install -qy equivs
+  apt install -qy equivs --no-install-recommends
   equivs-build texlive-equiv
   dpkg -i texlive-local_*.deb
   rm -fr /tmp/*
@@ -93,9 +95,9 @@ RUN rm /usr/local/bin/dvisvgm
 ARG LATEXML_VERSION
 RUN <<EOF
   set -eux
-  curl -L https://launchpad.net/ubuntu/+archive/primary/+files/latexml_${LATEXML_VERSION}-1_all.deb -o /latexml_${LATEXML_VERSION}-1_all.deb
-  dpkg -i /latexml_${LATEXML_VERSION}-1_all.deb
-  rm /latexml_${LATEXML_VERSION}-1_all.deb
+  curl -L https://launchpad.net/ubuntu/+archive/primary/+files/latexml_${LATEXML_VERSION}-4_all.deb -o /latexml_${LATEXML_VERSION}-4_all.deb
+  dpkg -i /latexml_${LATEXML_VERSION}-4_all.deb
+  rm /latexml_${LATEXML_VERSION}-4_all.deb
 EOF
 
 # Enable imagemagick policy permissions for work with arXiv PDF/EPS files
@@ -115,19 +117,34 @@ ENV MAGICK_DISK_LIMIT=2GiB \
   MAGICK_TIME_LIMIT=900
 
 # patch LaTeXML to report full paths and columns starting from 1
-RUN apt install -qy patch
 RUN --mount=target=/docker-ctx cat /docker-ctx/latexml-*.patch | patch -d /usr/share/perl5 -p2
 
+### latexml-oxide base layer
+FROM latexml AS latexml-oxide
+
+ARG LATEXMLOXIDE_VERSION
+ARG TARGETARCH
+RUN <<EOF
+  set -eux
+  curl -L https://github.com/dginev/latexml-oxide/releases/download/${LATEXMLOXIDE_VERSION}/latexml-oxide_${LATEXMLOXIDE_VERSION}-1_${TARGETARCH}.deb -o /latexml-oxide_${LATEXMLOXIDE_VERSION}-1_${TARGETARCH}.deb
+  dpkg -i /latexml-oxide_${LATEXMLOXIDE_VERSION}-1_${TARGETARCH}.deb
+  rm /latexml-oxide_${LATEXMLOXIDE_VERSION}-1_${TARGETARCH}.deb
+  cd /usr
+  latexml_oxide --init=plain.tex
+  latexml_oxide --init=latex.ltx
+EOF
+
 ### BookML
-FROM latexml AS bookml
+FROM latexml-oxide AS bookml
 
 COPY release.zip /release.zip
 
 ARG TEXLIVE_SCHEME
 ARG LATEXML_VERSION
+ARG LATEXMLOXIDE_VERSION
 ARG BOOKML_VERSION
 LABEL org.opencontainers.image.source=https://github.com/vlmantova/bookml
-LABEL org.opencontainers.image.title="BookML ${BOOKML_VERSION} runner (LaTeXML ${LATEXML_VERSION}, TeX Live ${TEXLIVE_VERSION} ${TEXLIVE_SCHEME})"
+LABEL org.opencontainers.image.title="BookML ${BOOKML_VERSION} runner (LaTeXML ${LATEXML_VERSION}, latexml-oxide ${LATEXMLOXIDE_VERSION}, TeX Live ${TEXLIVE_VERSION} ${TEXLIVE_SCHEME})"
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 LABEL org.opencontainers.image.version=${BOOKML_VERSION}
 LABEL org.opencontainers.image.description="Run BookML in the current working directory. Usage: `docker run --rm -i -t -v.:/source ghcr.io/vlmantova/bookml:${BOOKML_VERSION}`"

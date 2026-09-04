@@ -38,7 +38,7 @@
       <xsl:message terminate="yes">bookml: you must call latexmlpost/latexmlc with --navigationtoc=context or disable the gitbook style via \usepackage[style=plain]{bookml}</xsl:message>
     </xsl:if>
     <xsl:choose>
-      <xsl:when test="not($GITBOOK) or */@bml-colors-done">
+      <xsl:when test="not($GITBOOK) or b:oxide() or */@bml-colors-done">
         <xsl:apply-imports/>
       </xsl:when>
       <xsl:otherwise>
@@ -354,7 +354,7 @@
   </xsl:template>
 
   <!-- insert <a href=""> for navigation TOC entries without href (i.e., the page itself) -->
-  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC//ltx:ref[not(@href)]">
+  <xsl:template match="ltx:navigation[b:gitbook()]/ltx:TOC//ltx:ref[not(@href) or @href='']">
     <xsl:param name="context"/>
     <!-- TODO: is there *any* way to get the current filename? it may be impossible -->
     <a href="" title="{@title}" aria-current="page">

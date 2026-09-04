@@ -31,17 +31,10 @@
     xmlns:exsl  = "http://exslt.org/common"
     xmlns:str   = "http://exslt.org/strings"
     xmlns:m     = "http://www.w3.org/1998/Math/MathML"
+    xmlns:bml   = "https://vlmantova.github.io/bookml"
     xmlns       = "http://www.w3.org/1999/xhtml"
     extension-element-prefixes = "exsl func str"
     exclude-result-prefixes = "ltx f b svg xlink m">
-
-  <!-- remove the outdated Content-type meta tag (backported from 0.8.6) -->
-  <xsl:template match="/" mode="head-content-type">
-    <xsl:choose>
-      <xsl:when test="b:max-version('0.8.5')"/>
-      <xsl:otherwise><xsl:apply-imports/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
 
   <xsl:template match="/" mode="body-begin">
     <xsl:apply-imports />
@@ -53,7 +46,7 @@
 
   <!-- add BookML resources and preamble raw HTML at the end of the head -->
   <xsl:template match="/" mode="head-end">
-    <xsl:apply-templates select="//ltx:resource[@type='text/html']" mode="bml-resource"/>
+    <xsl:apply-templates select="//ltx:resource[@type='text/html'] | //ltx:resource[@type='application/xhtml+xml']" mode="bml-resource"/>
     <xsl:apply-templates select="//ltx:resource[contains(@type,';bmllocation=head')]" mode="bml-resource"/>
     <xsl:if test="not(b:nomathjax())">
       <xsl:variable name="mjx-version">
@@ -67,7 +60,7 @@
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="ltx:resource[@type='text/html']" mode="bml-resource">
+  <xsl:template match="ltx:resource[@type='text/html'] | //ltx:resource[@type='application/xhtml+xml']" mode="bml-resource">
     <xsl:text>&#x0A;</xsl:text>
     <xsl:apply-templates mode="copy-foreign"/>
   </xsl:template>
@@ -151,51 +144,6 @@
   <!-- remove date from subpages, add 'hasAnchor' class for GitBook -->
   <xsl:template
     match="ltx:title[parent::*/child::ltx:titlepage and b:gitbook() and not(//ltx:navigation/ltx:ref[@rel='up']) and f:seclev-aux(local-name(..))='0']" />
-
-  <xsl:template
-    match="ltx:title[not(parent::*/child::ltx:titlepage) and b:max-version('0.8.5') and (not(b:gitbook()) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')]">
-    <xsl:param name="context" />
-    <xsl:text>&#x0A;</xsl:text>
-    <xsl:element name="{concat('h',f:section-head-level(parent::*))}" namespace="{$html_ns}">
-      <xsl:variable name="innercontext" select="'inline'"/><!-- override -->
-      <xsl:call-template name="add_id"/>
-      <xsl:call-template name="add_attributes"/>
-      <!-- avoid class styling when $GITBOOK -->
-      <xsl:if test="$GITBOOK"><xsl:attribute name="class"/></xsl:if>
-      <xsl:apply-templates select="." mode="begin">
-        <xsl:with-param name="context" select="$innercontext"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates>
-        <xsl:with-param name="context" select="$innercontext"/>
-      </xsl:apply-templates>
-    </xsl:element>
-    <!-- include parent's subtitle, author & date (if any)-->
-    <xsl:apply-templates select="../ltx:subtitle" mode="intitle">
-      <xsl:with-param name="context" select="$context"/>
-    </xsl:apply-templates>
-    <xsl:if test="not(parent::ltx:sidebar)">
-      <xsl:call-template name="authors">
-        <xsl:with-param name="context" select="$context"/>
-      </xsl:call-template>
-      <!-- date on front page only (backported from v0.8.6) -->
-      <xsl:if test="not(//ltx:navigation/ltx:ref[@rel='start'])">
-        <xsl:call-template name="dates">
-          <xsl:with-param name="context" select="$context"/>
-          <xsl:with-param name="dates" select="../ltx:date"/>
-        </xsl:call-template>
-      </xsl:if>
-    </xsl:if>
-    <xsl:apply-templates select="." mode="end">
-      <xsl:with-param name="context" select="$context"/>
-    </xsl:apply-templates>
-    <xsl:text>&#x0A;</xsl:text>
-    <xsl:apply-templates select="parent::*" mode="auto-toc">
-      <xsl:with-param name="context" select="$context"/>
-    </xsl:apply-templates>
-  </xsl:template>
-
-  <xsl:template
-    match="ltx:title[parent::*/child::ltx:titlepage and b:max-version('0.8.5') and (not(b:gitbook()) or //ltx:navigation/ltx:ref[@rel='start'] or f:seclev-aux(local-name(..))!='0')]" />
 
   <xsl:template match="ltx:TOC/ltx:title"/>
 
@@ -374,7 +322,11 @@
       <xsl:call-template name="add_attributes">
         <xsl:with-param name="extra_style">
           <xsl:if test="@imagedepth">
-            <xsl:value-of select="concat('vertical-align:-',@imagedepth,'px')"/>
+            <!-- BookML images set the depth in em units (oxide only) -->
+            <xsl:value-of select="concat('vertical-align:-',@imagedepth)"/>
+            <xsl:if test="not(b:ends-with(@imagedepth,'em'))">
+              <xsl:text>px</xsl:text>
+            </xsl:if>
           </xsl:if>
         </xsl:with-param>
       </xsl:call-template>
@@ -397,12 +349,8 @@
     </img>
   </xsl:template>
 
-  <!-- ugly fix for backslashes in URLs on Windows -->
-  <xsl:template match="@href[b:max-version('0.8.6')] | @src[b:max-version('0.8.6')]" mode="bml-alter">
-    <xsl:attribute name="{local-name()}">
-      <xsl:value-of select="b:fix-windows-paths(.)"/>
-    </xsl:attribute>
-  </xsl:template>
+  <!-- remove bml: attributes -->
+  <xsl:template match="@bml:*" mode="copy-attribute" />
 
   <!-- remove parentheses around dates -->
   <xsl:template name="dates">
@@ -425,28 +373,6 @@
         </xsl:apply-templates>
       </xsl:element>
     </xsl:if>
-  </xsl:template>
-
-  <!-- add default \FrameSep (=3\fboxsep=9pt) padding, if missing -->
-  <xsl:template match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/@style"
-    mode="bml-alter">
-    <xsl:variable name="attr"><span><xsl:apply-imports /></span></xsl:variable>
-    <xsl:attribute name="style">
-      <xsl:text>padding:9pt;</xsl:text>
-      <xsl:copy-of select="exsl:node-set($attr)//@style" />
-    </xsl:attribute>
-  </xsl:template>
-
-  <!-- HACK detect titled-frame and add negative margins to the title (TODO: compute the correct margins based on the parent padding) -->
-  <xsl:template
-    match="*[b:max-version('0.8.7') and b:has-class('ltx_framed_rectangle') and not(contains(./@style,'padding'))]/span[position()=1 and contains(./@style,'width:100%;')]/@style"
-    mode="bml-alter">
-    <xsl:variable name="content"><xsl:apply-imports /></xsl:variable>
-    <xsl:attribute name="style">
-      <xsl:text>margin-left:-9pt;margin-right:-9pt;margin-top:-9pt;margin-bottom:9pt;padding-left:9pt;padding-right:9pt;</xsl:text>
-      <xsl:value-of select="substring-before($content,'width:100%;')" />
-      <xsl:value-of select="substring-after($content,'width:100%;')" />
-    </xsl:attribute>
   </xsl:template>
 
   <!-- modify listings to use <code> tags and follow LaTeX layout -->
@@ -517,13 +443,8 @@
     </xsl:element>
   </xsl:template>
 
-  <!-- replace code space with actual space, to facilitate copy & paste -->
-  <xsl:template match="ltx:text[b:max-version('0.8.7') and b:has-class('ltx_lst_space')]/text()[.='&#xA0;']">
-    <xsl:text> </xsl:text>
-  </xsl:template>
-
   <!-- recreate missing viewBox attribute -->
-  <xsl:template match="ltx:picture[b:max-version('0.8.8') and svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
+  <xsl:template match="ltx:picture[not(b:oxide()) and b:max-version('0.8.8') and svg:svg[not(@viewBox) and @width and @height and svg:g/@transform]]" mode="as-svg">
     <!-- Wrap in inline-block, to ensure CSS works (eg, mtext in Firefox) -->
     <span class="ltx_inline-block">
       <svg:svg>
@@ -1427,6 +1348,16 @@
       </span>
       <span aria-hidden="true"><xsl:copy-of select="exsl:node-set($fragment)/*/node()" /></span>
     </xsl:copy>
+  </xsl:template>
+
+  <!-- fix depth of TikZ matrices with latexml-oxide 0.7.6 -->
+  <xsl:template match="g[b:max-version('0.7.6') and b:has-class('ltx_tikzmatrix')]/@transform" mode="bml-alter">
+    <xsl:variable name="last-row-transform" select="../g[b:has-class('ltx_tikzmatrix_row',.)][last()]/@transform" />
+    <xsl:variable name="y" select="substring-after($last-row-transform,'matrix(1 0 0 1 0 ')" />
+    <xsl:attribute name="transform">
+      <xsl:text>matrix(1 0 0 -1 0 </xsl:text>
+      <xsl:value-of select="$y" />
+    </xsl:attribute>
   </xsl:template>
 
 </xsl:stylesheet>

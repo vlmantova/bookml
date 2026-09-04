@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,9 +94,9 @@ detect-perl: announce-detect-core
 	@$(call bml.print.testver,          perl,5.8.1,,$(perl_ver),)
 	@:
 detect-latexml: announce-detect-core
-	@$(eval latexml_ver:=$$(subst $$(bml.utils.closedp),,$$(filter %$$(bml.utils.closedp), \
-	  $$(shell $$(LATEXML) --VERSION 2>&1))))
-	@$(call bml.print.testver,       LaTeXML,0.8.7,0.8.8,$(latexml_ver))
+	@$(eval latexml_ver:=$$(if $$(bml.utils.ifoxide),$$(word 2,$$(shell $$(LATEXML) --version)),$$(subst $$(bml.utils.closedp),,$$(filter %$$(bml.utils.closedp), \
+	  $$(shell $$(LATEXML) --VERSION 2>&1)))))
+	@$(call bml.print.testver,       LaTeXML,$(if $(bml.utils.ifoxide),0.7.6,0.8.8),$(if $(bml.utils.ifoxide),0.7.6,0.8.8),$(latexml_ver), $(if $(bml.utils.ifoxide),(oxide),(perl)))
 	@:
 detect-latexmk: announce-detect-core
 	@$(call bml.print.testver,       latexmk,,,$(lastword $(shell $(LATEXMK) --version 2>$(bml.utils.null))))

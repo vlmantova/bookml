@@ -45,15 +45,15 @@ GITBOOK_DIRS   := gitbook $(patsubst %,gitbook/%,css css/fontawesome js)
 GITBOOK_OUT    := $(patsubst $(GITBOOK_SOURCE)/%,gitbook/%,$(GITBOOK_CSS) $(GITBOOK_TTF:.ttf=.woff2) $(GITBOOK_JS))
 
 CSS          := $(patsubst %.scss,%.css,$(wildcard CSS/*.scss))
-BOOKML_CSS   := $(patsubst %,bookml/%,$(CSS))
-BOOKML_JS    := $(patsubst %,bookml/%,$(wildcard js/*))
-BOOKML_XSLT  := $(patsubst %,bookml/%,$(wildcard XSLT/*))
-BOOKML_LTX   := bookml/bookml-init.sty bookml/bookml.sty bookml/latexml.sty
-BOOKML_LTXML := bookml/bookml-init.sty.ltxml bookml/bookml.sty.ltxml bookml/schema.rng $(patsubst %,bookml/%,$(wildcard bindings/*/*.ltxml))
-BOOKML_MK    := bookml/bml-config.mk bookml/bml-deps.mk bookml/bml-detect.mk bookml/bml-print.mk bookml/bml-utils.mk bookml/bml-version.mk bookml/bookml.mk bookml/bookml.pm bookml/deps.pl bookml/manifest.pl bookml/search_index.pl bookml/xraux.pl bookml/xsltproc.pl
-BOOKML_OUT   := $(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK)
+BOOKML_CSS   := $(CSS)
+BOOKML_JS    := $(wildcard js/*)
+BOOKML_XSLT  := $(wildcard XSLT/*)
+BOOKML_LTX   := $(wildcard bookml*.sty) latexml.sty
+BOOKML_LTXML := $(wildcard bookml*.ltxml bookml*.rhai) schema.rng $(wildcard bindings/*/*.ltxml bindings/*/*.rhai) bmlimages.pl resources.pl
+BOOKML_MK    := $(wildcard bml-*.mk) bookml.mk bookml.pm deps.pl manifest.pl search_index.pl xraux.pl xsltproc.pl
+BOOKML_OUT   := $(addprefix bookml/,$(BOOKML_CSS) $(BOOKML_JS) $(BOOKML_XSLT) $(BOOKML_LTX) $(BOOKML_LTXML) $(BOOKML_MK))
 
-RELEASE_OUT  := $(patsubst %,bookml/%,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
+RELEASE_OUT  := $(addprefix bookml/,$(GITBOOK_OUT)) $(BOOKML_OUT) bookml/GNUmakefile
 
 TEST_DIRS    := $(patsubst %,test/%,$(BOOKML_DIRS))
 TEST_OUT     := $(patsubst %,test/bookml/%,$(GITBOOK_OUT)) $(patsubst %,test/%,$(BOOKML_OUT))
@@ -81,17 +81,19 @@ docker-ctx/release.zip: release.zip | docker-ctx/./
 
 TEXLIVE_VERSION=2021
 LATEXML_VERSION=0.8.8
+LATEXMLOXIDE_VERSION=0.7.6
 IS_LATEST=yes
 REF=ghcr.io/vlmantova/bookml
 $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arch))): docker-build-%: Dockerfile docker-ctx/release.zip
 	$(eval ARCH=$(lastword $(subst -, ,$*)))
 	$(eval SCHEME=$(firstword $(subst -, ,$*)))
 	$(eval TAG=$(BOOKML_VERSION)-$(ARCH))
-	docker build --load --build-arg=BUILDKIT_INLINE_CACHE=1 \
+	docker buildx build --load --build-arg=BUILDKIT_INLINE_CACHE=1 \
 		$(foreach scheme,$(SCHEMES),$(foreach tag,latest-$(ARCH) cache-$(TAG),--cache-from=type=registry,ref=$(REF)-$(scheme):$(tag))) \
-		--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(TAG),mode=max --platform linux/$(ARCH) \
+		--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(TAG),mode=max,compression=zstd --platform linux/$(ARCH) \
 		--build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --build-arg=TEXLIVE_SCHEME=$(SCHEME) \
 		--build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) \
+		--build-arg=LATEXMLOXIDE_VERSION=$(LATEXMLOXIDE_VERSION) \
 		--tag=$(REF)-$(SCHEME):$(TAG) $(if $(IS_LATEST),--tag=$(REF)-$(SCHEME):latest-$(ARCH)) \
 		--output type=docker,compression=zstd \
 		-f "$<" docker-ctx
@@ -107,7 +109,7 @@ $(foreach scheme,$(SCHEMES),docker-manifest-$(scheme)): docker-manifest-%:
 	docker buildx imagetools create \
 		--tag=$(REF)-$*:$(BOOKML_VERSION) $(if $(IS_LATEST),--tag=$(REF)-$*:latest) \
 		--annotation=index:org.opencontainers.image.source=https://github.com/vlmantova/bookml \
-		--annotation=index:org.opencontainers.image.title='BookML $(BOOKML_VERSION) runner (LaTeXML $(LATEXML_VERSION), TeX Live $(TEXLIVE_VERSION) $*)' \
+		--annotation=index:org.opencontainers.image.title='BookML $(BOOKML_VERSION) runner (LaTeXML $(LATEXML_VERSION), latexml-oxide $(LATEXMLOXIDE_VERSION), TeX Live $(TEXLIVE_VERSION) $*)' \
 		--annotation=index:org.opencontainers.image.licenses=GPL-3.0-or-later \
 		--annotation=index:org.opencontainers.image.version=$(BOOKML_VERSION) \
 		--annotation=index:org.opencontainers.image.description='Run BookML in the current working directory. Usage: `docker run --rm -i -t -v.:/source $(REF)-$*:$(BOOKML_VERSION)`' \
@@ -117,7 +119,7 @@ docker-manifest:
 	docker buildx imagetools create \
 		--tag=$(REF):$(BOOKML_VERSION) $(if $(IS_LATEST),--tag=$(REF):latest) \
 		--annotation=index:org.opencontainers.image.source=https://github.com/vlmantova/bookml \
-		--annotation=index:org.opencontainers.image.title='BookML $(BOOKML_VERSION) runner (LaTeXML $(LATEXML_VERSION), TeX Live $(TEXLIVE_VERSION) $*)' \
+		--annotation=index:org.opencontainers.image.title='BookML $(BOOKML_VERSION) runner (LaTeXML $(LATEXML_VERSION), latexml-oxide $(LATEXMLOXIDE_VERSION), TeX Live $(TEXLIVE_VERSION) $*)' \
 		--annotation=index:org.opencontainers.image.licenses=GPL-3.0-or-later \
 		--annotation=index:org.opencontainers.image.version=$(BOOKML_VERSION) \
 		--annotation=index:org.opencontainers.image.description='Run BookML in the current working directory. Usage: `docker run --rm -i -t -v.:/source $(REF):$(BOOKML_VERSION)`' \
@@ -152,6 +154,9 @@ bookml/%/./:
 gitbook/%/./:
 	$(MKDIR) "$(call ospath,$@)"
 
+test/bookml/./:
+	$(MKDIR) "$(call ospath,$@)"
+
 test/bookml/%/./:
 	$(MKDIR) "$(call ospath,$@)"
 
@@ -161,13 +166,13 @@ gitbook/%: $(GITBOOK_SOURCE)/% | $$(@D)/./
 bookml/%: % | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-test/bookml/%: bookml/% | $$(if $$(filter %/./,$@),,$(@D)/./)
+test/bookml/%: bookml/% | $$(if $$(filter %/./,$$@),,$$(@D)/./)
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
 bookml/GNUmakefile: template/GNUmakefile | $$(@D)/./
 	$(CP) "$(call ospath,$<)" "$(call ospath,$@)"
 
-$(patsubst %,bookml/%,bml-detect.mk bookml-init.sty bookml-init.sty.ltxml bookml.sty bookml.sty.ltxml XSLT/utils.xsl): bookml/%: % | $$(@D)/./
+$(patsubst %,bookml/%,bml-detect.mk $(wildcard *.ltxml *.rhai *.sty) XSLT/utils.xsl): bookml/%: % | $$(@D)/./
 	perl -pe "s!\@DATE@!$(BOOKML_DATE)!g; s!\@VERSION@!$(BOOKML_VERSION)!g" "$<" > "$@"
 
 # fix erratic positioning of the prev/next buttons due to buggy rounding

@@ -1,5 +1,5 @@
 # BookML: bookdown flavoured GitBook port for LaTeXML
-# Copyright (C) 2021-26  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+# Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -177,5 +177,8 @@ bml.utils.after  = $(strip $(if $2,\
 bml.utils.makeflags = $(filter-out -,$(firstword -$(MAKEFLAGS)))
 bml.utils.makeopts  = $(call bml.utils.before,--,$(wordlist 2,$(words -$(MAKEFLAGS)),-$(MAKEFLAGS)))
 bml.utils.makeargs  = $(call bml.utils.after,--,$(MAKEFLAGS))
+
+# recognise latexml_oxide
+bml.utils.ifoxide = $(findstring oxide,$(notdir $(call bml.utils.autovar,LATEXML)))
 
 endif # __bml.utils.mk.included

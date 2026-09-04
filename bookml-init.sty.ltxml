@@ -4,7 +4,7 @@
 =begin comment
 
   BookML: bookdown flavoured GitBook port for LaTeXML
-  Copyright (C) 2021-25  Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
+  Copyright (C) 2021-26 Vincenzo Mantova <v.l.mantova@leeds.ac.uk>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,500 +27,46 @@ package LaTeXML::Package::Pool;
 use strict;
 use warnings;
 
-use LaTeXML::Util::Pathname;
+# the options are not picked up from bookml-init.sty (why?)
+RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
 
-{
-  my $bindings = "bookml/bindings/v$LaTeXML::VERSION";
-  if (-d $bindings) {
-    PushValue('SEARCHPATHS', pathname_absolute(pathname_canonical($bindings)));
-  }
-}
+PushValue(SEARCHPATHS => pathname_absolute(pathname_canonical("bookml/bindings/v$LaTeXML::VERSION-perl")));
 
-# bookml/bookml uses AtBeginDocument()! we must load it in the
-# @document@preamble@atend hook which runs *before* @at@begin@document
-PushValue('@document@preamble@atend', Tokenize('\usepackage{bookml/bookml}'));
-
-# LaTeXML currently does not support the class options 10pt, 11pt, etc so we have to do the work ourselves
-# we try to do this immediately after \document class, so that the correct size is set before \title, \author, etc
-DefPrimitiveI('\bml@process@pt@size', undef, sub {
-    # ensure we do not run this twice
-    return if defined LookupValue('BML_PT_SIZE');
-
-    my ($stomach) = @_;
-    my ($class, $pt);
-
-    my @classoptions = @{ LookupValue('class_options') || [] };
-
-    # check 'aa', 'elsart' etc first since they load 'article', 'amsart' etc internally
-    for my $cls ('a0poster', 'aastex', 'acmart', 'beamer', 'elsart', 'IEEEtran', 'iopart', 'JHEP', 'JHEP2', 'JHEP3', 'minimal', 'slides', 'amsart', 'amsbook', 'amsproc', 'article', 'report', 'book') {
-      if (LookupValue("$cls.cls.ltxml_loaded")) {
-        $class = $cls; last; } }
-
-    for my $opt (grep(/^\d+pt$/, @classoptions)) {
-      $pt = $opt =~ s/pt//r; }
-
-    my %bml_font_sizes = (
-      # article
-      'size10.clo' => {
-        normalsize   => [10,    12],
-        small        => [9,     11],
-        footnotesize => [8,     9.5],
-        scriptsize   => [7,     8],
-        tiny         => [5,     6],
-        large        => [12,    14],
-        Large        => [14.4,  18],
-        LARGE        => [17.28, 22],
-        huge         => [20.74, 25],
-        Huge         => [24.88, 30]
-      },
-      'size11.clo' => {
-        normalsize   => [10.95, 13.6],
-        small        => [10,    12],
-        footnotesize => [9,     11],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [12,    14],
-        Large        => [14.4,  18],
-        LARGE        => [17.28, 22],
-        huge         => [20.74, 25],
-        Huge         => [24.88, 30]
-      },
-      'size12.clo' => {
-        normalsize   => [12,    14.5],
-        small        => [10.95, 13.6],
-        footnotesize => [10,    12],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [14.4,  18],
-        Large        => [17.28, 22],
-        LARGE        => [20.74, 25],
-        huge         => [24.88, 30],
-        Huge         => [24.88, 30]
-      },
-      # extsizes
-      'size8.clo' => {
-        normalsize   => [8,     9.5],
-        small        => [7,     8],
-        footnotesize => [6,     7],
-        scriptsize   => [5,     6],
-        tiny         => [5,     6],
-        large        => [10,    10.95],
-        Large        => [10.95, 12],
-        LARGE        => [12,    14],
-        huge         => [14.4,  18],
-        Huge         => [17.28, 22]
-      },
-      'size9.clo' => {
-        normalsize   => [9,     10.95],
-        small        => [8,     9],
-        footnotesize => [7,     8],
-        scriptsize   => [6,     7],
-        tiny         => [5,     6],
-        large        => [10,    12],
-        Large        => [10.95, 13],
-        LARGE        => [12,    14],
-        huge         => [14.4,  18],
-        Huge         => [17.28, 22]
-      },
-      'size14.clo' => {
-        normalsize   => [14.4,  17],
-        small        => [12,    14],
-        footnotesize => [10,    12],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [17.28, 22],
-        Large        => [20.74, 25],
-        LARGE        => [24.88, 30],
-        huge         => [29.86, 35],
-        Huge         => [35.83, 40]
-      },
-      'size17.clo' => {
-        normalsize   => [17.28, 22],
-        small        => [14.4,  17],
-        footnotesize => [12,    14],
-        scriptsize   => [10,    11],
-        tiny         => [8,     9],
-        large        => [20.74, 25],
-        Large        => [24.88, 30],
-        LARGE        => [29.86, 35],
-        huge         => [35.83, 41],
-        Huge         => [42.99, 52]
-      },
-      'size20.clo' => {
-        normalsize   => [20.74, 25],
-        small        => [17.28, 22],
-        footnotesize => [14.4,  17],
-        scriptsize   => [12,    14],
-        tiny         => [10,    11],
-        large        => [24.88, 30],
-        Large        => [29.86, 35],
-        LARGE        => [35.83, 41],
-        huge         => [42.99, 52],
-        Huge         => [51.59, 63]
-      },
-      # book, amsdtx, amsldoc
-      'bk10.clo' => {
-        normalsize   => [10,    12],
-        small        => [9,     11],
-        footnotesize => [8,     9.5],
-        scriptsize   => [7,     8],
-        tiny         => [5,     6],
-        large        => [12,    14],
-        Large        => [14.4,  18],
-        LARGE        => [17.28, 22],
-        huge         => [20.74, 25],
-        Huge         => [24.88, 30]
-      },
-      'bk11.clo' => {
-        normalsize   => [10.95, 13.6],
-        small        => [10,    12],
-        footnotesize => [9,     11],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [12,    14],
-        Large        => [14.4,  18],
-        LARGE        => [17.28, 22],
-        huge         => [20.74, 25],
-        Huge         => [24.88, 30]
-      },
-      'bk12.clo' => {
-        normalsize   => [12,    14.5],
-        small        => [10.95, 13.6],
-        footnotesize => [10,    12],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [14.4,  18],
-        Large        => [17.28, 22],
-        LARGE        => [20.74, 25],
-        huge         => [24.88, 30],
-        Huge         => [24.88, 30]
-      },
-      # amsart, amsbook, amsproc
-      'amscls10.clo' => {
-        Tiny         => [5,     6],
-        tiny         => [6,     7],
-        scriptsize   => [7,     8],
-        footnotesize => [8,     10],
-        small        => [9,     11],
-        normalsize   => [10,    12],
-        large        => [10.95, 13],
-        Large        => [12,    14],
-        LARGE        => [14.4,  17],
-        huge         => [17.28, 20],
-        Huge         => [20.74, 24]
-      },
-      'amscls11.clo' => {
-        Tiny         => [6,     7],
-        tiny         => [7,     8],
-        scriptsize   => [8,     10],
-        footnotesize => [9,     11],
-        small        => [10,    12],
-        normalsize   => [10.95, 13],
-        large        => [12,    14],
-        Large        => [14.4,  17],
-        LARGE        => [17.28, 20],
-        huge         => [20.74, 24],
-        Huge         => [24.88, 30]
-      },
-      'amscls12.clo' => {
-        Tiny         => [7,     8],
-        tiny         => [8,     10],
-        scriptsize   => [9,     11],
-        footnotesize => [10,    12],
-        small        => [10.95, 13],
-        normalsize   => [12,    14],
-        large        => [14.4,  17],
-        Large        => [17.28, 20],
-        LARGE        => [20.74, 24],
-        huge         => [24.88, 30],
-        Huge         => [24.88, 30]
-      },
-      'amscls8.clo' => {
-        Tiny         => [5,     6],
-        tiny         => [5,     6],
-        scriptsize   => [5,     6],
-        footnotesize => [6,     7],
-        small        => [7,     8],
-        normalsize   => [8,     10],
-        large        => [9,     11],
-        Large        => [10,    12],
-        LARGE        => [10.95, 13],
-        huge         => [12,    14],
-        Huge         => [14.4,  17]
-      },
-      'amscls9.clo' => {
-        Tiny         => [5,     6],
-        tiny         => [5,     6],
-        scriptsize   => [6,     7],
-        footnotesize => [7,     8],
-        small        => [8,     10],
-        normalsize   => [9,     11],
-        large        => [10,    12],
-        Large        => [10.95, 13],
-        LARGE        => [12,    14],
-        huge         => [14.4,  17],
-        Huge         => [17.28, 20]
-      },
-      # aa (which version? 9.0 on arXiv does not have *pt options)
-      'aa10.clo' => {
-        normalsize   => [10,    11],
-        small        => [9,     10],
-        scriptsize   => [7,     8],
-        tiny         => [8,     9],
-        large        => [10.95, 13],
-        Large        => [14.4,  16],
-        LARGE        => [17.28, 20],
-        huge         => [20.74, 24],
-        Huge         => [24.88, 30],
-        footnotesize => [9,     10]
-      },
-      'aa11.clo' => {
-        normalsize   => [10.95, 13.6],
-        small        => [10,    12],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [12,    14],
-        Large        => [14.4,  18],
-        LARGE        => [17.28, 22],
-        huge         => [20.74, 25],
-        Huge         => [24.88, 30],
-        footnotesize => [10,    12]
-      },
-      'a12.clo' => {
-        normalsize   => [12,    14.5],
-        small        => [10.95, 13.6],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [14.4,  18],
-        Large        => [17.28, 22],
-        LARGE        => [20.74, 25],
-        huge         => [24.88, 30],
-        Huge         => [24.88, 30],
-        footnotesize => [10.95, 13.6]
-      },
-      # elsart
-      'elsart.clo' => {
-        normalsize   => [12,    14.5],
-        small        => [10.95, 13.6],
-        footnotesize => [10.95, 13.6],
-        scriptsize   => [8,     9.5],
-        tiny         => [6,     7],
-        large        => [14.4,  18],
-        Large        => [17.28, 22],
-        LARGE        => [20.74, 22],
-        huge         => [20.74, 27],
-        Huge         => [20.74, 27]
-      },
-      # a0poster
-      'a0poster.cls' => {
-        tiny         => [12,    14],
-        scriptsize   => [14.4,  18],
-        footnotesize => [17.28, 22],
-        small        => [20.74, 24],
-        normalsize   => [24.88, 30],
-        large        => [29.86, 37],
-        Large        => [35.83, 45],
-        LARGE        => [43,    54],
-        huge         => [51.6,  64],
-        Huge         => [61.92, 77],
-        veryHuge     => [74.3,  93],
-        VeryHuge     => [89.16, 112],
-        VERYHuge     => [107,   134]
-      },
-      # minimal
-      'minimal.cls' => {
-        normalsize => [10, 12]
-      },
-      # slides
-      'slides.cls' => {
-        normalsize   => [19.907, 28],
-        small        => [16.59,  19],
-        footnotesize => [16.59,  19],
-        scriptsize   => [16.59,  19],
-        tiny         => [13.82,  16],
-        large        => [23.89,  42],
-        Large        => [28.66,  48],
-        LARGE        => [34.4,   52],
-        huge         => [41.28,  60],
-        Huge         => [41.28,  60]
-      },
-      # IEEEtran
-      'IEEEtran9.cls' => {
-        normalsize   => [9,   11.0476],
-        small        => [8.5, 10],
-        footnotesize => [8,   9],
-        scriptsize   => [7,   8],
-        tiny         => [5,   6],
-        sublargesize => [10,  12],
-        large        => [10,  12],
-        Large        => [12,  14],
-        LARGE        => [14,  17],
-        huge         => [17,  20],
-        Huge         => [20,  24]
-      },
-      'IEEEtran10.cls' => {
-        normalsize   => [10, 12],
-        small        => [9,  10],
-        footnotesize => [8,  9],
-        scriptsize   => [7,  8],
-        tiny         => [5,  6],
-        sublargesize => [11, 13.4],
-        large        => [12, 14],
-        Large        => [14, 17],
-        LARGE        => [17, 20],
-        huge         => [20, 24],
-        Huge         => [24, 28]
-      },
-      'IEEEtran11.cls' => {
-        normalsize   => [11, 13.3846],
-        small        => [10, 12],
-        footnotesize => [9,  10.5],
-        scriptsize   => [8,  9],
-        tiny         => [6,  7],
-        sublargesize => [12, 14],
-        large        => [12, 14],
-        Large        => [14, 17],
-        LARGE        => [17, 20],
-        huge         => [20, 24],
-        Huge         => [24, 28]
-      },
-      'IEEEtran12.cls' => {
-        normalsize   => [12, 13.92],
-        small        => [10, 12],
-        footnotesize => [9,  10.5],
-        scriptsize   => [8,  9],
-        tiny         => [6,  7],
-        sublargesize => [14, 17],
-        large        => [14, 17],
-        Large        => [17, 20],
-        LARGE        => [20, 24],
-        huge         => [22, 26],
-        Huge         => [24, 28]
-      },
-    );
-
-    my $file;
-
-    if ($class eq 'a0poster') {
-      $file = 'a0poster.cls'; }
-    elsif ($class eq 'aastex') {
-      if (!defined $pt) {
-        $pt = 10;
-        for (@classoptions) {
-          if    (m/^(?:manuscript|aasms4)$/)             { $pt = 12; }
-          elsif (m/^(?:preprint|aaspp4|aj_pt4|apjpt4)$/) { $pt = 11; }
-          elsif (m/^(?:preprint2|aas2pp4)$/)             { $pt = 10; } } }
-      $file = "size$pt.clo"; }
-    elsif ($class eq 'acmart') {
-      if (!defined $pt) {
-        $pt = 10;
-        for (@classoptions) {
-          if    (m/^(?:manuscript|acmtog|sigconf|siggraph|sigchi|acmp)$/) { $pt = 9; }
-          elsif (m/^(?:acmsall|acmlarge|sigplan|sigchi-a|acmengage)$/)    { $pt = 10; } } }
-      $file = "amscls$pt.clo"; }
-    elsif ($class =~ m/^(amsart|amsbook|amsproc)$/) {
-      $pt //= 10;
-      $file = "amscls$pt.clo"; }
-    elsif ($class =~ m/^(article|report)$/) {
-      $pt //= 10;
-      $file = "size$pt.clo"; }
-    elsif ($class eq 'beamer') {
-      if (!defined $pt) {
-        $pt = 11;
-        for (@classoptions) {
-          if    (m/^smaller$/) { $pt = 10; }
-          elsif (m/^bigger$/)  { $pt = 12; } } }
-      $file = "size$pt.clo"; }
-    elsif ($class eq 'book') {
-      $pt //= 10;
-      $file = ((10 <= $pt && $pt <= 12) ? 'bk' : 'size') . "$pt.clo"; }
-    elsif ($class eq 'elsart') {
-      $file = 'elsart.clo'; }
-    elsif ($class eq 'IEEEtran') {
-      $pt //= 10;
-      $file = "IEEEtran$pt.clo"; }
-    elsif ($class eq 'iopart') {
-      $file = ($pt == 10) ? 'size10.clo' : 'size12.clo'; }
-    elsif ($class =~ m/^JHEP/) {
-      $pt //= 11;
-      for (@classoptions) {
-        if    (m/^proceedings$/) { $pt = 10; }
-        elsif (m/^published$/)   { $pt = 11; } }
-      $file = "size$pt.clo"; }
-    elsif ($class eq 'minimal') {
-      $file = 'minimal.cls'; }
-    elsif ($class eq 'slides') {
-      $file = 'slides.cls'; }
-
-# Remaining classes currently supported by LaTeXML:
-# aa, elsarticle, ieeeconf, llcns, moderncv, quantumarticle covered by defaults
-# aipproc OMITTED, font sizes are picked in the preamble by \layoutstyle
-# standalone, subfiles not true classes
-# TODO gen-j-l, gen-m-l, gen-p-l, mn, mn2e, mnras, PoS, revtex, revtex4-1, revtex4, svjour, svjour3, svmult
-
-    my $sizes = $bml_font_sizes{$file};
-    $pt //= 10;
-
-    AssignValue(BML_PT_SIZE => $pt, 'global');
-
-    if (!$sizes) {
-      # fall back to standard (ext)article sizes
-      $sizes = $bml_font_sizes{"size$pt.clo"};
-      if ($sizes) {
-        # in case LaTeXML adds support for a new class BookML does not know about
-        Warn('unexpected', $pt . 'pt', undef, "BookML does not know how the class handles the option '${pt}pt', falling back to extarticle sizes"); } }
-
-    # LaTeXML makes \baselinestretch a register with value 0, but it should be a macro with value 1
-    my $defn;
-    if (!($defn = LookupDefinition(T_CS('\baselinestretch'))) || $defn->isRegister) {
-      DefMacroI('\baselinestretch', undef, 1); }
-
-    if ($sizes) {
-      for my $name (keys %{$sizes}) {
-        my ($size, $skip) = @{ $sizes->{$name} };
-        # mimic the internal \@setfontsize
-        DefPrimitiveI("\\$name", undef, sub {
-            my ($stomach) = @_;
-            my $stretched = $skip * ToString(Expand(T_CS('\baselinestretch')));
-            $stretched = Glue("${stretched}pt");
-            AssignRegister('\normalbaselineskip' => $stretched);
-            AssignRegister('\baselineskip'       => $stretched);
-            RawTeX('\normalbaselineskip\baselineskip');
-            return;
-        }, font => { size => $size });
-      }
-
-      # mimic running \normalsize in the preamble (hence scope 'global')
-      my ($normalsize, $skip) = @{ $sizes->{normalsize} };
-      my $stretched = $skip * ToString(Expand(T_CS('\baselinestretch')));
-      $stretched = Glue("${stretched}pt");
-      AssignRegister('\normalbaselineskip' => $stretched, 'global');
-      AssignRegister('\baselineskip'       => $stretched, 'global');
-      # configure LaTeXML font size
-      AssignValue(NOMINAL_FONT_SIZE => $normalsize, 'global');
-
-      # save the pt font size in the output, for later use in CSS
-      # (at begin document, after latexml has been loaded)
-      AtBeginDocument(Tokens(T_CS('\lx@save@parameter'), T_OTHER('bml-font-size'), T_OTHER($normalsize)));
-
-      # set the font size to normal size
-      $stomach->digest(T_CS('\normalsize'));
-    } else {
-      Error('unexpected', $pt . 'pt', undef, "BookML does not know how the current class handles the option '${pt}pt' and no fall back found in extarticle"); }
-
-    return;
+# add commands to be digested in afterDigest
+# the body can refer to the arguments via #1, #2, ...
+DefPrimitive('\bml@at@afterdigest Token Undigested', sub {
+  my ($stomach, $cs, $body) = @_;
+  my $defn = LookupDefinition($cs);
+  push(@{ $$defn{afterDigest} }, sub {
+    my ($stomach, $whatsit) = @_;
+    my @args = $whatsit->getArgs;
+    DefMacroI('\bml@after@digest@tmp', '{}' x @args, ToString($body));
+    $stomach->digest(Invocation(T_CS('\bml@after@digest@tmp'), map { $_ ? Tokens($_->revert) : $_ } @args));
+  });
+  return;
 });
 
-if (grep { m/\.cls\.ltxml_loaded$|\.cls_loaded$/ } keys %{ $STATE->{value} }) {
-  # called after \documentclass
-  Info('bookml', 'init', $STATE->getStomach, 'for best results, add \RequirePackage{bookml-init} or \RequirePackage{bookml/bookml} before \documentclass');
-  RawTeX('\bml@process@pt@size'); }
-else {
-  # patch \documentclass to run \bml@process@pt@size
-  Let('\bml@orig@documentclass', '\documentclass');
-  DefMacro('\documentclass OptionalSemiverbatim SkipSpaces Semiverbatim []', sub {
-      my ($gullet, $options, $class, $postoptions) = @_;
-      Tokens(T_CS('\bml@orig@documentclass'), $options ? (T_OTHER('['), $options, T_OTHER(']')) : (), T_BEGIN, $class, T_END, $postoptions ? (T_OTHER('['), $postoptions, T_OTHER(']')) : (), T_CS('\bml@process@pt@size'));
-  }); }
+my $selectfont = LookupDefinition(T_CS('\selectfont'));
+push(@{ $$selectfont{afterDigest} }, sub {
+  my ($stomach) = @_;
+  my $size = ToString(Expand(T_CS('\f@size')));
+  MergeFont(size => $size);
+  $stomach->digest(T_CS('\size@update'));
+});
+
+Let(T_CS('\LaTeXMLgenerator'), T_CS('\LaTeXML'));
+AtBeginDocument('\lx@save@parameter{bml-generator}{latexml}');
+AtBeginDocument('\lx@save@parameter{bml-generator-version}{\LaTeXMLversion}');
+
+DefPrimitive('\bml@init@schema', sub { RelaxNGSchema('bookml/schema'); });
+
+# LaTeXML leaves \@classoptionslist even after \documentclass
+if (grep { m/\.cls\.ltxml_loaded|\.cls_loaded$/ } keys %{ $STATE->{value} }) {
+  DefMacro('\@classoptionslist','') if XEquals(T_CS('\@classoptionslist'),T_CS('\relax'));
+}
+
+DefMacro('\bml@generator@engine', 'perl');
+
+InputDefinitions('bookml/bookml-init.sty', noltxml => 1);
 
 1;

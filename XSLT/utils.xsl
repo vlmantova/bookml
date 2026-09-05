@@ -223,7 +223,7 @@
 
   <!-- test that the LaTeXML version is at most $v -->
   <func:function name="b:oxide">
-    <func:result select="boolean(/processing-instruction('latexml')[.='bml-generator=&quot;latexml-oxide&quot;'])"/>
+    <func:result select="boolean(/processing-instruction('latexml')[.='bml-generator=&quot;latexml-oxide&quot;'] | //ltx:resource[@type='text/plain;bml-key=generator' and text() = 'oxide'])"/>
   </func:function>
 
   <func:function name="b:max-version">

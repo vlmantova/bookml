@@ -38,6 +38,8 @@ if (! grep { $_ eq $class } @classes) {
       $class = $cls; last; } }
   DefMacroI('\bml@class@name', undef, $class); }
 
+DefMacroI('\bml@ltxml@dpi', undef, sub { T_OTHER(LookupValue('DPI') // 100); });
+
 InputDefinitions('bookml/bookml-clo.sty', noltxml => 1);
 
 AssignValue('NOMINAL_FONT_SIZE', ToString(Expand(T_CS('\f@size'))), global => 1);

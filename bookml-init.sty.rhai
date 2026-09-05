@@ -16,7 +16,7 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-RequirePackage("latexml", ["nocomments", "noguesstabularheaders"]);
+DefConditional("\\if@bookml", || { true });
 
 AppendSearchPath(`bookml/bindings/v${LaTeXMLVersion()}-oxide`);
 
@@ -47,5 +47,9 @@ AtBeginDocument("\\lx@save@parameter{bml-generator-version}{\\LaTeXMLversion}");
 DefPrimitive("\\bml@init@schema", || RelaxNGSchema("bookml/schema"));
 
 DefMacro("\\bml@generator@engine", "oxide");
+
+// latexml-oxide 0.7.6 omits processing instructions from split documents!
+// smuggle the generator another way
+RequireResource("", #{ content: "oxide", type: "text/plain;bml-key=generator" });
 
 InputDefinitions("bookml/bookml-init.sty", #{ noltxml: true });

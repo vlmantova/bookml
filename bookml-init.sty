@@ -17,9 +17,11 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{bookml/bookml-init}[@DATE@ @VERSION@ BookML: bookdown flavoured GitBook port for LaTeXML (init package)]
 
-\IfFileExists{latexml.sty}{\RequirePackage[nocomments, noguesstabularheaders]{latexml}}{\RequirePackage[nocomments, noguesstabularheaders]{bookml/latexml}}
+\ifcsname if@bookml\endcsname\else
+  \expandafter\newif\csname if@bookml\endcsname
+\fi
 
-\iflatexml
+\if@bookml
 
 \RequirePackage{etoolbox}
 

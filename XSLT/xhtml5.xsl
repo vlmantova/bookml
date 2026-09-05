@@ -953,33 +953,11 @@
     </xsl:call-template>
   </xsl:template>
 
-  <xsl:template match="/" mode="styling">
-    <xsl:attribute name="style">
-      <xsl:apply-templates select="." mode="bml-styling" />
-    </xsl:attribute>
-  </xsl:template>
-
   <xsl:template match="*" mode="bml-styling" />
 
   <xsl:template match="/" mode="begin">
     <xsl:apply-imports />
-    <xsl:apply-templates select="/" mode="styling" />
     <xsl:apply-templates select="/" mode="classes" />
-  </xsl:template>
-
-  <xsl:template match="/" mode="bml-styling">
-    <xsl:variable name="font-size" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'bml-font-size=&quot;')],'bml-font-size=&quot;'),'&quot;')" />
-    <xsl:variable name="dpi" select="substring-before(substring-after(//processing-instruction()[local-name()='latexml'][contains(.,'DPI=&quot;')],'DPI=&quot;'),'&quot;')" />
-    <xsl:if test="$font-size">
-      <xsl:text>--bml-ltx-font-size:</xsl:text>
-      <xsl:value-of select="$font-size" />
-      <xsl:text>;</xsl:text>
-    </xsl:if>
-    <xsl:if test="$dpi">
-      <xsl:text>--bml-ltxml-dpi:</xsl:text>
-      <xsl:value-of select="$dpi" />
-      <xsl:text>;</xsl:text>
-    </xsl:if>
   </xsl:template>
 
   <xsl:template match="/" mode="bml-classes">

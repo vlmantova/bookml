@@ -42,6 +42,9 @@ use lib 'bookml';
 require 'bmlimages.pl';
 require 'resources.pl';
 
+# nocomments is not picked up from \RequirePackage is bookml.sty
+RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders', 'dpi=96.36']) unless LookupDefinition(T_CS('\iflatexml'));
+
 ### BookML resources
 DefPrimitiveI('\bml@resources', undef, sub {
     my $jobname = ToString(Expand(T_CS('\jobname')));

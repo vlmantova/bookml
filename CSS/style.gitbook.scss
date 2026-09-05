@@ -903,6 +903,36 @@ svg foreignObject {
   }
 }
 
+.book.color-theme-1 {
+  & [style*="color:"] {
+    @each $i in stop-color flood-color lighting-color text-decoration-color {
+      --bml-#{$i}-sepia:
+        rgb(from var(--bml-#{$i})
+          calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
+          calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
+          calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b));
+      *[style*="--bml-#{$i}:"] {
+        #{$i}: var(--bml-#{$i}-sepia) !important;
+      }
+    }
+  }
+}
+
+.book.color-theme-2 {
+  & [style*="color:"] {
+    @each $i in stop-color flood-color lighting-color text-decoration-color {
+      --bml-#{$i}-dark:
+        rgb(from var(--bml-#{$i})
+          calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
+          calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
+          calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b)));
+      *[style*="--bml-#{$i}:"] {
+        #{$i}: var(--bml-#{$i}-dark) !important;
+      }
+    }
+  }
+}
+
 /* set body background as well */
 body {
   background-color: #fafafa;
@@ -934,126 +964,82 @@ body {
 
 /* post v0.8.8 colors */
 [style*="--ltx-fg-color:"] {
-  color: var(--ltx-fg-color);
+  color: var(--ltx-fg-color) !important;
   --bml-color: var(--ltx-fg-color);
 }
 [style*="--ltx-bg-color:"] {
-  background-color: var(--ltx-bg-color);
+  background-color: var(--ltx-bg-color) !important;
   --bml-background-color: var(--ltx-bg-color);
 }
 [style*="--ltx-border-color:"] {
-  border-color: var(--ltx-border-color);
+  border-color: var(--ltx-border-color) !important;
   --bml-border-color: var(--ltx-border-color);
 }
 [style*="--ltx-fill-color:"] {
-  fill: var(--ltx-fill-color);
+  fill: var(--ltx-fill-color) !important;
 }
 [style*="--ltx-stroke-color:"] {
-  stroke: var(--ltx-stroke-color);
+  stroke: var(--ltx-stroke-color) !important;
 }
 
 .book.color-theme-1 {
   & [style*="color:"] {
-    --fn-fg-color-to-sepia-mode:
-      rgb(from var(--ltx-fg-color)
+    @each $i in fg bg border fill stroke {
+      --fn-#{$i}-color-to-sepia-mode:
+        rgb(from var(--ltx-#{$i}-color)
         calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
         calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
-        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b)
-      );
-    --fn-bg-color-to-sepia-mode:
-      rgb(from var(--ltx-bg-color)
-        calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
-        calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
-        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b)
-      );
-    --fn-border-color-to-sepia-mode:
-      rgb(from var(--ltx-border-color)
-        calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
-        calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
-        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b)
-      );
-    --fn-fill-color-to-sepia-mode:
-      rgb(from var(--ltx-fill-color)
-        calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
-        calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
-        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b)
-      );
-    --fn-stroke-color-to-sepia-mode:
-      rgb(from var(--ltx-stroke-color)
-        calc((0.393 + 0.607 * (1 - 0.4)) * r + (0.769 - 0.769 * (1 - 0.4)) * g + (0.189 - 0.189 * (1 - 0.4)) * b)
-        calc((0.349 - 0.349 * (1 - 0.4)) * r + (0.686 + 0.314 * (1 - 0.4)) * g + (0.168 - 0.168 * (1 - 0.4)) * b)
-        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b)
-      );
-  }
-  & [style*="--ltx-fg-color:"] {
-    color: var(--fn-fg-color-to-sepia-mode);
-    --bml-color: var(--fn-fg-color-to-sepia-mode);
-  }
-  & [style*="--ltx-bg-color:"] {
-    background-color: var(--fn-bg-color-to-sepia-mode);
-    --bml-background-color: var(--fn-bg-color-to-sepia-mode);
-  }
-  & [style*="--ltx-border-color:"] {
-    border-color: var(--fn-border-color-to-sepia-mode);
-    --bml-border-color: var(--fn-border-color-to-sepia-mode);
-  }
-  & [style*="--ltx-fill-color:"] {
-    fill: var(--fn-fill-color-to-sepia-mode);
-  }
-  & [style*="--ltx-stroke-color:"] {
-    stroke: var(--fn-stroke-color-to-sepia-mode);
+        calc((0.272 - 0.272 * (1 - 0.4)) * r + (0.534 - 0.534 * (1 - 0.4)) * g + (0.131 + 0.879 * (1 - 0.4)) * b));
+    }
+    & [style*="--ltx-fg-color:"] {
+      color: var(--fn-fg-color-to-sepia-mode) !important;
+      --bml-color: var(--fn-fg-color-to-sepia-mode);
+    }
+    & [style*="--ltx-bg-color:"] {
+      background-color: var(--fn-bg-color-to-sepia-mode) !important;
+      --bml-background-color: var(--fn-bg-color-to-sepia-mode);
+    }
+    & [style*="--ltx-border-color:"] {
+      border-color: var(--fn-border-color-to-sepia-mode) !important;
+      --bml-border-color: var(--fn-border-color-to-sepia-mode);
+    }
+    & [style*="--ltx-fill-color:"] {
+      fill: var(--fn-fill-color-to-sepia-mode) !important;
+      --bml-fill: var(--fn-fill-color-to-sepia-mode);
+    }
+    & [style*="--ltx-stroke-color:"] {
+      stroke: var(--fn-stroke-color-to-sepia-mode) !important;
+      --bml-stroke: var(--fn-fill-color-to-sepia-mode);
+    }
   }
 }
 
 .book.color-theme-2 {
   & [style*="color:"] {
-    --fn-fg-color-to-dark-mode:
-      rgb(from var(--ltx-fg-color)
-        calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b))
-      );
-    --fn-bg-color-to-dark-mode:
-      rgb(from var(--ltx-bg-color)
-        calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b))
-      );
-    --fn-border-color-to-dark-mode:
-      rgb(from var(--ltx-border-color)
-        calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b))
-      );
-    --fn-fill-color-to-dark-mode:
-      rgb(from var(--ltx-fill-color)
-        calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b))
-      );
-    --fn-stroke-color-to-dark-mode:
-      rgb(from var(--ltx-stroke-color)
-        calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
-        calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b))
-      );
+    @each $i in fg bg border fill stroke {
+      --fn-#{$i}-color-to-dark-mode:
+        rgb(from var(--ltx-#{$i}-color)
+          calc((0.213 - 0.787) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 + 0.072) * (255 - b))
+          calc((0.213 + 0.213) * (255 - r) + (0.715 - 0.285) * (255 - g) + (0.072 + 0.072) * (255 - b))
+          calc((0.213 + 0.213) * (255 - r) + (0.715 + 0.715) * (255 - g) + (0.072 - 0.928) * (255 - b)));
+    }
   }
   & [style*="--ltx-fg-color:"] {
-    color: var(--fn-fg-color-to-dark-mode); 
-    --bml-color: var(--fn-fg-color-to-dark-mode); 
+    color: var(--fn-fg-color-to-dark-mode) !important;
+    --bml-color: var(--fn-fg-color-to-dark-mode);
   }
   & [style*="--ltx-bg-color:"] {
-    background-color: var(--fn-bg-color-to-dark-mode);
+    background-color: var(--fn-bg-color-to-dark-mode) !important;
     --bml-background-color: var(--fn-bg-color-to-dark-mode);
   }
   & [style*="--ltx-border-color:"] {
-    border-color: var(--fn-border-color-to-dark-mode);
+    border-color: var(--fn-border-color-to-dark-mode) !important;
     --bml-border-color: var(--fn-border-color-to-dark-mode);
   }
   & [style*="--ltx-fill-color:"] {
-    fill: var(--fn-fill-color-to-dark-mode);
+    fill: var(--fn-fill-color-to-dark-mode) !important;
   }
   & [style*="--ltx-stroke-color:"] {
-    stroke: var(--fn-stroke-color-to-dark-mode);
+    stroke: var(--fn-stroke-color-to-dark-mode) !important;
   }
 }

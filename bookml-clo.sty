@@ -17,11 +17,9 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{bookml/bookml-clo}[@DATE@ @VERSION@ BookML: bookdown flavoured GitBook port for LaTeXML (class options package)]
 
-\IfFileExists{latexml.sty}{\RequirePackage[nocomments, noguesstabularheaders]{latexml}}{\RequirePackage[nocomments, noguesstabularheaders]{bookml/latexml}}
-
-\iflatexml
-
 \RequirePackage{bookml/bookml-init}
+
+\if@bookml
 
 \ifx\bml@class@name\@empty
 \PackageWarning{bookml/bookml-clo}{unrecognised class, loading font sizes from the article class}
@@ -765,6 +763,6 @@
 
 \ifcsname bml@clo@apply\endcsname\bml@clo@apply\fi
 
-\AtBeginDocument{{\normalsize\lx@save@parameter{bml-font-size}{\f@size}}}
+{\AtBeginDocument{{\normalsize\bmlRawHTML{<style>:root{--bml-ltx-font-size:\f@size;--bml-ltxml-dpi:\bml@ltxml@dpi}</style>}}}}
 
-\fi % \iflatexml
+\fi % \if@bookml

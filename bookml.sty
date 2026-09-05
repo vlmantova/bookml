@@ -17,10 +17,10 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{bookml/bookml}[@DATE@ @VERSION@ BookML: bookdown flavoured GitBook port for LaTeXML]
 
-\IfFileExists{latexml.sty}{\RequirePackage[nocomments, noguesstabularheaders]{latexml}}{\RequirePackage[nocomments, noguesstabularheaders]{bookml/latexml}}
+\RequirePackage{bookml/bookml-init}
 
-\iflatexml
-  \RequirePackage{bookml/bookml-init}
+\ifcsname iflatexml\endcsname\else
+  \IfFileExists{latexml.sty}{\RequirePackage[nocomments,noguesstabularheaders,dpi=96.36]{latexml}}{\RequirePackage[nocomments,noguesstabularheaders,dpi=96.36]{bookml/latexml}}
 \fi
 
 \newcommand{\BookMLversion}{@VERSION@}

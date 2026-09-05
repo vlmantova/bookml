@@ -29,6 +29,11 @@ if ! classes.contains(class) {
   DefMacro("\\bml@class@name", class);
 }
 
+DefMacro("\\bml@ltxml@dpi", || {
+  let dpi = LookupString("KV@LTXML@dpi");
+  return if dpi != "" { dpi } else { "100" };
+});
+
 InputDefinitions("bookml/bookml-clo.sty", #{ noltxml: true });
 
 AssignFloat("NOMINAL_FONT_SIZE", parse_float(ToString(Digest(T_CS("\\f@size")))), "global");

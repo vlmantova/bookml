@@ -27,8 +27,7 @@ package LaTeXML::Package::Pool;
 use strict;
 use warnings;
 
-# the options are not picked up from bookml-init.sty (why?)
-RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders']);
+DefConditional('\if@bookml', sub { 1; });
 
 PushValue(SEARCHPATHS => pathname_absolute(pathname_canonical("bookml/bindings/v$LaTeXML::VERSION-perl")));
 

@@ -256,6 +256,7 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
   \else
     \def\bml@image@include{%
       \bml@image@generate%
+      \global\let\bml@image@generate\relax%
       \stepcounter{bml@image@counter}%
       \includegraphics{bmlimages/\jobname-\thebml@image@counter.svg}%
       \bml@image@depth{\thebml@image@counter}}

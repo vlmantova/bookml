@@ -286,7 +286,7 @@ DefConstructor("\\bml@html@tag Undigested",
       let close = rawtag.starts_with("/");
       if close { rawtag.crop(1); }
 
-      let elem = rawtag;
+      let elem = rawtag.to_lower();
       for c in [' ', '\n', '\x12', '\r', '/'] {
         let i = elem.index_of(c);
         if i > -1 { elem.crop(0,i); }
@@ -402,9 +402,6 @@ DefPrimitive("\\bml@image@generate",
       \\expandafter\\bml@notelog\\expandafter{\\bml@image@logline}\
       \\let\\bml@image@logline\\@undefined\\repeat\
       \\closein\\bml@image@logfile"));
-
-    // do not run twice!
-    Let("\\bml@image@generate", "\\relax");
   }
 );
 

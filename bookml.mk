@@ -407,7 +407,7 @@ $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HT
 	@$(call bml.print.cmd,$(call bml.utils.autovar,$(if $(bml.utils.ifoxide),LATEXML,LATEXMLPOST)) \
 	  $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(call bml.utils.autovar,SPLITAT),--splitat=$(call bml.utils.autovar,SPLITAT)) \
-	  --urlstyle=file --pmml --mathtex \
+	  $(if $(bml.utils.ifoxide),,--urlstyle=file) --pmml --mathtex \
 	  $(call bml.utils.autovar,LATEXMLPOSTFLAGS) $(call bml.utils.autovar,LATEXMLPOSTEXTRAFLAGS) \
 	  --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
 	  $(if $(bml.utils.ifoxide),,--dbfile=$(AUX_DIR)/latexmlaux/$*.LaTeXML.db) \

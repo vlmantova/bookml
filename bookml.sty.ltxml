@@ -297,7 +297,7 @@ DefEnvironment('{bml@html@env@} Undigested',
       $whatsit->getProperty("inline") ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
   properties => sub {
     my ($stomach, $elem) = @_;
-    $elem = ToString($elem);
+    $elem = lc(ToString($elem));
     return (elem => $elem, inline => LookupMapping('bml@html@inline', $elem));
   },
   reversion => ''
@@ -413,9 +413,6 @@ DefPrimitive('\bml@image@generate', sub {
     }
 
     ProgressSpindown('BookML images');
-
-    # do not run twice!
-    Let('\bml@image@generate', '\relax');
     return;
 });
 

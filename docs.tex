@@ -93,7 +93,7 @@
 }
 
 \lstdefinestyle{bookml}{style=latexml,
-  moretexcs=[2]{bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat,<}
+  moretexcs=[2]{bmlImageEnvironment,bmlHTMLEnvironment,bmlRawHTML,bmlDescription,bmlPlusClass,bmlHTMLInlineEnvironment,bmlAltFormat,bmlDisableMathJax,<}
 }
 
 \lstdefinestyle{yaml}{
@@ -114,7 +114,7 @@
 \title{\texorpdfstring{BookML\@: \LaTeX{} to \HTML, made easy(ish). \\ Powered by \href{https://dlmf.nist.gov/LaTeXML/}{\LaTeXML}.}{BookML: LaTeX to HTML, made easy(ish). Powered by LaTeXML.}}
 \author{Vincenzo Mantova}
 
-\date{1\textsuperscript{st} July 2026}
+\date{5\textsuperscript{th} September 2026}
 
 \begin{document}
 
@@ -133,7 +133,7 @@
     <a href="https://github.com/vlmantova/bookml/stargazers"><img alt="Stargazers on GitHub" src="https://img.shields.io/github/stars/vlmantova/bookml?logo=github"/></a>
   }
 
-  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{index.plain.html}{plain} with Latin Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
+  Formats: \href{https://vlmantova.github.io/bookml/}{GitBook} (html), \href{plain/}{plain} with Latin Modern (html), \href{https://vlmantova.github.io/bookml/docs.pdf}{PDF}, \href{https://github.com/vlmantova/bookml/blob/docs/docs.tex}{\LaTeX{} source}.
 
   For Leeds-specific instructions see the \href{https://vlmantova.github.io/bookmlleeds/}{Leeds BookML guide}.
 \end{center}
@@ -151,16 +151,39 @@ BookML is a small package to help you convert \LaTeX{} documents into accessible
 
 BookML key features are:
 \begin{itemize}
-  \item simple installation: BookML is just a zip file you unpack in the folder containing your \texttt{.tex} files (admittedly a lie: you must install \LaTeXML{} first, see \hyperref[get-started-on-your-device]{Getting started on your device});
-  \item Overleaf and GitHub integration: BookML can also be used with Overleaf by adding a single file to your project and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub;
-  \item accessible and mobile friendly output based on the popular \href{https://bookdown.org/home/}{bookdown} project, including font selection and dark mode, tweaked to meet the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA;
-  \item fully automated (re-)compilation based on which files have changed on disk, powered by \href{https://www.gnu.org/software/make/}{GNU Make}: running a single \cmdinline{make} will recompile the files which need updating;
-  \item high quality conversion of external EPS and PDF figures to SVG via \href{https://dvisvgm.de}{dvisvgm}, rather than ImageMagick used by LaTeXML;
-  \item transparent generation of SVG images from \href{https://tikz.net/}{\tikzname} pictures, \href{https://ctan.org/pkg/animate}{animate} animations, \Xy-matrices, and virtually any other picture-like environment, for when \LaTeXML{} struggles with them;
-  \item easy insertion of alternative text for images;
-  \item arbitrary \HTML{} content in \LaTeX{}, for instance to create foldable paragraphs;
-  \item declare and include alternative PDF versions, which are also recompiled automatically (for instance sans serif, large print);
-  \item outputs are automatically packaged into zip files and \href{https://scorm.com/}{SCORM packages}, which are supported natively by most Learning Management Systems.
+  \item simple installation: simply drop the \texttt{bookml/} directory next to the files to be compiled and copy \texttt{GNUmakefile} in the same place (well, uhm, that is a bit of a lie: you need to install \LaTeXML{} first! see \hyperref[get-started-on-your-device]{Getting started on your device});
+  \item Overleaf and GitHub integration: BookML can be used with Overleaf by adding a single file to your project or using the \href{https://www.overleaf.com/latex/templates/bookml-template/nycbmrhpscpx}{BookML template}, and linking it to GitHub (which requires a paid Overleaf subscription), or by directly putting your files on GitHub (no subscription required);
+  \item accessible and mobile friendly output: virtually identical to the \href{https://bookdown.org/yihui/bookdown/html.html#gitbook-style}{GitBook style} of \href{https://bookdown.org}{bookdown}, including font selection and dark mode, tweaked to meet the \href{https://www.w3.org/TR/WCAG21/}{Web Content Accessibility Guidelines 2.1} level AA;
+  \item fully automated (re-)compilation based on which files have changed on disk, powered by \href{https://www.gnu.org/software/make/}{GNU Make}: just run \cmdinline{make} to zip together all PDF and HTML outputs from all the main \texttt{.tex} files in the directory (one package per main \texttt{.tex} file);
+  \item high quality conversion of external EPS and PDF figures to SVG via \href{https://mupdf.readthedocs.io/en/latest/tools/mutool.html}{mutool}, \href{https://poppler.freedesktop.org/}{pdftocairo}, \href{https://inkscape.org/}{Inkscape} or \href{https://dvisvgm.de}{dvisvgm}, rather than ImageMagick used by LaTeXML;
+  \item transparent generation of SVG images from \href{https://tikz.net/}{\tikzname} pictures, \href{https://ctan.org/pkg/animate}{animate} animations, \Xy-matrices, and virtually any other picture-like environment: just add a few lines of code in the preamble
+    \begin{lstlisting}[style=bookml]
+\bmlImageEnvironment{tikzpicture,animate}
+\iflatexml\else % prevent LaTeXML from even trying to load TikZ
+\usepackage{tikz}
+\usepackage{animate}
+\fi
+    \end{lstlisting}
+  \item alternative text for images straight from \LaTeX:
+    \begin{lstlisting}[style=bookml]
+\usepackage{bookml/bookml}\bmlImageEnvironment{tikzpicture}
+    \end{lstlisting}
+  \item arbitrary \HTML{} content in \LaTeX{}, such as collapsible tags:
+    \begin{lstlisting}[style=bookml]
+\usepackage{bookml/bookml}
+...
+\<details>
+  \<summary>\textbf{Solution.}\</summary>
+  To create a collapsible `proof' environment, ...
+\</details>
+    \end{lstlisting}
+  \item declare alternative PDF versions (for instance sans serif, large print):
+    \begin{lstlisting}[style=bookml]
+\bmlAltFormat{notes-large-print.pdf}{PDF (large print)}
+% you must provide notes-large-print.tex
+    \end{lstlisting}
+    the files will be automatically compiled and included in the `Download' menu of bookdown (see the \href{https://github.com/vlmantova/bookml/releases/latest/download/example.zip}{example} for more info)
+  \item \href{https://scorm.com/}{SCORM} support: running \cmdinline{make} creates valid \texttt{SCORM.*.zip} packages supported by most Learning Management Systems (if not, please submit an issue!).
 \end{itemize}
 
 \tableofcontents
@@ -170,7 +193,7 @@ BookML key features are:
 \subsection{On your device}\label{get-started-on-your-device}
 
 \begin{enumerate}
-  \item Install the bare minimum prerequisites: \href{https://dlmf.nist.gov/LaTeXML/get.html}{LaTeXML} (minimum 0.8.7, recommended 0.8.8 or later) and \href{https://www.gnu.org/software/make/}{GNU Make} (minimum 3.81, but later versions are considerably faster), on top of a working \TeX{} installation, such as \TeX{} Live or MiK\TeX{}.
+  \item Install the bare minimum prerequisites: \href{https://dlmf.nist.gov/LaTeXML/get.html}{LaTeXML} (0.8.8 or later) and \href{https://www.gnu.org/software/make/}{GNU Make} (minimum 3.81, but later versions are considerably faster), on top of a working \TeX{} installation, such as \TeX{} Live or MiK\TeX{}.
   \item Unpack the latest \href{https://github.com/vlmantova/bookml/releases/latest/download/release.zip}{BookML release} and put the \texttt{bookml} folder next to your \texttt{.tex} files. You can also start with a \href{https://github.com/vlmantova/bookml/releases/latest/download/template.zip}{minimal template}.
   \item \textbf{First time only:} move \texttt{bookml/GNUmakefile} one folder up. It must be in the same folder as your main \texttt{.tex} files.
   \item Now open a terminal in the folder containing \texttt{GNUmakefile} and run \cmdinline{make detect} (use \cmdinline{gmake detect} on Windows).
@@ -179,7 +202,7 @@ BookML key features are:
 When all goes well, you should see an output like the following:
 
 \begin{tabularx}{\textwidth}[h]{>{\color{MidnightBlue}\tt}r@{\texttt{\ }}>{\tt}X}
-\cellcolor{red}\color{white} Required\phantom{:} & \cellcolor{red}\bmlRawHTML{} \\
+\cellcolor{red}\color{white} Required\bmlRawHTML{ }\phantom{:} & \cellcolor{red}\bmlRawHTML{} \\
   Main files:    & \textcolor{OliveGreen}{template.tex}                                          \\
   BookML:        & \textcolor{OliveGreen}{\BookMLversion{} OK}                                   \\
   GNU Make:      & \textcolor{OliveGreen}{4.4.1 OK}                                              \\
@@ -190,11 +213,14 @@ When all goes well, you should see an output like the following:
   zip:           & \textcolor{OliveGreen}{3.1b OK}                                               \\
 \cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{for any image handling, including BookML images} \\
   Image::Magick: & \textcolor{red}{NOT FOUND}                                                    \\
-\multicolumn{2}{X}{\textcolor{magenta}{\tt -{}-{}- PDFTOSVG\_CONVERTER is set to `mutool' -{}-{}-}} \\
-  Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS to SVG, PDF to SVG via dvisvgm) \\
-  mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (PDF to SVG via mutool) \\
+\multicolumn{2}{X}{\textcolor{magenta}{\tt -{}-{}- PDFTOSVG\_CONVERTER is set to `auto' -{}-{}-}} \\
+\multicolumn{2}{X}{\textcolor{magenta}{\tt -{}-{}- EPSTOSVG\_CONVERTER is set to `auto' -{}-{}-}} \\
+  Ghostscript:   & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS/PDF to SVG via dvisvgm) \\
   dvisvgm:       & \textcolor{OliveGreen}{3.4.3 OK} (PDF to SVG via mutool)) \\
   dvisvgm/libgs: & \textcolor{OliveGreen}{9.25 OK} (BookML images, EPS to SVG, PDF to SVG via dvisvgm)  \\
+  mutool:        & \textcolor{OliveGreen}{1.23.0 OK} (PDF to SVG via mutool) \\
+  pdftocairo:    & \textcolor{red}{NOT FOUND} (PDF to SVG via pdftocairo) \\
+  inkscape:      & \textcolor{red}{NOT FOUND} (EPS/PDF to SVG via Inkscape) \\
 \cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{BookML images (\textbackslash{}bmlImageEnvironment and \textbackslash{}begin\{bmlimage\})} \\
   preview.sty:   & \textcolor{OliveGreen}{14.0.6 OK}                                             \\
 \cellcolor{red}\color{white} Optional: & \cellcolor{red}\textcolor{white}{misc} \\
@@ -346,7 +372,7 @@ For other images such as \tikzname{} pictures, add \ltxinline|\bmlDescription{te
 \end{foldedframe}
 
 \begin{foldedframe}[open=""]{Videos}\label{videos}
-  You can inject arbitrary \HTML{} using \ltxinline|\bmlRawHTML{HTML here}| or \ltxinline|\<div>TeX here\</div>|. That is enough to insert videos, for example by typing the YouTube embed code. Note that characters must be escaped, for instance replace \ltxinline|%| with \ltxinline|\%|, and you must follow the \XML{} syntax, so an attribute \htmlinline|<iframe allowfullscreen>| will need to be written as \htmlinline|<iframe allowfullscreen="">|.
+  You can inject arbitrary \HTML{} using \ltxinline|\bmlRawHTML{HTML here}| or \ltxinline|\<div>TeX here\</div>|. That is enough to insert videos, for example by typing the YouTube embed code. Special characters may need to be escaped with a backslash, for instance replace \ltxinline|%| with \ltxinline|\%|, and you must follow the \XML{} syntax, so an attribute \htmlinline|<iframe allowfullscreen>| will need to be written as \htmlinline|<iframe allowfullscreen="">|.
   \begin{lstlisting}[style=bookml]
 \bmlRawHTML{<iframe allowfullscreen=""></iframe>}
   \end{lstlisting}
@@ -395,7 +421,7 @@ For other images such as \tikzname{} pictures, add \ltxinline|\bmlDescription{te
 \fi
   \end{lstlisting}
 
-  The \HTML{} tags must be written in \XML{} syntax (so \ltxinline|\<br/>| rather than \ltxinline|\<br>|). See \hyperref[reference-manual]{Reference manual} for more details.
+  The \HTML{} tags can be written in normal HTML5 syntax, but they must be closed (so remember to write \ltxinline|\<br/>| rather than \ltxinline|\<br>|). See \hyperref[reference-manual]{Reference manual} for more details.
 \end{foldedframe}
 
 \begin{foldedframe}{Customize header and footer (e.g.\ for copyright notice)}\label{headers-and-footers}
@@ -413,10 +439,10 @@ For other images such as \tikzname{} pictures, add \ltxinline|\bmlDescription{te
 
   You can also specify different splitting strategies for different files by writing:
   \begin{lstlisting}
-$(AUX_DIR)/html/lecturenotes/index.html: SPLITAT=chapter
-$(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
+lecturenotes_SPLITAT=chapter
+problemsheet1_SPLITAT=
 \end{lstlisting}
-  to the end of \texttt{GNUmakefile}. Be careful to specify the splitting on the \texttt{index.html} files rather than the final zip or SCORM target. See \hyperref[reference-manual]{Reference manual} for more details.
+  to the end of \texttt{GNUmakefile}. See \hyperref[reference-manual]{Reference manual} for more details.
 
   By default, all files are split by section.
 \end{foldedframe}
@@ -444,7 +470,7 @@ $(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
 \bmlAltFormat{docs.pdf}{}
   \end{lstlisting}
 
-  Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltxinline|\documentclass| or it will be compiled by itself into separate \HTML{}, zip, and SCORM.
+  Please note that \texttt{docs.large.tex} must \emph{not} contain the string \ltxinline|\documentclass| or it will be compiled by itself into separate \HTML{}, zip, and SCORM. Otherwise, change the value of the variable \texttt{SOURCES}.
 
   See \texttt{template.tex}, \texttt{template-sans.tex}, \texttt{template-sans-large.tex} for an example.
 \end{foldedframe}
@@ -460,7 +486,7 @@ $(AUX_DIR)/html/problemsheet1/index.html: SPLITAT=
 \end{foldedframe}
 
 \begin{foldedframe}{Some PDF and EPS figures look odd or prevent compilation}\label{odd-pdf-eps-figures}
-  By default, BookML uses \texttt{dvisvgm} to convert EPS images to SVG, and \texttt{mutool} to convert PDF images to SVG. If you do not want to install \texttt{mutool}, you can try setting \makeinline|PDFTOSVG_CONVERTER=dvisvgm| in \texttt{GNUmakefile}. The output of \cmdinline|make detect| will help you determine if this is feasible on your machine.
+  By default, BookML uses \texttt{dvisvgm} or \texttt{inkscape} to convert EPS images to SVG, and one of \texttt{mutool}, \texttt{pdftocairo}, \texttt{inkscape}, \texttt{dvisvgm} to convert PDF images to SVG. BookML will determine automatically the best option available on your machine. The output of \cmdinline|make detect| will show you what is available.
 
   If you cannot get good SVGs from the automatic conversion, you have two possibilities. You can convert the images yourself, and place the resulting images in the same folder and with the same name as the original PDF or EPS files, but extensions \texttt{.svg}, \texttt{.png}, or \texttt{.jpg}. \textbf{You must use }\ltxinline|\includegraphics{figure}|\textbf{ instead of }\ltxinline|\includegraphics{figure.pdf}|\textbf{ for this to work.} You can also disable the automatic conversion altogether with \makeinline|PDFTOSVG_CONVERTER=|, at which point \LaTeXML{} will convert the images to PNG using ImageMagick.
 \end{foldedframe}
@@ -566,6 +592,8 @@ BookML can be configured by loading the \texttt{bookml/bookml} package and passi
 \item[\texttt{nomathjax}] Disable MathJax.
 \item[\texttt{imagescale=X.XX}] (Deprecated) Rescale all images generated via LaTeX (using \ltxinline|bmlimage|, see below) by the desired factor. Images are normally sized so that fonts inside the image match the font size of the browser, but there have been cases where BookML is wrong, and images turn out too small or too large. When that happens, tweak \texttt{\textit{imagescale}}, and please report the issue.
 \item[\texttt{nohtmlsyntax}] Do not define the command \ltxinline|\<| used for writing \HTML{} tags directly in \TeX{}.
+\item[\texttt{draft}] Do not compile and include the alternative formats and do not generate the BookML images. BookML images will be replaced by file names.
+\item[\texttt{final}] Compile and include the alternative formats and generate the BookML images (default behaviour if neither of <code>draft</code>, <code>final</code> is specified).
 \end{description}
 
 \subsection{Package commands and environments}\label{commands-and-environments}
@@ -574,10 +602,10 @@ Loading \ltxinline|\usepackage{bookml/bookml}| makes the following commands avai
 \begin{description}
 \item[\texttt{\textbackslash{}BookMLversion}] The currently running version of BookML.
 \item[\texttt{\textbackslash{}bmlAltFormat[<\textit{opts}>]\{<\textit{file}>\}\{<\textit{label}>\}}] Compile (if necessary) and include \texttt{<\textit{file}>} in the download menu with label \texttt{<\textit{label}>}. An empty label removes the file from the download menu. The optional argument \texttt{<\textit{opts}>} is a key-value list passed internally to \ltxinline|\lxRequireResource| (for instance, use \ltxinline|type=application/octet-stream| if LaTeXML is not able to recognise the MIME type of the file). Only available in the \texttt{\textit{gitbook}} style.
-\item[\texttt{\textbackslash{}<}] Open or close an \HTML{} tag, as in \ltxinline|\<span class="example">some \LaTeX{} code\</span>|. The content between the tags is normal \LaTeX{} code. Tags will normally generate an additional \htmlinline|<p>...</p>| tag, unless they can only contain 'phrasing content'. If necessary, the behaviour of each tag can be changed with the \ltxinline|\bmlHTML*Environment| commands. Tags must follow the XML syntax, for instance \ltxinline|\<br>| is not valid: you must write \ltxinline|\<br/>|.
+\item[\texttt{\textbackslash{}<}] Open or close an \HTML{} tag, as in \ltxinline|\<span class="example">some \LaTeX{} code\</span>|. The content between the tags is normal \LaTeX{} code. If necessary, the behaviour of each tag can be changed with the \ltxinline|\bmlHTML*Environment| commands.  Tags will normally generate an additional \htmlinline|<p>...</p>| tag, unless the HTML5 spec says that they can only contain `phrasing content' or that they are `transparent', or if their direct descendants are also HTML tags. The text between \ltxinline|\<| and \ltxinline|>| is parsed following the HTML5 spec, except that all tags need to be closed, \ltxinline|/>| closes non-void tags, and only the basic XML enties are supported.
 \item[\texttt{\textbackslash{}bmlHTMLEnvironment\{<\textit{tag}>\}}] Introduce or redefine an \HTML{} tag environment, to be used as \ltxinline|\begin{h:tag}[attr1=val1,...]...\end{h:tag}| or as \ltxinline|\<tag>|.
-\item[\texttt{\textbackslash{}bmlHTMLInlineEnvironment\{<\textit{tag}>}\}] Introduce or redefine an \HTML{} tag environment which accepts `phrasing content' only.
-\item[\texttt{\textbackslash{}bmlRawHTML\{<\textit{html}>}\}] Insert \texttt{\texttt{<\textit{html}>}} directly in the output document, after expanding all the \TeX{} macros. When the command appears in the preamble, \texttt{<\textit{html}>} will be part of the head and will be copied in every output page. \texttt{<\textit{html}>} must be written in valid XML syntax, with either no namespace or the correct namespace for \HTML.
+\item[\texttt{\textbackslash{}bmlHTMLInlineEnvironment\{<\textit{tag}>}\}] Introduce or redefine an \HTML{} tag environment which accepts `phrasing content' only or is `transparent'.
+\item[\texttt{\textbackslash{}bmlRawHTML\{<\textit{html}>}\}] Insert \texttt{\texttt{<\textit{html}>}} directly in the output document, after expanding all the \TeX{} macros. Special characters are handled like in \ltxinline|\href| from the hyperref package: you should use \ltxinline|\\| to enter a literal backslash, while other special characters can be escaped as \ltxinline|\#|, \ltxinline|\%|, \ltxinline|\&|, \ltxinline|\&| when necessary. When the command appears in the preamble, \texttt{<\textit{html}>} will be part of the head and will be copied in every output page. \texttt{<\textit{html}>} must be written in valid XML syntax, with either no namespace or the correct namespace for \HTML. The HTML5 syntax is currently \textbf{not} supported.
 \item[\texttt{\textbackslash{}begin\{bmlimage\}}] The body of this environment is compiled directly into an SVG image via \LaTeX, instead of running through \LaTeXML.
 \item[\texttt{\textbackslash{}bmlImageEnvironment\{<\textit{env}>\}}] Compile all environments \texttt{<\textit{env}>} directly into SVG images via \LaTeX, instead of running them through \LaTeXML. The most typical example is \ltxinline|\bmlImageEnvironment{tikzpicture}| for when \LaTeXML{} struggles to process \tikzname{} pictures properly or sufficiently quickly. \textbf{Warning:} this will not work properly when the environments are called implicitly (for instance, the package \texttt{tcolorbox} uses \ltxinline|\begin{tikzpicture}| internally to implement its theorems, and that could results in theorems appearing as images, and in the wrong places).
 \item[\texttt{\textbackslash{}bmlDescription\{<\textit{text}>\}}] Attach an alternative text \texttt{<\textit{text}>} to the immediately preceding object. Only useful for images, for instance immediately after \ltxinline|\end{tikzpicture}|. \textbf{Warning:} the command must immediately follow the object; even empty spaces can cause issues.
@@ -586,38 +614,57 @@ Loading \ltxinline|\usepackage{bookml/bookml}| makes the following commands avai
 \end{description}
 
 \subsection{Makefile options}\label{makefile-options}
+The build process accepts configuration options via Make variables, using the syntax \makeinline|VARIABLE=value| to replace a value and \cmdinline|FLAGS+=moreflags| to append more values. Changing the settings will automatically recompile the files that are affected. To apply an option only to the outputs of \texttt{file.tex}, use \makeinline|file_VARIABLE| and \makeinline|file_FLAGS| (normal variables are replaced, while \makeinline|file_*FLAGS| variables are added to the general \makeinline|*FLAGS| values). Special characters in the file name must be replaced with \makeinline|_|; for instance use \makeinline|sheet1_solutions_SPLITAT| to control the outputs of \texttt{sheet1+solutions.tex}. Comments can be added by starting the line with \makeinline|#|.
 
-The build process accepts configuration options via Make variables, using the syntax \makeinline|VARIABLE=value|. The options can be passed in three ways:
+For instance, the following \texttt{GNUmakefile} specifies that the files to compile are \texttt{notes.tex} and \texttt{exercises.tex} only (instead of every \texttt{.tex} file with \ltxinline|\documentclass|), that they must be compiled to SCORM packages, and that \texttt{exercises.tex} must not be split by section. Moreover, \texttt{exercises.tex} should be complied using LuaTeX.
+\begin{lstlisting}[language=make]
+SOURCES=notes.tex exercises.tex
+include bookml/bookml.mk
+FORMATS=scorm
+# exercises is split into small sections but we want a single HTML page
+exercises_SPLITAT=
+exercises_LATEXMKFLAGS=-pdflua
+\end{lstlisting}
+
+The options can be passed in four ways:
 
 \begin{enumerate}
-  \item In \texttt{GNUmakefile} before \makeinline|include bookml/bookml.mk|. Each option must appear on its own line, without indentation.
-  \item On the command line as \cmdinline{make VARIABLE=value}.
-  \item To apply an option to a single output \texttt{file}, write it in \texttt{GNUmakefile} somewhere after \makeinline|include bookml/bookml.mk| as \makeinline|file: VARIABLE=value| on its own line, without indentation. For instance, \makeinline|main.pdf: LATEXMKFLAGS=-pdflua|. \textbf{Warning:} the variable must be applied to the target it affects \textbf{immediately} or it can cause inconsistent results (see for example \makeinline|SPLITAT| below).
+  \item Written in \texttt{GNUmakefile}, with each option on its own line, without indentation. You typically want to put the values before \makeinline|include bookml/bookml.mk|, for instance to avoid scanning the \texttt{.tex} files when you are overriding \makeinline|SOURCES|. Moreover, \makeinline|AUX_DIR| **must** appear **before** \makeinline|include bookml/bookml.mk|. On the other hand, adding flags with \makeinline|+=| **must** be done **after** \makeinline|include bookml/bookml.mk|.
+  \item On the command line as \cmdinline|make VARIABLE=value|. Appending is not supported on the command line.
+  \item In your shell environment.
+  \item In \texttt{GNUmakefile} applied directly to the target, like \makeinline|file.pdf: LATEXMKFLAGS = -pdflua|. This is discouraged: it behaves consistently **only if applied to the ultimate affected target**. For instance, \makeinline|SPLITAT| must be applied to \makeinline|$(AUX_DIR)/html/file/index.html|. If applied to \texttt{file.zip} by mistake, the variable may or may not take effect depending on its value on \texttt{SCORM.file.zip}, potentially leading to an infinite loop. Use \makeinline|file_SPLITAT| instead.
 \end{enumerate}
 
-Note that changing options will \textbf{not} trigger a recompilation of the files. You will typically need to run \cmdinline|make clean| before recompiling again. For more information about the Makefile syntax and how variables are evaluated, consult the \href{https://www.gnu.org/software/make/manual/}{GNU Make manual}.
+Changing the configuration will trigger a recompilation of the files that are affected. For instance, changing \makeinline|file_SPLITAT| will cause \texttt{file/index.html} to rebuild, but not \texttt{file.pdf}, nor \texttt{notes/index.html}.
 
-The following options are available.
+For more information about the Makefile syntax and how variables are evaluated, consult the \href{https://www.gnu.org/software/make/manual/}{GNU Make manual}.
 
 \begin{description}
 \item[\texttt{AUX\_DIR}] Location of the directory containing all intermediate files generated during compilation, such as \texttt{.aux} and \texttt{.bbl} files. This option is ignored by the BookML GitHub action. Default \texttt{\textit{auxdir}}.
 \item[\texttt{SOURCES}] Space-separated list of \texttt{.tex} files to be compiled. File names with spaces are \textbf{not} supported. Default is the list of \texttt{.tex} files in the current directory that contain the string \ltxinline|\documentclass| (even if appearing in a comment!).
 \item[\texttt{FORMATS}] Spaces-separated list of formats to be generated from \texttt{SOURCES}. Recognised formats are \texttt{pdf}, \texttt{scorm}, \texttt{zip}. Default \texttt{\textit{scorm zip}}.
 \item[\texttt{SPLITAT}] How to split the \HTML{} output into multiple files (chapter, section, subsection, subsubsection). Set to empty to disable splitting. See the \texttt{latexmlpost} manual, \cmdinline|--split| option, for more details. \textbf{Warning:} when applied to a single target, it must be applied to \makeinline|$(AUX_DIR)/file/index.html:| instead of say \cmdinline|file.zip:|, otherwise zip and SCORM outputs will see different values. Default \texttt{\textit{section}}.
-\item[\texttt{DVISVGM}] Command to call dvisvgm. Default \texttt{\textit{dvisvgm}}.
-\item[\texttt{DVISVGMFLAGS}] Options to pass to dvisvgm. Default \texttt{\textit{--no-fonts}}.
+\item[\texttt{CURL}] Command to call curl. Default \texttt{\textit{curl}} (if present).
+\item[\texttt{DVISVGM}] Command to call dvisvgm. Default \texttt{\textit{dvisvgm}} (if present).
+\item[\texttt{DVISVGMFLAGS}] Options to pass to dvisvgm. Default \texttt{\textit{--no-fonts --optimize}}.
+\item[\texttt{EPSTOSVG\_CONVERTER}] Select which converter to use for converting EPS images to SVG. Currently supported values are \texttt{auto}, \texttt{dvisvgm}, \texttt{inkscape}; \texttt{auto} will look for dvisvgm, inkscape in that order. If set to empty, LaTeXML will convert EPS to PNG using ImageMagick. Default \texttt{\textit{auto}}.
+\item[\texttt{INKSCAPE}] Command to call inkscape. Default \texttt{\textit{inkscape}} (if present).
+\item[\texttt{INKSCAPEFLAGS}] Options to pass to inkscape. Default \texttt{\textit{--without-gui}}.
 \item[\texttt{LATEXMK}] Command to call Latexmk. Default \texttt{\textit{latexmk}}.
 \item[\texttt{LATEXMKFLAGS}] Command options to pass to Latexmk. For instance, use \ltxinline|LATEXMKFLAGS=-pdflua| to use LuaTeX when compiling to PDF. Please ensure that Latexmk will produce a PDF rather than a DVI.
 \item[\texttt{LATEXML}] Command to call \LaTeXML. Default \texttt{\textit{latexml}}.
 \item[\texttt{LATEXMLFLAGS}] Options to pass to \LaTeXML.
 \item[\texttt{LATEXMLPOST}] Command to call \texttt{latexmlpost}. Default \texttt{\textit{latexmlpost}}.
-\item[\texttt{LATEXMLPOSTFLAGS}] Options to pass to \texttt{latexmlpost}. \textbf{Warning:} when applied to a single target, it must be applied to \ltxinline|$(AUX_DIR)/file/index.html:| instead of say \ltxinline|file.zip:|, just like for \texttt{SPLITAT}.
-\item[\texttt{MUTOOL}] Command to call mutool. Default \texttt{\textit{mutool}}.
+\item[\texttt{LATEXMLPOSTFLAGS}] Options to pass to \texttt{latexmlpost}.
+\item[\texttt{MUTOOL}] Command to call mutool. Default \texttt{\textit{mutool}} (if present).
 \item[\texttt{MUTOOLFLAGS}] Options to pass to mutool draw.
-\item[\texttt{PDFTOSVG\_CONVERTER}] Select which converter to use for converting PDF images to SVG. Currently supported values are \texttt{dvisvgm} and \texttt{mutool}. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default \texttt{\textit{mutool}}.
+\item[\texttt{PDFTOCAIRO}] Command to call pdftocairo. Default \texttt{\textit{pdftocairo}} (if present).
+\item[\texttt{PDFTOCAIROFLAGS}] Options to pass to pdftocairo.
+\item[\texttt{PDFTOSVG\_CONVERTER}] Select which converter to use for converting PDF images to SVG. Currently supported values are \texttt{auto}, \texttt{dvisvgm}, \texttt{inkscape}, \texttt{mutool}, \texttt{pdftocairo}; \texttt{auto} will look for mutool, pdftocairo, dvisvgm, inkscape in that order. If set to empty, LaTeXML will convert PDF to PNG using ImageMagick. Default \texttt{\textit{auto}}.
 \item[\texttt{PERL}] Command to call Perl. Default \texttt{\textit{perl}}.
 \item[\texttt{TEXFOT}] Command to call texfot. Default \texttt{\textit{texfot}}.
 \item[\texttt{TEXFOTFLAGS}] Options to pass to texfot.
+\item[\texttt{UNZIP}] Command to call unzip. Default \texttt{\textit{tar}} (if present) on Windows, \texttt{unzip} (if present) on other platforms.
 \item[\texttt{ZIP}] Command to call zip. Default \texttt{\textit{zip}} (or \texttt{\textit{miktex-zip}} if \texttt{zip.exe} is not available on Windows).
 \end{description}
 

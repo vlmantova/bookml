@@ -128,7 +128,7 @@
 
 %%% BookML resources
 \iflatexml
-  \AtEndDocument{\bml@resources}
+  \AtEndDocument{\ifcase\bml@style\or\or\bml@colors\fi\bml@resources}
 \fi
 
 %%% HTML

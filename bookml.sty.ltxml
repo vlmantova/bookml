@@ -46,13 +46,20 @@ require 'resources.pl';
 RequirePackage('latexml', options => ['nocomments', 'noguesstabularheaders', 'dpi=96.36']) unless LookupDefinition(T_CS('\iflatexml'));
 
 ### BookML resources
-DefPrimitiveI('\bml@resources', undef, sub {
-    my $jobname = ToString(Expand(T_CS('\jobname')));
-    my $style   = ToString(Expand(T_CS('\bml@style')));
-    my @styles  = ('none', 'plain', 'gitbook');
+DefConstructorI('\bml@resources', undef, sub {
+    my ($document) = @_;
+    my $jobname    = ToString(Expand(T_CS('\jobname')));
+    my $style      = ToString(Expand(T_CS('\bml@style')));
+    my @styles     = ('none', 'plain', 'gitbook');
     $style = $styles[$style];
 
     map { RequireResource($_) } bookml::resources::find($style, $jobname);
+
+    # move <ltx:resource> up to the top or they will not work
+    my ($firstnonresource) = $document->findnodes('/*/*[not(self::ltx:resource)]');
+    for my $node ($document->findnodes('//ltx:resource')) {
+      $node->unbindNode();
+      $document->documentElement->insertBefore($node, $firstnonresource); }
 
     return;
 });
@@ -60,10 +67,6 @@ DefPrimitiveI('\bml@resources', undef, sub {
 ### BookML colors
 # Compute colors for sepia and dark mode (mimicking CSS filters)
 # note that xcolor.sty and LaTeXML::Common::Color use the linear RGB space
-AtEndDocument(sub {
-    return unless ToString(Expand(T_CS('\bml@style'))) eq '2';
-    return T_CS('\bml@colors');
-});
 
 # CSS filter invert(100%) hue-rotate(180deg)
 sub BMLColorDarkMode {
@@ -109,7 +112,7 @@ sub BMLColorSepiaMode {
 my ($bml_colors_css, %bml_colors_darkmode, %bml_colors_sepiamode, %bml_colors) = ('', (), (), ());
 
 DefConstructorI('\bml@colors', undef, sub {
-    my ($document) = @_;
+    my ($document, %props) = @_;
 
     ProgressSpinup('BookML colors');
 
@@ -338,7 +341,7 @@ DefConstructor('\bml@html@tag Undigested', sub {
   ($LaTeXML::VERSION > v0.8.8) ? (afterDigest => sub {
       my ($stomach, $whatsit) = @_;
       if (!$whatsit->getProperty('close')) {
-        $whatsit->getProperty('inline') ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }}) : (),
+        $whatsit->getProperty('inline') ? $stomach->enterHorizontal : $stomach->leaveHorizontal; } }) : (),
   properties => sub {
     my ($stomach, $rawtag) = @_;
     my %props = ();
@@ -394,8 +397,8 @@ DefConstructor('\bml@html@raw@ Undigested', sub {
 # \begin{bmlimage} ... \end{bmlimage}
 # \bmlImageEnvironment{tikzpicture}
 DefPrimitive('\bml@image@generate', sub {
-    my $jobname = ToString(Expand(T_CS('\jobname')));
-    my $source  = LookupValue('SOURCEFILE');
+    my $jobname    = ToString(Expand(T_CS('\jobname')));
+    my $source     = LookupValue('SOURCEFILE');
     my $imagescale = ToString(Expand(T_CS('\bml@image@scale')));
 
     if ($imagescale !~ m/^(?:\d+|\d*\.\d+)$/) {
@@ -422,7 +425,7 @@ DefConstructor('\bml@image@depth{}', sub {
     my $depth = LookupMapping('bml@image@depth', ToString($counter));
 
     if ($depth) {
-      my $node = $document->getLastChildElement($document->getElement);
+      my $node       = $document->getLastChildElement($document->getElement);
       my $imagescale = $props{imagescale} || 1;
 
       $document->setAttribute($node, 'imagedepth', int((0.5 + $depth) * $imagescale * 96 / 72)); }
@@ -651,7 +654,7 @@ DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID', meaning => 'empty
             return (id => "bml-ams-absent-iden-$cnt"); },
           beforeConstruct => sub {
             my ($document, $whatsit) = @_;
-            my $id = $whatsit->getProperty('id') or return;
+            my $id     = $whatsit->getProperty('id') or return;
             my $absent = $document->getDocument->getElementById($id);
             if (!$absent) {
               Warn('expected', 'absent', $document, 'could not find the auto-inserted empty identifier');

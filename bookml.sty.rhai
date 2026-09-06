@@ -82,6 +82,8 @@ DefPrimitive("\\bml@resources",
   }
 );
 
+DefConstructor("\\bml@colors", "");
+
 /*** Minimal HTML5 parser
   Deviations from spec:
   - only XML entities are decoded

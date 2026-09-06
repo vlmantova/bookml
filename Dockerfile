@@ -119,7 +119,7 @@ ENV MAGICK_DISK_LIMIT=2GiB \
   MAGICK_TIME_LIMIT=900
 
 # patch LaTeXML to report full paths and columns starting from 1
-COPY docker-ctx/latexml-*.patch /
+COPY latexml-*.patch /
 RUN <<EOF
 cat /latexml-*.patch | patch -d /usr/share/perl5 -p2
 rm /latexml-*.patch

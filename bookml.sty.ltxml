@@ -637,19 +637,18 @@ DefMathI('\emptyset', undef, "\x{2205}\x{FE00}", role => 'ID', meaning => 'empty
 
         # empty identifier, followed by clean up routine to minimize the chances of spurious invisible times
         DefConstructor('\@bml@ams@absent', '<ltx:XMTok meaning="absent" xml:id="#id"/>',
-          afterDigest => sub {
+          properties => sub {
             my ($stomach, $whatsit) = @_;
             my $cnt = LookupValue('BML_AMS_ABSENT_IDEN') // 0;
             AssignValue('BML_AMS_ABSENT_IDEN' => ++$cnt, 'global');
-            $whatsit->setProperty(id => "bml-ams-absent-iden-$cnt");
-            return; },
+            DefMacroI('\@bml@ams@absent@iden', undef, $cnt);
+            return (id => "bml-ams-absent-iden-$cnt"); },
           reversion => '{}', alias => '');
         DefConstructorI('\@bml@ams@absent@cleanup', undef, '', reversion => '',
-          afterDigest => sub {
+          properties => sub {
             my ($stomach, $whatsit) = @_;
-            my $cnt = LookupValue('BML_AMS_ABSENT_IDEN') or return;
-            $whatsit->setProperty(id => "bml-ams-absent-iden-$cnt");
-            return; },
+            my $cnt = ToString(Expand(T_CS('\@bml@ams@absent@iden')));
+            return (id => "bml-ams-absent-iden-$cnt"); },
           beforeConstruct => sub {
             my ($document, $whatsit) = @_;
             my $id = $whatsit->getProperty('id') or return;

@@ -18,10 +18,12 @@ RUN <<EOF
 EOF
 # install texlive-local equiv pacakge
 # original equiv from https://wiki.debian.org/TeXLive?action=AttachFile&do=get&target=debian-equivs-${TEXLIVE_VERSION}-ex.txt
-RUN --mount=target=/docker-ctx <<EOF
+COPY texlive-equiv-${TEXLIVE_VERSION}.txt /texlive-equiv.txt
+RUN <<EOF
   set -eux
   cd /tmp
-  grep -v '^Depends:' < /docker-ctx/texlive-equiv-${TEXLIVE_VERSION}.txt > texlive-equiv
+  grep -v '^Depends:' < /texlive-equiv.txt > texlive-equiv
+  rm /texlive-equiv.txt
   apt update -qq
   apt install -qy equivs --no-install-recommends
   equivs-build texlive-equiv
@@ -117,7 +119,11 @@ ENV MAGICK_DISK_LIMIT=2GiB \
   MAGICK_TIME_LIMIT=900
 
 # patch LaTeXML to report full paths and columns starting from 1
-RUN --mount=target=/docker-ctx cat /docker-ctx/latexml-*.patch | patch -d /usr/share/perl5 -p2
+COPY docker-ctx/latexml-*.patch /
+RUN <<EOF
+cat /latexml-*.patch | patch -d /usr/share/perl5 -p2
+rm /latexml-*.patch
+EOF
 
 ### latexml-oxide base layer
 FROM latexml AS latexml-oxide

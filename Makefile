@@ -88,9 +88,10 @@ $(foreach arch,$(ARCHS),$(foreach scheme,$(SCHEMES),docker-build-$(scheme)-$(arc
 	$(eval ARCH=$(lastword $(subst -, ,$*)))
 	$(eval SCHEME=$(firstword $(subst -, ,$*)))
 	$(eval TAG=$(BOOKML_VERSION)-$(ARCH))
-	docker buildx build --load --build-arg=BUILDKIT_INLINE_CACHE=1 \
+	docker buildx build --load \
 		$(foreach scheme,$(SCHEMES),$(foreach tag,latest-$(ARCH) $(TAG),--cache-from=type=registry,ref=$(REF)-$(scheme):cache-$(tag))) \
-		$(foreach tag,$(if $(IS_LATEST),latest-$(ARCH)) $(TAG),--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(tag),mode=max,compression=zstd,oci-mediatypes=true --platform linux/$(ARCH)) \
+		$(foreach tag,$(if $(IS_LATEST),latest-$(ARCH)) $(TAG),--cache-to=type=registry,ref=$(REF)-$(SCHEME):cache-$(tag),mode=max,compression=zstd,oci-mediatypes=true) \
+		--platform linux/$(ARCH) \
 		--build-arg=TEXLIVE_VERSION=$(TEXLIVE_VERSION) --build-arg=TEXLIVE_SCHEME=$(SCHEME) \
 		--build-arg=LATEXML_VERSION=$(LATEXML_VERSION) --build-arg=BOOKML_VERSION=$(BOOKML_VERSION) \
 		--build-arg=LATEXMLOXIDE_VERSION=$(LATEXMLOXIDE_VERSION) \

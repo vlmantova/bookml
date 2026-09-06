@@ -98,7 +98,9 @@
 
 %%% Alternative formats
 \iflatexml
-  \ifbml@draft\else
+  \ifbml@draft
+    \let\bmlAltFormat\@gobbletwo
+  \else
     \let\bml@alt@formats\@empty
     \let\bml@alt@formats@\@empty
     \newcommand{\bmlAltFormat}[2]{%
@@ -245,14 +247,11 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
     \bml@image@env@maybeclose}
   \def\bml@image@env@maybeclose#1{%
     \def\@tempa{#1}%
-    \ifx\@tempa\bml@image@env@name%
-      \bml@image@include%
-    \else%
-      \bml@image@env@findend%
-    \fi}
+    \ifx\@tempa\bml@image@env@name\bml@image@include%
+    \else\expandafter\bml@image@env@findend\fi}
   \ifbml@draft
     \def\bml@image@include{\stepcounter{bml@image@counter}%
-      \texttt{{bmlimages/\jobname-\thebml@image@counter.svg}}}
+      \texttt{bmlimages/\jobname-\thebml@image@counter.svg}}
   \else
     \def\bml@image@include{%
       \bml@image@generate%

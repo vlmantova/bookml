@@ -294,7 +294,7 @@ DefEnvironment('{bml@html@env@} Undigested',
     (<ltx:xmlelem name="#elem" ns="http://www.w3.org/1999/xhtml">#body</ltx:xmlelem>)',
   ($LaTeXML::VERSION > v0.8.8) ? (afterDigestBegin => sub {
       my ($stomach, $whatsit) = @_;
-      $whatsit->getProperty("inline") ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
+      $whatsit->getProperty('inline') ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
   properties => sub {
     my ($stomach, $elem) = @_;
     $elem = lc(ToString($elem));
@@ -337,13 +337,14 @@ DefConstructor('\bml@html@tag Undigested', sub {
   },
   ($LaTeXML::VERSION > v0.8.8) ? (afterDigest => sub {
       my ($stomach, $whatsit) = @_;
-      $whatsit->getProperty("inline") ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }) : (),
+      if (!$whatsit->getProperty('close')) {
+        $whatsit->getProperty('inline') ? $stomach->enterHorizontal : $stomach->leaveHorizontal; }}) : (),
   properties => sub {
     my ($stomach, $rawtag) = @_;
     my %props = ();
 
     if (ToString($rawtag) =~ m!^(/?)([^ \n\f\r/]*)(.*)$!) {
-      my ($close, $elem, $afterElem) = ($1, $2, $3);
+      my ($close, $elem, $afterElem) = ($1, lc($2), $3);
       # TeX uses carriage return to represent newlines
       $afterElem =~ s/\r/\n/g;
 
@@ -444,8 +445,9 @@ DefConstructor('\bmlDescription Semiverbatim', sub {
 ### Add class to previous node
 DefConstructor('\bmlPlusClass Semiverbatim', sub {
     my ($document, $class) = @_;
-    my $node = $document->getLastChildElement($document->getElement);
-    $document->addClass($node, ToString($class));
+    my $curr = $document->getElement;
+    my $node = $document->findnode("*[last()]", $curr);
+    $document->addClass($node, ToString($class)) if $node;
   },
   reversion => ''
 );

@@ -446,7 +446,7 @@ DefConstructor("\\bmlPlusClass Semiverbatim",
   |document, class| {
     let curr = document.getElement();
     let node = document.findnode("*[last()]", curr);
-    document.addClass(node, ToString(class));
+    if node != () { document.addClass(node, ToString(class)) };
   },
   #{
     reversion: ""

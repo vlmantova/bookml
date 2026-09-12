@@ -1,10 +1,10 @@
 MATHSTESTS=amsldoc-equations disable-mathjax latexml-t-ams-mathtools mathtools mathvariants
 CODETESTS=algorithm2e algorithmic algorithmicx
 SOURCES=tests.tex algorithm2e.tex algorithmic.tex algorithmicx.tex images.tex inline-html.tex listings.tex $(foreach opt,mathjax2 mathjax3 mathjax4 nomathjax,$(MATHSTESTS:=-$(opt).tex))
-TARGETS=$(TARGETS.HTML)
 SPLITAT=
 
 images_LATEXML=latexml_oxide
+tests_LATEXML=latexml_oxide
 
 html:
 -include bookml/bookml.mk

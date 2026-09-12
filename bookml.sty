@@ -33,16 +33,16 @@
 \DeclareOption{draft}{\bml@drafttrue}
 \DeclareOption{final}{\bml@draftfalse}
 
-\def\bml@style{2}
-\DeclareOption{style=plain}{\def\bml@style{1}}
-\DeclareOption{style=gitbook}{\def\bml@style{2}}
-\DeclareOption{style=none}{\def\bml@style{0}}
+\gdef\bml@style{2}
+\DeclareOption{style=plain}{\gdef\bml@style{1}}
+\DeclareOption{style=gitbook}{\gdef\bml@style{2}}
+\DeclareOption{style=none}{\gdef\bml@style{0}}
 
-\def\bml@mathjax{4}
-\DeclareOption{mathjax=2}{\def\bml@mathjax{2}}
-\DeclareOption{mathjax=3}{\def\bml@mathjax{3}}
-\DeclareOption{mathjax=4}{\def\bml@mathjax{4}}
-\DeclareOption{nomathjax}{\def\bml@mathjax{0}}
+\gdef\bml@mathjax{4}
+\DeclareOption{mathjax=2}{\gdef\bml@mathjax{2}}
+\DeclareOption{mathjax=3}{\gdef\bml@mathjax{3}}
+\DeclareOption{mathjax=4}{\gdef\bml@mathjax{4}}
+\DeclareOption{nomathjax}{\gdef\bml@mathjax{0}}
 
 \iflatexml\else
   \DeclareOption{_bmlimages}{\bml@imagestrue}
@@ -51,23 +51,24 @@
 \DeclareOption{htmlsyntax}{\bml@htmlsyntaxtrue}
 \DeclareOption{nohtmlsyntax}{\bml@htmlsyntaxfalse}
 
-\def\bml@image@scale{1}
+\gdef\bml@image@scale{1}
 
-\DeclareOption*{
-  \edef\@tempa{\CurrentOption}
-  \def\bml@image@checkscale imagescale=#1\relax{
-    \def\@tempa{#1}
+\DeclareOption*{{
+  \edef\@tempa{imagescale=\CurrentOption imagescale=}
+  \def\bml@image@checkscale imagescale=#1imagescale=#2\relax{
+    \def\@tempa{#2}
     \ifx\@tempa\@empty
+      \PackageWarning{bookml/bookml}{option \CurrentOption\space ignored}
     \else
-      \PackageWarning{bookml}{the option imagescale is deprecated and may be ignored in future releases}
-      \bml@image@savescale#1\relax
+      \PackageWarning{bookml/bookml}{the option imagescale is deprecated and may be ignored in future releases}
+      \bml@image@savescale#2\relax
     \fi
   }
-  \def\bml@image@savescale #1imagescale=\relax{
-    \def\bml@image@scale{#1}
+  \def\bml@image@savescale#1imagescale=\relax{
+    \gdef\bml@image@scale{#1}
   }
-  \expandafter\bml@image@checkscale\@tempa imagescale=\relax
-}
+  \expandafter\bml@image@checkscale\@tempa\relax
+}}
 
 \ProcessOptions\relax
 
@@ -137,7 +138,7 @@
 % - preserve newlines
 % - expand \textbackslash to '\'
 % - expand \{, \} to '{', '}'
-\def\bml@html@beginvrb{%
+\gdef\bml@html@beginvrb{%
   \begingroup%
   \catcode`\^^M=12%
   \catcode`\%=12%
@@ -158,12 +159,12 @@
   \let\\\@backslashchar%
   \let\textbackslash\@backslashchar%
   \obeyspaces\obeylines}
-\let\bml@html@endvrb\endgroup
+\global\let\bml@html@endvrb\endgroup
 
 %%% Inline HTML tags via environments
 % \begin{h:TAG}[attr1=value,attr2] ... \end{h:TAG}
 \iflatexml
-  \def\bml@html@env#1#2{%
+  \gdef\bml@html@env#1#2{%
     \bml@html@setinline{#1}{#2}%
     \ifcsname h:#1\endcsname\else%
       \newenvironment{h:#1}%
@@ -171,20 +172,20 @@
           \@ifnextchar[{\bml@html@beginvrb\bml@html@attrs}{}}%
         {\end{bml@html@env@}}%
     \fi}
-  \def\bml@html@attrs[#1]{%
+  \gdef\bml@html@attrs[#1]{%
     \edef\@tempa{#1}%
     \expandafter\bml@html@attrs@\@tempa,\relax,\bml@html@endvrb}
   % parse attributes exactly like keyval.sty
-  \def\bml@html@attrs@#1,{%
+  \gdef\bml@html@attrs@#1,{%
     \ifx\relax#1\@empty\else%
       \bml@html@attr#1==\relax%
       \expandafter\bml@html@attrs@\fi}
-  \def\bml@html@attr#1=#2=#3\relax{\bml@html@attr@{#1}{#2}}
+  \gdef\bml@html@attr#1=#2=#3\relax{\bml@html@attr@{#1}{#2}}
 \else
-  \def\bml@html@env#1#2{\newenvironment{h:#1}[1][]{}{}}
+  \gdef\bml@html@env#1#2{\newenvironment{h:#1}[1][]{}{}}
 \fi
-\def\bmlHTMLEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{}}}
-\def\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{inline}}}
+\gdef\bmlHTMLEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{}}}
+\gdef\bmlHTMLInlineEnvironment#1{\@for\name:=#1\do{\expandafter\bml@html@env\expandafter{\name}{inline}}}
 
 % grossly simplified HTML model based on whether a tag admits flow content and
 % is not 'transparent'
@@ -202,27 +203,27 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
 % \<tag attr1="value" attr>
 \ifbml@htmlsyntax
   \iflatexml
-    \def\<{%
+    \long\gdef\bml@html@lt#1>{%
+      \edef\@tempa{#1}%
+      \expandafter\bml@html@tag\expandafter{\@tempa}\bml@html@endvrb}%
+    \long\gdef\<{%
       \bml@html@beginvrb%
-      \long\def\<#1>{%
-        \edef\@tempa{#1}%
-        \expandafter\bml@html@tag\expandafter{\@tempa}\bml@html@endvrb}%
-      \<}
+      \bml@html@lt}
   \else
-    \long\def\<#1>{}
+    \long\gdef\<#1>{}
   \fi
 \fi
 
 %%% Inline HTML via \bmlRawHTML
 \iflatexml
-  \long\def\bmlRawHTML{%
+  \long\gdef\bmlRawHTML{%
     \bml@html@beginvrb%
     \bml@html@raw}
-  \def\bml@html@raw#1{%
+  \gdef\bml@html@raw#1{%
     \edef\@tempa{#1}%
     \expandafter\bml@html@raw@\expandafter{\@tempa}\bml@html@endvrb}
 \else
-  \long\def\bmlRawHTML#1{}
+  \long\gdef\bmlRawHTML#1{}
 \fi
 
 %%% Image generation via LaTeX
@@ -232,28 +233,28 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
   \RequirePackage{graphicx}
   \newcounter{bml@image@counter}
 
-  \def\bmlImageEnvironment#1{%
+  \gdef\bmlImageEnvironment#1{%
     \@for\@tempa:=#1\do{\expandafter\bml@image@env\expandafter{\@tempa}}}
-  \def\bml@image@env#1{%
+  \gdef\bml@image@env#1{%
     \AtBeginDocument{\bml@image@env@{#1}}}
-  \def\bml@image@env@#1{
-    \expandafter\def\csname begin{#1}\endcsname{%
+  \gdef\bml@image@env@#1{
+    \expandafter\gdef\csname begin{#1}\endcsname{%
       \bml@image@env@replace{#1}}}
 
-  \def\bml@image@env@replace#1{%
+  \gdef\bml@image@env@replace#1{%
     \edef\bml@image@env@name{#1}%
     \bml@image@env@findend}
-  \def\bml@image@env@findend#1\end{%
+  \gdef\bml@image@env@findend#1\end{%
     \bml@image@env@maybeclose}
-  \def\bml@image@env@maybeclose#1{%
+  \gdef\bml@image@env@maybeclose#1{%
     \def\@tempa{#1}%
     \ifx\@tempa\bml@image@env@name\bml@image@include%
     \else\expandafter\bml@image@env@findend\fi}
   \ifbml@draft
-    \def\bml@image@include{\stepcounter{bml@image@counter}%
+    \gdef\bml@image@include{\stepcounter{bml@image@counter}%
       \texttt{bmlimages/\jobname-\thebml@image@counter.svg}}
   \else
-    \def\bml@image@include{%
+    \gdef\bml@image@include{%
       \bml@image@generate%
       \global\let\bml@image@generate\relax%
       \stepcounter{bml@image@counter}%
@@ -263,10 +264,10 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
 \else
   \ifbml@images
     \RequirePackage[noconfig,delayed,active,tightpage]{preview}
-    \def\bmlImageEnvironment#1{%
+    \gdef\bmlImageEnvironment#1{%
       \@for\@tempa:=#1\do{\PreviewEnvironment{\@tempa}}}
   \else
-    \let\bmlImageEnvironment\@gobble
+    \global\let\bmlImageEnvironment\@gobble
   \fi
 \fi
 
@@ -275,11 +276,11 @@ strong,sub,summary,sup,svg,template,textarea,time,u,tt,var,video,wbr}
 
 \iflatexml\else
 %%% Alternative text
-\newcommand\bmlDescription[1]{}
+\global\let\bmlDescription\@gobble
 
 %%% Add class to previous node
-\newcommand\bmlPlusClass[1]{}
+\global\let\bmlPlusClass\@gobble
 
 %%% Disable MathJax locally
-\let\bmlDisableMathJax\relax
+\global\let\bmlDisableMathJax\relax
 \fi

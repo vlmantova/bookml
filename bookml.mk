@@ -409,7 +409,7 @@ $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HT
 	  $(if $(call bml.utils.autovar,SPLITAT),--splitat=$(call bml.utils.autovar,SPLITAT)) \
 	  $(if $(bml.utils.ifoxide),,--urlstyle=file) --pmml --mathtex \
 	  $(call bml.utils.autovar,LATEXMLPOSTFLAGS) $(call bml.utils.autovar,LATEXMLPOSTEXTRAFLAGS) \
-	  --xsltparameter=BMLSEARCH:yes --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
+	  $(if $(bml.utils.ifoxide),--xsltparameter=BMLSEARCH=yes,--xsltparameter=BMLSEARCH:yes) --sourcedirectory=. $(LATEXMLPOSTAUTOFLAGS) \
 	  $(if $(bml.utils.ifoxide),,--dbfile=$(AUX_DIR)/latexmlaux/$*.LaTeXML.db) \
 	  $(call bml.utils.escape3args,--log=$(AUX_DIR)/latexmlaux/$*.latexmlpost.log,--destination=$@,$<))
 	@$(call bml.utils.rm,$(AUX_DIR)/html/$*/LaTeXML.cache)

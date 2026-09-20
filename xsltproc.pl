@@ -44,31 +44,20 @@ __PACKAGE__->main unless caller;
 sub proc {
   my ($stylefile, $input, $output, %params) = @_;
 
-  local $SIG{__WARN__} = sub {
-    my ($msg) = @_;
-    my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
-    $severity = $severity // 'Error';
-    $object   = $object   // 'unknown';
-    $category = $category // 'internal';
-    $summary  = $summary  // $msg;
-    Message($severity, $category, $object, $input, decode('console_out', $summary));
-  } unless $bookml::IN_LATEXML;
-
-  local $SIG{__DIE__} = sub {
-    my ($msg) = @_;
-    Fatal('error', 'xsltproc.pl', undef, decode('console_out', $msg));
-  } unless $bookml::IN_LATEXML;
-
   bookml::open_file(my $fh_style, '<', $stylefile) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open the stylesheet: $!");
   binmode($fh_style);
-  my $style_doc = XML::LibXML->load_xml(IO => $fh_style, URI => URI::file->new(bookml::dirname($stylefile))->as_string) or Fatal('I/O', 'stylesheet', $stylefile, "cannot parse the stylesheet: $!");
+  my $style_doc = XML::LibXML->load_xml(IO => $fh_style, URI => URI::file->new($stylefile)->as_string) or Fatal('I/O', 'stylesheet', $stylefile, "cannot parse the stylesheet: $!");
+
+  # keep in sync with bmlimages.pl
+  # increase limit, twice as XML_PARSE_HUGE because... attributes?
+  XML::LibXSLT->max_depth(512);
 
   my $parser = XML::LibXSLT->new();
   my $stylesheet = $parser->parse_stylesheet($style_doc) or Fatal('I/O', 'stylesheet', $stylefile, "invalid stylesheet: $!");
 
   bookml::open_file(my $fh_input, '<', $input) or Fatal('I/O', 'stylesheet', $stylefile, "cannot open stylesheet: $!");
   binmode($fh_input);
-  my $input_doc = XML::LibXML->load_xml(IO => $fh_input, URI => URI::file->new(bookml::dirname($input))->as_string) or Fatal('I/O', 'input', $input, "cannot open or parse the input file: $!");
+  my $input_doc = XML::LibXML->load_xml(IO => $fh_input, URI => URI::file->new($input)->as_string) or Fatal('I/O', 'input', $input, "cannot open or parse the input file: $!");
 
   my $result = $stylesheet->transform($input_doc, %params) or Fatal('I/O', 'input', $input, "cannot transform the input file: $!");
 
@@ -97,6 +86,21 @@ sub main {
   }
 
   ($stylefile, $input) = @ARGV;
+
+  local $SIG{__WARN__} = sub {
+    my ($msg) = @_;
+    my ($severity, $category, $object, $summary) = $msg =~ m/^([^: ]*):([^: ]*):([^ ]*) ?(.*)$/;
+    $severity = $severity // 'Error';
+    $object   = $object   // 'unknown';
+    $category = $category // 'internal';
+    $summary  = $summary  // $msg;
+    Message($severity, $category, $object, $input, decode('console_out', $summary));
+  } unless $bookml::IN_LATEXML;
+
+  local $SIG{__DIE__} = sub {
+    my ($msg) = @_;
+    Fatal('error', 'xsltproc.pl', undef, decode('console_out', $msg));
+  } unless $bookml::IN_LATEXML;
 
   Fatal('expected', 'stylesheet', undef, 'you must specify a stylesheet')   unless defined $stylefile;
   Fatal('expected', 'input',      undef, 'you must specify an input file')  unless defined $input;

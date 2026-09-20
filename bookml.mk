@@ -185,7 +185,8 @@ LATEXMLPOSTAUTOFLAGS  ?=
 BOOKML_DEPS_DEPS        = bookml/bookml.pm bookml/deps.pl
 BOOKML_DEPS_PDF         = bookml/bookml.pm bookml/xraux.pl
 BOOKML_DEPS_HTML        = $(wildcard LaTeXML-html5.xsl bookml/XSLT/*.xsl) bookml/bookml.pm bookml/xsltproc.pl bookml/search_index.pl
-BOOKML_DEPS_XML         = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
+BOOKML_DEPS_XML         = bookml/XSLT/proc-svg.xsl bookml/bmlimages.pl bookml/bookml.pm bookml/resources.pl
+BOOKML_DEPS_PREXML      = bookml/XSLT/proc-preprocess-xml.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
 BOOKML_DEPS_IMSMANIFEST = bookml/XSLT/proc-imsmanifest.xsl bookml/bookml.pm bookml/xsltproc.pl
 BOOKML_DEPS_MANIFEST    = bookml/bookml.pm bookml/manifest.pl
 BOOKML_DEPS_HTMLDEPS    = bookml/XSLT/proc-resources.xsl bookml/XSLT/utils.xsl bookml/bookml.pm bookml/xsltproc.pl
@@ -357,7 +358,7 @@ $(call bml.config.set,xml,LATEXMLFLAGS LATEXMLEXTRAFLAGS,LATEXMLGENERATOR=$$(bml
 # attrib -r works around an issue where Windows sets the READONLY attribute on
 # the xml folder (common on cloud drives) and LaTeXML *believes it*
 # generate .mk to skip a step on the next restart
-$(AUX_DIR)/xml/%.xml: %.tex $$(call bml.config.prereq,xml) \
+$(AUX_DIR)/xml/%.xml: %.tex $(BOOKML_DEPS_XML) $$(call bml.config.prereq,xml) \
   | $$(@D)/./ $(bml.utils.tsprereq) $(call bml.config.predir,xml)
 	@$(bml.buildbegin)
 	@$(call bml.print.recipe,latexml,$<,$*.xml)
@@ -385,7 +386,7 @@ $(filter $(AUX_DIR)/deps/%.tex/xml.mk,$(bml.deps.rebuild)): $(AUX_DIR)/deps/%.te
 # additional preprocessing to XML files (for EPS/PDF to SVG conversion)
 $(call bml.config.set,preprocessed-xml,,\# AUTOSVG xslt parameter set to '$$(if $$(PDFTOSVG_CONVERTER),pdf) $$(if $$(EPSTOSVG_CONVERTER),eps)')
 
-$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_XML) $$(call bml.config.prereq,preprocessed-xml) \
+$(AUX_DIR)/xml/%.preprocessed-xml: $(AUX_DIR)/xml/%.xml $(BOOKML_DEPS_PREXML) $$(call bml.config.prereq,preprocessed-xml) \
   | $(bml.utils.tsprereq) $(call bml.config.predir,preprocessed-xml)
 	@$(bml.buildbegin)
 	@$(call bml.print.cmd,$(PERL) bookml/xsltproc.pl bookml/XSLT/proc-preprocess-xml.xsl --stringparam AUTOSVG $(call bml.utils.escape3args,$(if $(PDFTOSVG_CONVERTER),pdf) $(if $(EPSTOSVG_CONVERTER),eps),$<,--output=$@))

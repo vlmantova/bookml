@@ -29,11 +29,11 @@ use strict;
 use Getopt::Long;
 use DB_File;
 use IPC::Open3;
+use URI::file;
 use XML::LibXSLT;
 
 use lib 'bookml';
 use bookml;
-require 'xsltproc.pl';
 
 # code to activate bmlimages and add dvisvgm,hypertex as global options
 # hypertex ensures hyperref does not emit PDF specials which confuse dvisvgm
@@ -197,10 +197,38 @@ sub generate {
         (($! ? "Error closing pipe: $!" : 'Exit status ' . ($? >> 8)) .
           "\nInvocation: " . join(' ', @dsvg_invocation))); }
 
-  foreach my $d (@depths) {
-    if ($d =~ m/^(\d+):/) {
-      my $svg = "bmlimages/$jobname-$1.svg";
-      bookml::xsltproc::proc('bookml/XSLT/proc-svg.xsl', $svg, $svg) or Error('bookml', 'proc-svg', undef, "could not fix the size of $svg"); } }
+  if (@depths) {
+    bookml::open_file(my $fh_style, '<', 'bookml/XSLT/proc-svg.xsl') or (Error('bookml', 'proc-svg', undef, "cannot open the stylesheet: $!"), return @depths);
+    binmode($fh_style);
+
+    my $style_doc = XML::LibXML->load_xml(IO => $fh_style, URI => URI::file->new('bookml/XSLT/proc-svg.xsl')->as_string) or (Error('bookml', 'proc-svg', undef, "cannot parse the stylesheet: $!"), return @depths);
+
+    # keep in sync with xsltproc.pl
+    # increase limit, twice as XML_PARSE_HUGE because... attributes?
+    XML::LibXSLT->max_depth(512);
+
+    my $parser = XML::LibXSLT->new();
+    my $stylesheet = $parser->parse_stylesheet($style_doc) or (Error('bookml', 'proc-svg', undef, "cannot parse the stylesheet: $!"), return @depths);
+
+    foreach my $d (@depths) {
+      if ($d =~ m/^(\d+):/) {
+        my $svg = "bmlimages/$jobname-$1.svg";
+
+        bookml::open_file(my $fh_input, '<', $svg) or (Error('bookml', 'proc-svg', undef, "could not open the file $svg: $!"), next);
+        binmode($fh_input);
+
+        eval {
+          # do not die if libxml aborts, like when suggesting XML_PARSE_HUGE
+          local $SIG{__DIE__} = sub { 1; };
+          my $input_doc = XML::LibXML->load_xml(IO => $fh_input, URI => URI::file->new($svg)->as_string) or (Error('bookml', 'proc-svg', undef, "could not parse the file $svg: $!"), die);
+          my $result = $stylesheet->transform($input_doc) or (Error('bookml', 'proc-svg', undef, "cannot fix the size of $svg: $!"), die);
+
+          bookml::open_file(my $fh_output, '>', $svg) or (Error('bookml', 'proc-svg', undef, "cannot write to $svg: $!"), die);
+          binmode($fh_output);
+
+          $stylesheet->output_fh($result, $fh_output); };
+
+        Error('bookml', 'proc-svg', undef, "could not parse the file $svg: $@") if $@; } } }
 
   return @depths;
 }

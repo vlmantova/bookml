@@ -406,7 +406,7 @@ $(AUX_DIR)/html/%/index.html: $(AUX_DIR)/xml/%.preprocessed-xml $(BOOKML_DEPS_HT
 	@$(call bml.print.recipe,latexmlpost,$*.xml,$(AUX_DIR)/html/$*/index.html)
 	@$(call bml.utils.rmdir,$(AUX_DIR)/html/$*)
 	@$(call bml.print.cmd,$(call bml.utils.autovar,$(if $(bml.utils.ifoxide),LATEXML,LATEXMLPOST)) \
-	  $(if $(wildcard LaTeXML-html5.xsl),,--stylesheet=bookml/XSLT/bookml-html5.xsl) \
+	  --stylesheet=$(if $(wildcard LaTeXML-html5.xsl),LaTeXML-html5.xsl,bookml/XSLT/bookml-html5.xsl) \
 	  $(if $(call bml.utils.autovar,SPLITAT),--splitat=$(call bml.utils.autovar,SPLITAT)) \
 	  $(if $(bml.utils.ifoxide),,--urlstyle=file) --pmml --mathtex \
 	  $(call bml.utils.autovar,LATEXMLPOSTFLAGS) $(call bml.utils.autovar,LATEXMLPOSTEXTRAFLAGS) \

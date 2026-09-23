@@ -510,7 +510,7 @@ rule.pushAfterDigest(|| {
 // add CSS classes
 hrule.pushAfterConstruct(|document| {
   let props = document.getProperties();
-  if (!props["isHorizontal"]) {
+  if (props["isHorizontalRule"] == () || !props["isHorizontalRule"]) {
     let elem = document.findnode("*[last()]", document.getElement());
     document.addClass(elem, "bml_hrule");
   }
@@ -518,7 +518,8 @@ hrule.pushAfterConstruct(|document| {
 
 vrule.pushAfterConstruct(|document| {
   let props = document.getProperties();
-  if (!props["invisible"] && !props["isVertical"]) {
+  if ((props["invisible"] == () || !props["invisible"]) &&
+      (props["isVerticalRule"] == () || !props["isVerticalRule"])) {
     let elem = document.findnode("*[last()]", document.getElement());
     document.addClass(elem, "bml_hrule");
   }
